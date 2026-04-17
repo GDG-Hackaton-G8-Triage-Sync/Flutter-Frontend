@@ -400,9 +400,9 @@ class LoginScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          const Text(
-            '© 2024 TRIAGESYNC MEDICAL SYSTEMS. ALL RIGHTS RESERVED.',
-            style: TextStyle(
+          Text(
+            '© ${DateTime.now().year} TRIAGESYNC MEDICAL SYSTEMS. ALL RIGHTS RESERVED.',
+            style: const TextStyle(
               fontSize: 9,
               color: Colors.grey,
               letterSpacing: 0.5,
