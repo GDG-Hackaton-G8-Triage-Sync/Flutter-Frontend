@@ -53,8 +53,6 @@ TriageSync Frontend is a **production-grade Flutter application** serving two di
 | **json_serializable** | 6.8+ | JSON Parsing | Code generation for safe, performant serialization. |
 | **Google Fonts** | 6.2+ | Typography | Manrope (display) and Inter (body) fonts with fallback. |
 | **flutter_animate** | 4.5+ | Animations | Declarative micro‑interactions (pulse, scale, fade). |
-| **speech_to_text** | 6.6+ | Voice Input | Platform‑aware speech recognition for symptom dictation. |
-
 ---
 
 ## 3. Architecture & Folder Structure
