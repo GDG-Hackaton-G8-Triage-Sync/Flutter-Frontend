@@ -9,6 +9,7 @@ import '../patient/profile_screen.dart';
 import '../patient/settings_screen.dart';
 import '../patient/status_screen.dart';
 import '../patient/symptom_input_screen.dart';
+import '../common/consent_screen.dart';
 import '../../widgets/patient_home_tab.dart';
 
 class PatientDashboardScreen extends StatefulWidget {
@@ -111,8 +112,14 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
     });
   }
 
+  bool _hasConsented = false;
+
   @override
   Widget build(BuildContext context) {
+    if (!_hasConsented) {
+      return DataConsentScreen(onAccepted: () => setState(() => _hasConsented = true));
+    }
+
     final screens = <Widget>[
       PatientHomeTab(
         name: _name,
@@ -134,25 +141,29 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
         backgroundColor: const Color(0xFFF7F9FB),
         elevation: 0,
         surfaceTintColor: Colors.transparent,
-        title: Row(
-          children: [
-            const Icon(Icons.hub_outlined, color: Color(0xFF005EB8), size: 28),
-            const SizedBox(width: 10),
-            ShaderMask(
-              shaderCallback: (bounds) => const LinearGradient(
-                colors: [Color(0xFF00478D), Color(0xFF005EB8)],
-              ).createShader(bounds),
-              child: const Text(
-                'TriageSync',
-                style: TextStyle(
-                  fontFamily: 'Manrope',
-                  fontSize: 22,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white,
+        title: Padding(
+          padding: const EdgeInsets.only(left: 8),
+          child: Row(
+            children: [
+              const Icon(Icons.hub_rounded, color: Color(0xFF005EB8), size: 28),
+              const SizedBox(width: 12),
+              ShaderMask(
+                shaderCallback: (bounds) => const LinearGradient(
+                  colors: [Color(0xFF00478D), Color(0xFF005EB8)],
+                ).createShader(bounds),
+                child: const Text(
+                  'TriageSync',
+                  style: TextStyle(
+                    fontFamily: 'Manrope',
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                    letterSpacing: -0.5,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         actions: [
           if (_role == 'staff' || _role == 'admin')
@@ -190,7 +201,7 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, -5),
             ),
@@ -199,7 +210,7 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
         child: NavigationBar(
           selectedIndex: _currentIndex,
           backgroundColor: Colors.white,
-          indicatorColor: const Color(0xFF005EB8).withOpacity(0.1),
+          indicatorColor: const Color(0xFF005EB8).withValues(alpha: 0.1),
           height: 70,
           onDestinationSelected: (index) =>
               setState(() => _currentIndex = index),

@@ -52,14 +52,14 @@ class _PatientHomeTabState extends State<PatientHomeTab> {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       children: [
         _buildHeader(),
-        const SizedBox(height: 24),
+        const SizedBox(height: 32),
         _buildLatestStatusCard(),
-        const SizedBox(height: 24),
+        const SizedBox(height: 32),
         _buildActionGrid(),
-        const SizedBox(height: 24),
+        const SizedBox(height: 32),
         _buildHealthInsight(),
       ],
     );
@@ -72,42 +72,52 @@ class _PatientHomeTabState extends State<PatientHomeTab> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Good morning,',
+              'CLINICAL DASHBOARD',
               style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w500,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[500],
+                letterSpacing: 1.5,
               ),
             ),
+            const SizedBox(height: 4),
             Text(
-              widget.name.isNotEmpty ? widget.name : 'Patient',
+              widget.name.isNotEmpty ? 'Welcome, ${widget.name.split(' ').first}' : 'Welcome Back',
               style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w800,
+                fontSize: 28,
+                fontWeight: FontWeight.w900,
                 color: Color(0xFF002D57),
+                fontFamily: 'Manrope',
+                letterSpacing: -0.5,
               ),
             ),
           ],
         ),
         const Spacer(),
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.03),
-                blurRadius: 10,
-              ),
-            ],
-          ),
-          child: const Badge(
-            label: Text('2'),
-            child: Icon(Icons.notifications_none_outlined, color: Color(0xFF005EB8)),
-          ),
-        ),
+        _buildNotificationLauncher(),
       ],
+    );
+  }
+
+  Widget _buildNotificationLauncher() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+          ),
+        ],
+      ),
+      child: IconButton(
+        onPressed: () {},
+        icon: const Badge(
+          label: Text('2'),
+          child: Icon(Icons.notifications_active_outlined, color: Color(0xFF005EB8)),
+        ),
+      ),
     );
   }
 
@@ -135,7 +145,7 @@ class _PatientHomeTabState extends State<PatientHomeTab> {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF005EB8).withOpacity(0.3),
+              color: const Color(0xFF005EB8).withValues(alpha: 0.3),
               blurRadius: 15,
               offset: const Offset(0, 8),
             ),
@@ -152,7 +162,7 @@ class _PatientHomeTabState extends State<PatientHomeTab> {
             const SizedBox(height: 4),
             Text(
               'Start a session if you feel unwell',
-              style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 13),
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13),
             ),
             const SizedBox(height: 16),
             ElevatedButton(
@@ -179,7 +189,7 @@ class _PatientHomeTabState extends State<PatientHomeTab> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -205,7 +215,7 @@ class _PatientHomeTabState extends State<PatientHomeTab> {
                 width: 45,
                 height: 45,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(Icons.assignment_ind, color: color),
@@ -321,9 +331,9 @@ class _PatientHomeTabState extends State<PatientHomeTab> {
       borderRadius: BorderRadius.circular(16),
       child: Container(
         decoration: BoxDecoration(
-          color: color.withOpacity(0.05),
+          color: color.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withOpacity(0.1)),
+          border: Border.all(color: color.withValues(alpha: 0.1)),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -394,7 +404,7 @@ class _PatientHomeTabState extends State<PatientHomeTab> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(

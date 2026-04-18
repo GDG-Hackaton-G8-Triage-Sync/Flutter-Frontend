@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../widgets/state_visuals.dart';
 
 class AuditLogEntry {
   const AuditLogEntry({
@@ -37,11 +38,10 @@ class AuditLogViewerScreen extends StatelessWidget {
         ),
       ),
       body: entries.isEmpty
-          ? const Center(
-              child: Text(
-                'No audit records yet.',
-                style: TextStyle(color: Color(0xFF44474E)),
-              ),
+          ? const EmptyState(
+              icon: Icons.history_edu_outlined,
+              title: 'Log is Current',
+              message: 'No administrative or clinical actions have been recorded in this tracking period.',
             )
           : ListView.separated(
               padding: const EdgeInsets.all(16),

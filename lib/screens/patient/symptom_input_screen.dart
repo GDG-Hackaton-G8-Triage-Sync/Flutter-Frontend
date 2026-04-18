@@ -170,25 +170,26 @@ class _SymptomInputScreenState extends State<SymptomInputScreen> {
     final count = _controller.text.length;
 
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       children: [
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: const Color(0xFFFFDAD6).withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(color: const Color(0xFFFFDAD6)),
           ),
           child: const Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.emergency, color: Color(0xFFBA1A1A), size: 20),
+              Icon(Icons.emergency, color: Color(0xFFBA1A1A), size: 18),
               SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  "In an emergency, call 911 or your local emergency services immediately.",
+                  "CRITICAL: If you are experiencing a life-threatening emergency, stop and call 911 immediately.",
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
                     color: Color(0xFFBA1A1A),
                     height: 1.4,
                   ),
@@ -197,20 +198,21 @@ class _SymptomInputScreenState extends State<SymptomInputScreen> {
             ],
           ),
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 32),
         const Text(
-          'How are you feeling right now?',
+          'Clinical Assessment',
           style: TextStyle(
             fontFamily: 'Manrope',
-            fontSize: 30,
-            fontWeight: FontWeight.w800,
-            color: Color(0xFF00478D),
+            fontSize: 32,
+            fontWeight: FontWeight.w900,
+            color: Color(0xFF003366),
+            letterSpacing: -0.5,
           ),
         ),
         const SizedBox(height: 8),
         const Text(
-          'Describe your symptoms in your own words. Our triage system will prioritize your case.',
-          style: TextStyle(fontSize: 14, color: Color(0xFF44474E), height: 1.5),
+          'Please describe your symptoms in detail. This information will be used by our clinical engine to prioritize your care.',
+          style: TextStyle(fontSize: 15, color: Color(0xFF44474E), height: 1.6),
         ),
         const SizedBox(height: 18),
         Card(

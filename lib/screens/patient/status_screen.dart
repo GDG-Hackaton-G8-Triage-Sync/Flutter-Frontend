@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import '../../models/api_models.dart';
 import '../../services/backend_service.dart';
 import '../../services/session_service.dart';
+import '../../widgets/state_visuals.dart';
 import 'triage_history_screen.dart';
+import 'timeline_screen.dart';
 
 class StatusScreen extends StatefulWidget {
   const StatusScreen({super.key, this.refreshTrigger = 0});
@@ -93,90 +95,22 @@ class _StatusScreenState extends State<StatusScreen> {
         }
 
         if (snapshot.hasError) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.wifi_off,
-                    size: 48,
-                    color: Color(0xFF44474E),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Failed to load your status. Is the backend running?',
-                  ),
-                  const SizedBox(height: 12),
-                  ElevatedButton(
-                    onPressed: _refresh,
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
-            ),
-          );
+          return OfflineVisual(onRetry: _refresh);
         }
 
         final result = snapshot.data;
         if (result == null) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE0F0FF),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.assignment_outlined,
-                      size: 40,
-                      color: Color(0xFF005EB8),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'No triage submissions yet.',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF00478D),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Submit your symptoms to get your priority status.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Color(0xFF44474E)),
-                  ),
-                  const SizedBox(height: 16),
-                  OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const TriageHistoryScreen(),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.history_outlined),
-                    label: const Text('Open Triage History'),
-                  ),
-                  const SizedBox(height: 8),
-                  OutlinedButton.icon(
-                    onPressed: _refresh,
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('Refresh'),
-                  ),
-                ],
-              ),
-            ),
+          return EmptyState(
+            icon: Icons.assignment_outlined,
+            title: 'No Pending Triage',
+            message: 'You have no active triage sessions. Submit your symptoms in the Triage tab to get a priority assessment from our clinical engine.',
+            actionLabel: 'OPEN HISTORY',
+            onAction: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const TriageHistoryScreen()),
+              );
+            },
           );
         }
 
@@ -321,6 +255,20 @@ class _StatusScreenState extends State<StatusScreen> {
                                 ),
                               ),
                             ],
+                          ),
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            width: double.infinity,
+                            child: TextButton.icon(
+                              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PatientTimelineScreen())),
+                              icon: const Icon(Icons.timeline_outlined, size: 16),
+                              label: const Text('VIEW LIVE CARE TIMELINE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.1)),
+                              style: TextButton.styleFrom(
+                                foregroundColor: priorityColor,
+                                backgroundColor: priorityColor.withValues(alpha: 0.1),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                            ),
                           ),
                         ],
                       ),
