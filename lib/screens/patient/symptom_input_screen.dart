@@ -71,14 +71,14 @@ class _SymptomInputScreenState extends State<SymptomInputScreen> {
       setState(() => _attachedImage = null);
 
       // Track whether the user already triggered the callback from SuccessScreen
-      bool _callbackFired = false;
+      bool callbackFired = false;
 
       await Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => SuccessScreen(
             onViewStatus: () {
-              _callbackFired = true;
+              callbackFired = true;
               Navigator.pop(context);
               widget.onSubmitted?.call();
             },
@@ -87,7 +87,7 @@ class _SymptomInputScreenState extends State<SymptomInputScreen> {
       );
 
       // If user pressed back instead of "View My Status", still trigger callback
-      if (!_callbackFired) widget.onSubmitted?.call();
+      if (!callbackFired) widget.onSubmitted?.call();
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

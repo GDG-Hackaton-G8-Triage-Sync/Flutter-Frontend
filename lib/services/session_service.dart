@@ -27,6 +27,16 @@ class SessionService {
     return prefs.getString(_accessTokenKey);
   }
 
+  Future<String?> getRefreshToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_refreshTokenKey);
+  }
+
+  Future<void> updateAccessToken(String accessToken) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_accessTokenKey, accessToken);
+  }
+
   Future<String?> getRole() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_roleKey);

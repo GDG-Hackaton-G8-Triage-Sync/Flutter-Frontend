@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 import '../models/api_models.dart';
 import 'session_service.dart';
@@ -9,18 +12,29 @@ class BackendService {
   static final BackendService instance = BackendService._();
 
   static String get _baseUrl {
-    final env = const String.fromEnvironment(
-      'API_URL',
-      defaultValue: 'http://localhost:3001',
-    );
-    if (env.isNotEmpty) {
-      return env;
+    const envUrl = String.fromEnvironment('API_URL', defaultValue: '');
+    if (envUrl.isNotEmpty) {
+      return envUrl;
     }
-
+    if (kIsWeb) {
+      return 'http://localhost:3001';
+    }
+    if (Platform.isAndroid) {
+      return 'http://10.0.2.2:3001';
+    }
     return 'http://localhost:3001';
   }
 
   final SessionService _sessionService = SessionService();
+
+  late final Dio _authDio = Dio(
+    BaseOptions(
+      baseUrl: _baseUrl,
+      connectTimeout: const Duration(seconds: 10),
+      receiveTimeout: const Duration(seconds: 10),
+      headers: <String, String>{'Content-Type': 'application/json'},
+    ),
+  );
 
   late final Dio _dio =
       Dio(
@@ -40,8 +54,53 @@ class BackendService {
               }
               handler.next(options);
             },
+            onError: (error, handler) async {
+              final statusCode = error.response?.statusCode;
+              final req = error.requestOptions;
+              final isRefreshCall = req.path == '/api/auth/refresh/';
+              final alreadyRetried = req.extra['retried'] == true;
+
+              if (statusCode == 401 && !isRefreshCall && !alreadyRetried) {
+                final refreshToken = await _sessionService.getRefreshToken();
+                if (refreshToken == null || refreshToken.isEmpty) {
+                  await _sessionService.clear();
+                  handler.next(error);
+                  return;
+                }
+
+                try {
+                  final newToken = await _refreshAccessToken(refreshToken);
+                  await _sessionService.updateAccessToken(newToken);
+
+                  req.headers['Authorization'] = 'Bearer $newToken';
+                  req.extra['retried'] = true;
+
+                  final retried = await _dio.fetch(req);
+                  handler.resolve(retried);
+                  return;
+                } catch (_) {
+                  await _sessionService.clear();
+                }
+              }
+
+              handler.next(error);
+            },
           ),
         );
+
+  Future<String> _refreshAccessToken(String refreshToken) async {
+    final response = await _authDio.post<Map<String, dynamic>>(
+      '/api/auth/refresh/',
+      data: <String, dynamic>{'refresh_token': refreshToken},
+    );
+
+    final token = (response.data?['access_token'] ?? '') as String;
+    if (token.isEmpty) {
+      throw Exception('Refresh token response missing access token');
+    }
+
+    return token;
+  }
 
   Future<AuthResponse> login({
     required String email,
@@ -123,6 +182,18 @@ class BackendService {
     final response = await _dio.patch<Map<String, dynamic>>(
       '/api/dashboard/staff/patient/$id/status/',
       data: <String, dynamic>{'status': status},
+    );
+
+    return TriageItem.fromJson(response.data ?? <String, dynamic>{});
+  }
+
+  Future<TriageItem> updatePatientPriority({
+    required int id,
+    required int priority,
+  }) async {
+    final response = await _dio.patch<Map<String, dynamic>>(
+      '/api/staff/queue/$id/priority',
+      data: <String, dynamic>{'priority': priority},
     );
 
     return TriageItem.fromJson(response.data ?? <String, dynamic>{});

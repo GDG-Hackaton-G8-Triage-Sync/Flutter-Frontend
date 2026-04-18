@@ -1,5 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 
 import 'package:web_socket_channel/web_socket_channel.dart';
 
@@ -11,13 +14,27 @@ class WebSocketManager {
   WebSocketManager._();
   static final WebSocketManager instance = WebSocketManager._();
 
-  static const _wsUrl = 'ws://localhost:3002';
+  static String get _wsUrl {
+    const envUrl = String.fromEnvironment('WS_URL', defaultValue: '');
+    if (envUrl.isNotEmpty) {
+      return envUrl;
+    }
+    if (kIsWeb) {
+      return 'ws://localhost:3002';
+    }
+    if (Platform.isAndroid) {
+      return 'ws://10.0.2.2:3002';
+    }
+    return 'ws://localhost:3002';
+  }
   static const _reconnectDelay = Duration(seconds: 3);
+  static const _heartbeatInterval = Duration(seconds: 20);
 
   WebSocketChannel? _channel;
   StreamController<TriageItem>? _controller;
   bool _intentionallyClosed = false;
   Timer? _reconnectTimer;
+  Timer? _heartbeatTimer;
 
   /// Stream of incoming [TriageItem] updates from the server.
   Stream<TriageItem> get updates {
@@ -35,6 +52,7 @@ class WebSocketManager {
   void _doConnect() {
     try {
       _channel = WebSocketChannel.connect(Uri.parse(_wsUrl));
+      _startHeartbeat();
 
       _channel!.stream.listen(
         _onMessage,
@@ -49,9 +67,18 @@ class WebSocketManager {
 
   void _onMessage(dynamic raw) {
     try {
+      if (raw is! String) {
+        return;
+      }
+
       final Map<String, dynamic> json =
-          jsonDecode(raw as String) as Map<String, dynamic>;
-      if (json['type'] == 'queue_update') {
+          jsonDecode(raw) as Map<String, dynamic>;
+
+      final type = json['type'];
+      if (type == 'queue_update' ||
+          type == 'status_update' ||
+          type == 'patient_created' ||
+          type == 'priority_override') {
         final data = json['data'] as Map<String, dynamic>;
         final item = TriageItem.fromJson(data);
         _controller?.add(item);
@@ -62,6 +89,7 @@ class WebSocketManager {
   }
 
   void _onError(Object error) {
+    _stopHeartbeat();
     _channel = null;
     if (!_intentionallyClosed) {
       _scheduleReconnect();
@@ -69,6 +97,7 @@ class WebSocketManager {
   }
 
   void _onDone() {
+    _stopHeartbeat();
     _channel = null;
     if (!_intentionallyClosed) {
       _scheduleReconnect();
@@ -76,6 +105,7 @@ class WebSocketManager {
   }
 
   void _scheduleReconnect() {
+    _stopHeartbeat();
     _reconnectTimer?.cancel();
     _reconnectTimer = Timer(_reconnectDelay, () {
       if (!_intentionallyClosed) {
@@ -88,8 +118,25 @@ class WebSocketManager {
   void disconnect() {
     _intentionallyClosed = true;
     _reconnectTimer?.cancel();
+    _stopHeartbeat();
     _channel?.sink.close();
     _channel = null;
+  }
+
+  void _startHeartbeat() {
+    _stopHeartbeat();
+    _heartbeatTimer = Timer.periodic(_heartbeatInterval, (_) {
+      try {
+        _channel?.sink.add('{"type":"ping"}');
+      } catch (_) {
+        _stopHeartbeat();
+      }
+    });
+  }
+
+  void _stopHeartbeat() {
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = null;
   }
 
   /// Dispose the manager (close stream controller). Call on app shutdown.

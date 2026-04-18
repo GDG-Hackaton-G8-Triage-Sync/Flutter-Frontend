@@ -1,22 +1,26 @@
 import 'package:dio/dio.dart';
 
-import '../../../features/shared/models/admin_models.dart';
+import '../../../models/api_models.dart';
 import '../dio_client.dart';
 
 class AdminApi {
   final Dio _dio = DioClient.instance;
 
-  Future<SystemOverview> getOverview() async {
-    final response = await _dio.get<dynamic>('/api/admin/overview/');
-    return SystemOverview.fromJson(response.data as Map<String, dynamic>);
+  Future<AdminOverview> getOverview() async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/api/dashboard/admin/overview/',
+    );
+    return AdminOverview.fromJson(response.data ?? <String, dynamic>{});
   }
 
-  Future<Analytics> getAnalytics() async {
-    final response = await _dio.get<dynamic>('/api/admin/analytics/');
-    return Analytics.fromJson(response.data as Map<String, dynamic>);
+  Future<AdminAnalytics> getAnalytics() async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/api/dashboard/admin/analytics/',
+    );
+    return AdminAnalytics.fromJson(response.data ?? <String, dynamic>{});
   }
 
-  Future<List<User>> getUsers() async {
+  Future<List<AppUser>> getUsers() async {
     final response = await _dio.get<dynamic>('/api/admin/users/');
 
     final data = response.data;
@@ -28,7 +32,7 @@ class AdminApi {
 
     return listData
         .whereType<Map<String, dynamic>>()
-        .map(User.fromJson)
+        .map(AppUser.fromJson)
         .toList();
   }
 }

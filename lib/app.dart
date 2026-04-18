@@ -17,7 +17,7 @@ class TriageSyncApp extends StatelessWidget {
           brightness: Brightness.light,
         ),
         textTheme: GoogleFonts.manropeTextTheme(),
-        cardTheme: CardTheme(
+        cardTheme: CardThemeData(
           elevation: 0,
           color: Colors.white,
           shape: RoundedRectangleBorder(

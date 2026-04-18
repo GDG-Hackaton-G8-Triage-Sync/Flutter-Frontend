@@ -76,8 +76,30 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
       ).showSnackBar(SnackBar(content: Text('Status updated to $status.')));
     } catch (_) {
       if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Failed to update status.')));
+    } finally {
+      if (mounted) setState(() => _isUpdating = false);
+    }
+  }
+
+  Future<void> _executePriorityOverride(int p) async {
+    setState(() => _isUpdating = true);
+    try {
+      final updated = await _backend.updatePatientPriority(
+        id: _patient.id,
+        priority: p,
+      );
+      if (!mounted) return;
+      setState(() => _patient = updated);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to update status.')),
+        SnackBar(content: Text('Priority escalated to Level $p.')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to override priority.')),
       );
     } finally {
       if (mounted) setState(() => _isUpdating = false);
@@ -87,29 +109,37 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
   void _showOverridePriorityDialog() {
     showDialog<void>(
       context: context,
-      builder:
-          (ctx) => AlertDialog(
-            title: const Text('Override Priority'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [1, 2, 3, 4, 5].map((p) {
-                return ListTile(
-                  title: Text('Priority $p'),
-                  leading: Radio<int>(
-                    value: p,
-                    groupValue: _patient.priority,
-                    onChanged: (_) => Navigator.pop(ctx),
-                  ),
-                );
-              }).toList(),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancel'),
+      builder: (ctx) => AlertDialog(
+        title: const Text('Override Priority'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [1, 2, 3, 4, 5].map((p) {
+            return ListTile(
+              title: Text('Priority $p'),
+              leading: Icon(
+                p == _patient.priority
+                    ? Icons.radio_button_checked
+                    : Icons.radio_button_off,
+                color: p == _patient.priority
+                    ? const Color(0xFF005EB8)
+                    : Colors.grey,
               ),
-            ],
+              onTap: () {
+                Navigator.pop(ctx);
+                if (p != _patient.priority) {
+                  _executePriorityOverride(p);
+                }
+              },
+            );
+          }).toList(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
           ),
+        ],
+      ),
     );
   }
 
@@ -132,10 +162,9 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
           onPressed: () => Navigator.pop(context, _patient),
         ),
         title: ShaderMask(
-          shaderCallback:
-              (bounds) => const LinearGradient(
-                colors: [Color(0xFF00478D), Color(0xFF005EB8)],
-              ).createShader(bounds),
+          shaderCallback: (bounds) => const LinearGradient(
+            colors: [Color(0xFF00478D), Color(0xFF005EB8)],
+          ).createShader(bounds),
           child: const Text(
             'Patient Detail',
             style: TextStyle(
@@ -189,18 +218,14 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
                     ),
                   ),
                 ),
-              if (_patient.status != 'in_progress')
-                const SizedBox(height: 16),
+              if (_patient.status != 'in_progress') const SizedBox(height: 16),
               if (_patient.status != 'completed')
                 SizedBox(
                   width: double.infinity,
                   height: 56,
                   child: ElevatedButton.icon(
                     onPressed: () => _updateStatus('completed'),
-                    icon: const Icon(
-                      Icons.check_circle,
-                      color: Colors.white,
-                    ),
+                    icon: const Icon(Icons.check_circle, color: Colors.white),
                     label: const Text(
                       'Mark as Attended',
                       style: TextStyle(
@@ -224,10 +249,7 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
                 height: 56,
                 child: ElevatedButton.icon(
                   onPressed: _showOverridePriorityDialog,
-                  icon: const Icon(
-                    Icons.edit_note,
-                    color: Color(0xFF00478D),
-                  ),
+                  icon: const Icon(Icons.edit_note, color: Color(0xFF00478D)),
                   label: const Text(
                     'Override Priority',
                     style: TextStyle(
@@ -425,7 +447,11 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        const Icon(Icons.photo, size: 16, color: Color(0xFF44474E)),
+                        const Icon(
+                          Icons.photo,
+                          size: 16,
+                          color: Color(0xFF44474E),
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           'Photo: ${_patient.photoName}',
