@@ -3,6 +3,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 import '../../services/backend_service.dart';
+import '../../widgets/premium_interactive.dart';
 import 'success_screen.dart';
 
 class SymptomInputScreen extends StatefulWidget {
@@ -323,23 +324,12 @@ class _SymptomInputScreenState extends State<SymptomInputScreen> {
             ),
           ),
         ),
-        const SizedBox(height: 14),
-        SizedBox(
-          height: 52,
-          child: ElevatedButton.icon(
-            onPressed: _isSubmitting ? null : _submit,
-            icon: _isSubmitting
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                : const Icon(Icons.send),
-            label: Text(_isSubmitting ? 'Submitting...' : 'Submit for Triage'),
-          ),
+        const SizedBox(height: 32),
+        PremiumButton(
+          label: _isSubmitting ? 'Submitting...' : 'Submit for Triage',
+          onTap: _submit,
+          isLoading: _isSubmitting,
+          icon: Icons.send_rounded,
         ),
       ],
     );

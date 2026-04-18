@@ -11,6 +11,7 @@ import '../patient/status_screen.dart';
 import '../patient/symptom_input_screen.dart';
 import '../common/consent_screen.dart';
 import '../../widgets/patient_home_tab.dart';
+import '../../utils/navigation_transitions.dart';
 
 class PatientDashboardScreen extends StatefulWidget {
   const PatientDashboardScreen({super.key});
@@ -85,8 +86,8 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
   Future<void> _openProfile() async {
     final updated = await Navigator.push<Map<String, String>>(
       context,
-      MaterialPageRoute(
-        builder: (_) => ProfileScreen(name: _name, email: _email, role: _role),
+      SlideRightRoute(
+        child: ProfileScreen(name: _name, email: _email, role: _role),
       ),
     );
 

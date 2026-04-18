@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/api_models.dart';
 import '../services/backend_service.dart';
 import '../screens/patient/hospital_info_screen.dart';
+import 'premium_interactive.dart';
 
 class PatientHomeTab extends StatefulWidget {
   final String name;
@@ -164,15 +165,12 @@ class _PatientHomeTabState extends State<PatientHomeTab> {
               'Start a session if you feel unwell',
               style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13),
             ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: widget.onStartTriage,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: const Color(0xFF005EB8),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              child: const Text('Start Triage Now'),
+            const SizedBox(height: 24),
+            PremiumButton(
+              onTap: widget.onStartTriage,
+              label: 'Start Triage Assessment',
+              color: Colors.white,
+              textColor: const Color(0xFF005EB8),
             ),
           ],
         ),
