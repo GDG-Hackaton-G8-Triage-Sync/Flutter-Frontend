@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../../models/api_models.dart';
+import '../session_service.dart';
 
 /// Manages a persistent WebSocket connection to the mock server (ws://localhost:3002).
 /// Emits [TriageItem] events whenever the server broadcasts a queue_update.
@@ -20,12 +21,12 @@ class WebSocketManager {
       return envUrl;
     }
     if (kIsWeb) {
-      return 'ws://localhost:3002';
+      return 'ws://localhost:3002/ws/v1/updates/';
     }
     if (Platform.isAndroid) {
-      return 'ws://10.0.2.2:3002';
+      return 'ws://10.0.2.2:3002/ws/v1/updates/';
     }
-    return 'ws://localhost:3002';
+    return 'ws://localhost:3002/ws/v1/updates/';
   }
 
   static const _reconnectDelay = Duration(seconds: 3);
@@ -53,6 +54,7 @@ class WebSocketManager {
   void _doConnect() {
     try {
       _channel = WebSocketChannel.connect(Uri.parse(_wsUrl));
+      _sendAuthFrame();
       _startHeartbeat();
 
       _channel!.stream.listen(
@@ -75,10 +77,9 @@ class WebSocketManager {
       final Map<String, dynamic> json = jsonDecode(raw) as Map<String, dynamic>;
 
       final type = json['type'];
-      if (type == 'queue_update' ||
-          type == 'status_update' ||
-          type == 'patient_created' ||
-          type == 'priority_override') {
+      if (type == 'TRIAGE_CREATED' ||
+          type == 'TRIAGE_UPDATED' ||
+          type == 'SLA_BREACH') {
         final data = json['data'] as Map<String, dynamic>;
         final item = TriageItem.fromJson(data);
         _controller?.add(item);
@@ -123,11 +124,21 @@ class WebSocketManager {
     _channel = null;
   }
 
+  Future<void> _sendAuthFrame() async {
+    final token = await SessionService().getAccessToken();
+    if (token != null) {
+      _channel?.sink.add(jsonEncode({
+        'type': 'AUTH',
+        'token': token,
+      }));
+    }
+  }
+
   void _startHeartbeat() {
     _stopHeartbeat();
     _heartbeatTimer = Timer.periodic(_heartbeatInterval, (_) {
       try {
-        _channel?.sink.add('{"type":"ping"}');
+        _channel?.sink.add('{"type":"PING"}');
       } catch (_) {
         _stopHeartbeat();
       }

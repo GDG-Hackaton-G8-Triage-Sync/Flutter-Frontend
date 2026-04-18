@@ -57,7 +57,7 @@ class BackendService {
             onError: (error, handler) async {
               final statusCode = error.response?.statusCode;
               final req = error.requestOptions;
-              final isRefreshCall = req.path == '/api/auth/refresh/';
+              final isRefreshCall = req.path == '/api/v1/auth/refresh/';
               final alreadyRetried = req.extra['retried'] == true;
 
               if (statusCode == 401 && !isRefreshCall && !alreadyRetried) {
@@ -90,7 +90,7 @@ class BackendService {
 
   Future<String> _refreshAccessToken(String refreshToken) async {
     final response = await _authDio.post<Map<String, dynamic>>(
-      '/api/auth/refresh/',
+      '/api/v1/auth/refresh/',
       data: <String, dynamic>{'refresh_token': refreshToken},
     );
 
@@ -107,7 +107,7 @@ class BackendService {
     required String password,
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
-      '/api/auth/login/',
+      '/api/v1/auth/login/',
       data: <String, dynamic>{'email': email, 'password': password},
     );
 
@@ -131,7 +131,7 @@ class BackendService {
     String role = 'patient',
   }) async {
     await _dio.post<void>(
-      '/api/auth/register/',
+      '/api/v1/auth/register/',
       data: <String, dynamic>{
         'name': name,
         'email': email,
@@ -146,7 +146,7 @@ class BackendService {
     String? photoName,
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
-      '/api/triage/',
+      '/api/v1/triage/',
       data: <String, dynamic>{
         'description': description,
         if (photoName != null && photoName.isNotEmpty) 'photo_name': photoName,
@@ -161,7 +161,7 @@ class BackendService {
     String? status,
   }) async {
     final response = await _dio.get<List<dynamic>>(
-      '/api/dashboard/staff/patients/',
+      '/api/v1/staff/patients/',
       queryParameters: <String, dynamic>{
         if (priority != null) 'priority': priority,
         if (status != null && status.isNotEmpty) 'status': status,
@@ -180,7 +180,7 @@ class BackendService {
     required String status,
   }) async {
     final response = await _dio.patch<Map<String, dynamic>>(
-      '/api/dashboard/staff/patient/$id/status/',
+      '/api/v1/staff/patient/$id/status/',
       data: <String, dynamic>{'status': status},
     );
 
@@ -192,7 +192,7 @@ class BackendService {
     required int priority,
   }) async {
     final response = await _dio.patch<Map<String, dynamic>>(
-      '/api/staff/queue/$id/priority',
+      '/api/v1/staff/patient/$id/priority/',
       data: <String, dynamic>{'priority': priority},
     );
 
@@ -204,7 +204,7 @@ class BackendService {
     required String nurseName,
   }) async {
     final response = await _dio.patch<Map<String, dynamic>>(
-      '/api/triage/$id/verify/',
+      '/api/v1/staff/patient/$id/verify/',
       data: <String, dynamic>{'verified_by': nurseName},
     );
 
@@ -213,20 +213,20 @@ class BackendService {
 
   Future<AdminOverview> getAdminOverview() async {
     final response = await _dio.get<Map<String, dynamic>>(
-      '/api/dashboard/admin/overview/',
+      '/api/v1/admin/overview/',
     );
     return AdminOverview.fromJson(response.data ?? <String, dynamic>{});
   }
 
   Future<AdminAnalytics> getAdminAnalytics() async {
     final response = await _dio.get<Map<String, dynamic>>(
-      '/api/dashboard/admin/analytics/',
+      '/api/v1/admin/analytics/',
     );
     return AdminAnalytics.fromJson(response.data ?? <String, dynamic>{});
   }
 
   Future<List<AppUser>> getUsers() async {
-    final response = await _dio.get<List<dynamic>>('/api/admin/users/');
+    final response = await _dio.get<List<dynamic>>('/api/v1/admin/users/');
     final data = response.data ?? <dynamic>[];
     return data
         .whereType<Map<String, dynamic>>()
@@ -239,7 +239,7 @@ class BackendService {
     required String role,
   }) async {
     final response = await _dio.patch<Map<String, dynamic>>(
-      '/api/admin/users/$id/role/',
+      '/api/v1/admin/users/$id/role/',
       data: <String, dynamic>{'role': role},
     );
     return AppUser.fromJson(response.data ?? <String, dynamic>{});
@@ -250,7 +250,7 @@ class BackendService {
     required String email,
   }) async {
     final response = await _dio.patch<Map<String, dynamic>>(
-      '/api/profile/',
+      '/api/v1/profile/',
       data: <String, dynamic>{'name': name, 'email': email},
     );
 
@@ -273,12 +273,12 @@ class BackendService {
   }
 
   Future<void> deletePatient(int id) async {
-    await _dio.delete<void>('/api/admin/patient/$id/');
+    await _dio.delete<void>('/api/v1/admin/patient/$id/');
   }
 
   Future<List<TriageItem>> getPatientSubmissionsByEmail(String email) async {
     final response = await _dio.get<List<dynamic>>(
-      '/api/triage-submissions/',
+      '/api/v1/triage-submissions/',
       queryParameters: <String, dynamic>{'email': email},
     );
 
