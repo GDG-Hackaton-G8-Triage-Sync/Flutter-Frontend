@@ -1,0 +1,80 @@
+{
+  "authUsers": [
+    {
+      "id": 1,
+      "name": "Patient Demo",
+      "email": "patient@triagesync.com",
+      "password": "123456",
+      "role": "patient"
+    },
+    {
+      "id": 2,
+      "name": "Staff Demo",
+      "email": "staff@triagesync.com",
+      "password": "123456",
+      "role": "staff"
+    },
+    {
+      "id": 3,
+      "name": "Admin Demo",
+      "email": "admin@triagesync.com",
+      "password": "123456",
+      "role": "admin"
+    }
+  ],
+  "triageSubmissions": [
+    {
+      "id": 101,
+      "email": "patient@triagesync.com",
+      "description": "Chest pain and sweating",
+      "priority": 1,
+      "urgency_score": 95,
+      "condition": "Cardiac Event",
+      "status": "waiting",
+      "created_at": "2026-04-14T10:30:00Z",
+      "photo_name": "ecg.jpg"
+    },
+    {
+      "id": 102,
+      "email": "patient@triagesync.com",
+      "description": "Headache and nausea",
+      "priority": 3,
+      "urgency_score": 60,
+      "condition": "Migraine",
+      "status": "in_progress",
+      "created_at": "2026-04-14T11:10:00Z",
+      "photo_name": ""
+    },
+    {
+      "id": 103,
+      "email": "patient@triagesync.com",
+      "description": "Shortness of breath and chest pressure",
+      "priority": 5,
+      "urgency_score": 10,
+      "condition": "General Assessment",
+      "status": "waiting",
+      "created_at": "2026-04-18T12:03:41.238Z",
+      "photo_name": "sample.jpg"
+    }
+  ],
+  "adminUsers": [
+    {
+      "id": 1,
+      "name": "Patient Demo",
+      "email": "patient@triagesync.com",
+      "role": "patient"
+    },
+    {
+      "id": 2,
+      "name": "Staff Demo",
+      "email": "staff@triagesync.com",
+      "role": "staff"
+    },
+    {
+      "id": 3,
+      "name": "Admin Demo",
+      "email": "admin@triagesync.com",
+      "role": "admin"
+    }
+  ]
+}

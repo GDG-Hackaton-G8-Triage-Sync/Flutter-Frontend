@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'screens/login_screen.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'screens/splash_screen.dart';
 
 class TriageSyncApp extends StatelessWidget {
   const TriageSyncApp({super.key});
@@ -11,9 +12,46 @@ class TriageSyncApp extends StatelessWidget {
       title: 'TriageSync',
       theme: ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF005EB8)),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF005EB8),
+          brightness: Brightness.light,
+        ),
+        textTheme: GoogleFonts.manropeTextTheme(),
+        cardTheme: CardTheme(
+          elevation: 0,
+          color: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: const Color(0xFFF7F9FB),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFFDDE4F0)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFFDDE4F0)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFF005EB8), width: 2),
+          ),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF005EB8),
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            elevation: 0,
+          ),
+        ),
       ),
-      home: const LoginScreen(),
+      home: const SplashScreen(),
     );
   }
 }

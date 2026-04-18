@@ -2,7 +2,9 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 class SuccessScreen extends StatelessWidget {
-  const SuccessScreen({super.key});
+  const SuccessScreen({super.key, this.onViewStatus});
+
+  final VoidCallback? onViewStatus;
 
   @override
   Widget build(BuildContext context) {
@@ -227,7 +229,13 @@ class SuccessScreen extends StatelessWidget {
                         width: double.infinity,
                         height: 56,
                         child: ElevatedButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            if (onViewStatus != null) {
+                              onViewStatus!();
+                            } else {
+                              Navigator.pop(context);
+                            }
+                          },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF005EB8),
                             shape: RoundedRectangleBorder(

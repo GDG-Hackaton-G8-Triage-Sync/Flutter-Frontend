@@ -2,35 +2,31 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
-import '../models/api_models.dart';
-import '../services/backend_service.dart';
-import 'dashboard/patient_dashboard_screen.dart';
-import 'patient/signup_screen.dart';
-import 'staff/admin_portal_screen.dart';
-import 'staff/staff_dashboard_screen.dart';
+import '../../services/backend_service.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class SignupScreen extends StatefulWidget {
+  const SignupScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<SignupScreen> createState() => _SignupScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _SignupScreenState extends State<SignupScreen> {
+  final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
   final BackendService _backend = BackendService.instance;
-
   bool _isLoading = false;
 
-  Future<void> _handleLogin() async {
+  Future<void> _handleSignup() async {
+    final name = _nameController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
-    if (email.isEmpty || password.isEmpty) {
+    if (name.isEmpty || email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter email and password.')),
+        const SnackBar(content: Text('Please fill all fields.')),
       );
       return;
     }
@@ -38,13 +34,22 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final auth = await _backend.login(email: email, password: password);
+      await _backend.register(
+        name: name,
+        email: email,
+        password: password,
+        role: 'patient',
+      );
+
       if (!mounted) return;
-      _routeByRole(auth);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Registration successful. Please sign in.')),
+      );
+      Navigator.pop(context);
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Invalid credentials or backend is offline.')),
+        const SnackBar(content: Text('Registration failed. Backend may be offline.')),
       );
     } finally {
       if (mounted) {
@@ -53,31 +58,9 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  void _routeByRole(AuthResponse auth) {
-    if (auth.role == 'admin') {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const AdminPortalScreen()),
-      );
-      return;
-    }
-
-    if (auth.role == 'staff') {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const StaffDashboardScreen()),
-      );
-      return;
-    }
-
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const PatientDashboardScreen()),
-    );
-  }
-
   @override
   void dispose() {
+    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -142,31 +125,40 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Welcome Back',
-                        style: TextStyle(
-                          fontFamily: 'Manrope',
-                          fontSize: 28,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF1A1C1E),
+                      Row(
+                        children: [
+                          IconButton(
+                            onPressed: () => Navigator.pop(context),
+                            icon: const Icon(Icons.arrow_back_ios_new),
+                          ),
+                          const Text(
+                            'Create Patient Account',
+                            style: TextStyle(
+                              fontFamily: 'Manrope',
+                              fontSize: 24,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      TextField(
+                        controller: _nameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Full Name',
+                          prefixIcon: Icon(Icons.person_outline),
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Sign in with your account to access patient, staff, or admin experiences.',
-                        style: TextStyle(color: Color(0xFF73777F)),
-                      ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 14),
                       TextField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
                         decoration: const InputDecoration(
                           labelText: 'Email',
-                          hintText: 'user@example.com',
                           prefixIcon: Icon(Icons.email_outlined),
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 14),
                       TextField(
                         controller: _passwordController,
                         obscureText: true,
@@ -180,35 +172,11 @@ class _LoginScreenState extends State<LoginScreen> {
                         width: double.infinity,
                         height: 52,
                         child: ElevatedButton(
-                          onPressed: _isLoading ? null : _handleLogin,
+                          onPressed: _isLoading ? null : _handleSignup,
                           child: _isLoading
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : const Text('Sign In'),
+                              ? const CircularProgressIndicator(color: Colors.white)
+                              : const Text('Create Account'),
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      Center(
-                        child: TextButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (_) => const SignupScreen()),
-                            );
-                          },
-                          child: const Text('New patient? Register your profile'),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Demo roles available from backend data: patient, staff, admin.',
-                        style: TextStyle(fontSize: 12, color: Colors.grey),
                       ),
                     ],
                   ),

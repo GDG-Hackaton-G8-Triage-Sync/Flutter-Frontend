@@ -1,0 +1,12 @@
+{
+    "name": "triagesync-frontend-mock-backend",
+    "version": "1.0.0",
+    "private": true,
+    "scripts": {
+        "mock:server": "node mock-server/server.js"
+    },
+    "dependencies": {
+        "json-server": "^0.17.4",
+        "ws": "^8.18.0"
+    }
+}

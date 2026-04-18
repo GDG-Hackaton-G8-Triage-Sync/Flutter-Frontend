@@ -14,7 +14,7 @@ void main() {
     // Build our app and trigger a frame.
     await tester.pumpWidget(const TriageSyncApp());
 
-    // Verify that login screen is loaded by checking for the 'TriageSync' title.
-    expect(find.text('TriageSync'), findsWidgets);
+    // Verify that login screen is loaded.
+    expect(find.text('Welcome Back'), findsOneWidget);
   });
 }
