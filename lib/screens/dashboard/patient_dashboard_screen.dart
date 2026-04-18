@@ -9,6 +9,7 @@ import '../patient/profile_screen.dart';
 import '../patient/settings_screen.dart';
 import '../patient/status_screen.dart';
 import '../patient/symptom_input_screen.dart';
+import '../../widgets/patient_home_tab.dart';
 
 class PatientDashboardScreen extends StatefulWidget {
   const PatientDashboardScreen({super.key});
@@ -80,6 +81,28 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
     }
   }
 
+  Future<void> _openProfile() async {
+    final updated = await Navigator.push<Map<String, String>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ProfileScreen(name: _name, email: _email, role: _role),
+      ),
+    );
+
+    if (!mounted || updated == null) {
+      return;
+    }
+
+    setState(() {
+      _name = (updated['name'] ?? _name).trim();
+      _email = (updated['email'] ?? _email).trim();
+      final role = (updated['role'] ?? _role).trim();
+      if (role.isNotEmpty) {
+        _role = role;
+      }
+    });
+  }
+
   void _onSymptomSubmitted() {
     // Bump trigger → StatusScreen will re-fetch
     setState(() {
@@ -91,77 +114,70 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final screens = <Widget>[
+      PatientHomeTab(
+        name: _name,
+        email: _email,
+        onStartTriage: () => setState(() => _currentIndex = 2),
+      ),
       StatusScreen(
         key: ValueKey('status_$_statusRefreshTrigger'),
         refreshTrigger: _statusRefreshTrigger,
       ),
       SymptomInputScreen(onSubmitted: _onSymptomSubmitted),
-      SettingsScreen(
-        onOpenProfile: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) =>
-                  ProfileScreen(name: _name, email: _email, role: _role),
-            ),
-          );
-        },
-        onLogout: _logout,
-      ),
+      SettingsScreen(onOpenProfile: _openProfile, onLogout: _logout),
     ];
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9FB),
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         backgroundColor: const Color(0xFFF7F9FB),
         elevation: 0,
         surfaceTintColor: Colors.transparent,
-        title: ShaderMask(
-          shaderCallback: (bounds) => const LinearGradient(
-            colors: [Color(0xFF00478D), Color(0xFF005EB8)],
-          ).createShader(bounds),
-          child: const Text(
-            'TriageSync',
-            style: TextStyle(
-              fontFamily: 'Manrope',
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
+        title: Row(
+          children: [
+            const Icon(Icons.hub_outlined, color: Color(0xFF005EB8), size: 28),
+            const SizedBox(width: 10),
+            ShaderMask(
+              shaderCallback: (bounds) => const LinearGradient(
+                colors: [Color(0xFF00478D), Color(0xFF005EB8)],
+              ).createShader(bounds),
+              child: const Text(
+                'TriageSync',
+                style: TextStyle(
+                  fontFamily: 'Manrope',
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                ),
+              ),
             ),
-          ),
+          ],
         ),
         actions: [
           if (_role == 'staff' || _role == 'admin')
             IconButton(
               onPressed: _openRoleDashboard,
               icon: const Icon(
-                Icons.dashboard_customize_outlined,
+                Icons.admin_panel_settings_outlined,
                 color: Color(0xFF005EB8),
               ),
-              tooltip: 'Open role dashboard',
+              tooltip: 'Switch to Staff View',
             ),
           // User avatar / name chip
           Padding(
-            padding: const EdgeInsets.only(right: 12),
+            padding: const EdgeInsets.only(right: 16),
             child: GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        ProfileScreen(name: _name, email: _email, role: _role),
-                  ),
-                );
-              },
+              onTap: _openProfile,
               child: CircleAvatar(
-                radius: 16,
-                backgroundColor: const Color(0xFFE0F0FF),
+                radius: 18,
+                backgroundColor: const Color(0xFF005EB8),
                 child: Text(
                   _name.isNotEmpty ? _name[0].toUpperCase() : 'U',
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF005EB8),
+                    color: Colors.white,
                   ),
                 ),
               ),
@@ -170,27 +186,46 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
         ],
       ),
       body: IndexedStack(index: _currentIndex, children: screens),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        backgroundColor: Colors.white,
-        onDestinationSelected: (index) => setState(() => _currentIndex = index),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.bar_chart_outlined),
-            selectedIcon: Icon(Icons.bar_chart),
-            label: 'Status',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.assignment_outlined),
-            selectedIcon: Icon(Icons.assignment),
-            label: 'Symptoms',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings),
-            label: 'Settings',
-          ),
-        ],
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: NavigationBar(
+          selectedIndex: _currentIndex,
+          backgroundColor: Colors.white,
+          indicatorColor: const Color(0xFF005EB8).withOpacity(0.1),
+          height: 70,
+          onDestinationSelected: (index) =>
+              setState(() => _currentIndex = index),
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(Icons.home_outlined, color: Colors.grey),
+              selectedIcon: Icon(Icons.home, color: Color(0xFF005EB8)),
+              label: 'Home',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.history_outlined, color: Colors.grey),
+              selectedIcon: Icon(Icons.history, color: Color(0xFF005EB8)),
+              label: 'Queue',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.add_circle_outline, color: Colors.grey),
+              selectedIcon: Icon(Icons.add_circle, color: Color(0xFF005EB8)),
+              label: 'Triage',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.settings_outlined, color: Colors.grey),
+              selectedIcon: Icon(Icons.settings, color: Color(0xFF005EB8)),
+              label: 'Settings',
+            ),
+          ],
+        ),
       ),
     );
   }

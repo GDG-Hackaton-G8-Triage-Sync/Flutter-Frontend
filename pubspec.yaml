@@ -33,6 +33,7 @@ dependencies:
   flutter_dotenv: ^6.0.0
   google_fonts: ^8.0.2
   local_auth: ^3.0.1
+  speech_to_text: 7.3.0
 
 dev_dependencies:
   flutter_test:

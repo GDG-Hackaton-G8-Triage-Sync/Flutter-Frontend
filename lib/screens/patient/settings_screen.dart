@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'privacy_security_screen.dart';
+
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({
     super.key,
@@ -87,8 +89,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: const Text('Privacy & Security'),
             subtitle: const Text('Manage consent and security settings'),
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Privacy settings opened')),
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const PrivacySecurityScreen(),
+                ),
               );
             },
           ),

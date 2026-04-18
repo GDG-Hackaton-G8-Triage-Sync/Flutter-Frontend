@@ -297,7 +297,7 @@ class OnboardingScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     const Text(
-                      '© 2024 TRIAGESYNC MEDICAL SYSTEMS. ALL RIGHTS RESERVED.',
+                      '© 2026 TRIAGESYNC MEDICAL SYSTEMS. ALL RIGHTS RESERVED.',
                       style: TextStyle(
                         fontSize: 9,
                         color: Colors.grey,

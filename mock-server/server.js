@@ -174,6 +174,47 @@ server.post("/api/auth/register/", (req, res) => {
     return res.status(201).json({ message: "Registered" });
 });
 
+server.patch("/api/profile/", (req, res) => {
+    if (!requireAnyRole(req, res, ["patient", "staff", "admin"])) {
+        return;
+    }
+
+    const name = (req.body?.name || "").toString().trim();
+    const email = (req.body?.email || "").toString().trim().toLowerCase();
+
+    if (!name || !email) {
+        return res.status(400).json({ error: "Name and email are required" });
+    }
+
+    const db = router.db;
+    const currentUser = db.get("authUsers").find({ id: req.user.id }).value();
+    if (!currentUser) {
+        return res.status(404).json({ error: "User not found" });
+    }
+
+    const existing = db.get("authUsers").find({ email }).value();
+    if (existing && existing.id !== req.user.id) {
+        return res.status(400).json({ error: "Email already in use" });
+    }
+
+    db.get("authUsers")
+        .find({ id: req.user.id })
+        .assign({ name, email })
+        .write();
+
+    db.get("adminUsers")
+        .find({ id: req.user.id })
+        .assign({ name, email })
+        .write();
+
+    return res.json({
+        id: req.user.id,
+        name,
+        email,
+        role: currentUser.role,
+    });
+});
+
 server.post("/api/triage/", (req, res) => {
     if (!requireAnyRole(req, res, ["patient"])) {
         return;

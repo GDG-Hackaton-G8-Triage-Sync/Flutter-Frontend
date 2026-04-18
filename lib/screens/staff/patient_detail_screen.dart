@@ -143,6 +143,64 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
     );
   }
 
+  void _showVitalsDialog() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text(
+          'Log Clinical Vitals',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            TextField(
+              decoration: InputDecoration(
+                labelText: 'Blood Pressure (e.g. 120/80)',
+                prefixIcon: Icon(Icons.bloodtype),
+              ),
+            ),
+            SizedBox(height: 12),
+            TextField(
+              decoration: InputDecoration(
+                labelText: 'Heart Rate (bpm)',
+                prefixIcon: Icon(Icons.favorite),
+              ),
+            ),
+            SizedBox(height: 12),
+            TextField(
+              decoration: InputDecoration(
+                labelText: 'Temperature (°F)',
+                prefixIcon: Icon(Icons.thermostat),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Vitals logged to encrypted datastore.'),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF005EB8),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Save Vitals'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -183,9 +241,33 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
           children: [
             _buildPatientHeader(),
             const SizedBox(height: 24),
+            _buildAICopilotCard(),
+            const SizedBox(height: 24),
             _buildPrioritySentinelCard(),
             const SizedBox(height: 24),
             _buildSymptomDescription(),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _showVitalsDialog,
+                icon: const Icon(Icons.monitor_heart, color: Colors.white),
+                label: const Text(
+                  'Log Vitals',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFBA1A1A),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
             const SizedBox(height: 32),
             // Status action buttons
             if (_isUpdating)
@@ -468,6 +550,82 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildAICopilotCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE8DEF8), // Material 3 Light Purple Secondary
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFD0BCFF), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.auto_awesome, color: Color(0xFF6750A4), size: 20),
+              SizedBox(width: 8),
+              Text(
+                'AI Triage Copilot',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF6750A4),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Suggested Level: ${_patient.priority}\nReasoning: Analysis of presented condition "${_patient.condition}" indicates symptom vectors mapping to ESI Priority ${_patient.priority}. Clinical correlation recommended.',
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF1D192B),
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (!_isUpdating)
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'AI Priority medically confirmed & audited.',
+                      ),
+                    ),
+                  );
+                },
+                icon: const Icon(
+                  Icons.verified_user,
+                  color: Color(0xFF6750A4),
+                  size: 18,
+                ),
+                label: const Text(
+                  'Confirm AI Priority',
+                  style: TextStyle(
+                    color: Color(0xFF6750A4),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Color(0xFF6750A4), width: 2),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

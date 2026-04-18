@@ -53,6 +53,19 @@ class SessionService {
     return prefs.getString(_emailKey);
   }
 
+  Future<void> updateProfile({
+    required String name,
+    required String email,
+    String? role,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_nameKey, name);
+    await prefs.setString(_emailKey, email);
+    if (role != null && role.isNotEmpty) {
+      await prefs.setString(_roleKey, role);
+    }
+  }
+
   Future<void> clear() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_accessTokenKey);

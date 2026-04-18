@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 import '../../services/backend_service.dart';
 import 'success_screen.dart';
@@ -22,6 +23,66 @@ class _SymptomInputScreenState extends State<SymptomInputScreen> {
 
   XFile? _attachedImage;
   bool _isSubmitting = false;
+
+  late stt.SpeechToText _speech;
+  bool _isListening = false;
+  bool _speechEnabled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _speech = stt.SpeechToText();
+    _initSpeech();
+  }
+
+  Future<void> _initSpeech() async {
+    try {
+      _speechEnabled = await _speech.initialize(
+        onStatus: (status) => debugPrint('STT Status: $status'),
+        onError: (error) => debugPrint('STT Error: $error'),
+      );
+    } catch (_) {
+      _speechEnabled = false;
+    }
+    setState(() {});
+  }
+
+  void _listenToggle() async {
+    if (!_isListening) {
+      if (_speechEnabled) {
+        setState(() => _isListening = true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Listening... speak now. (Native SDK)')),
+        );
+        await _speech.listen(
+          onResult: (val) {
+            setState(() {
+              _controller.text = val.recognizedWords;
+            });
+          },
+        );
+      } else {
+        // Fallback for emulators testing without hardware mic configs
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Simulating Spanish speech block for translation demo...',
+            ),
+          ),
+        );
+        Future.delayed(const Duration(seconds: 2), () {
+          if (!mounted) return;
+          setState(() {
+            _controller.text =
+                "Tengo un dolor muy fuerte en el pecho que comenzó hace una hora. Me cuesta respirar.";
+          });
+        });
+      }
+    } else {
+      setState(() => _isListening = false);
+      await _speech.stop();
+    }
+  }
 
   Future<void> _pickImage() async {
     final file = await _picker.pickImage(
@@ -184,10 +245,33 @@ class _SymptomInputScreenState extends State<SymptomInputScreen> {
                         color: Colors.grey,
                       ),
                     ),
-                    TextButton.icon(
-                      onPressed: _pickImage,
-                      icon: const Icon(Icons.attach_file),
-                      label: const Text('Attach Photo'),
+                    Row(
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(
+                            color: const Color(
+                              0xFF005EB8,
+                            ).withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: IconButton(
+                            onPressed: _listenToggle,
+                            icon: Icon(
+                              _isListening ? Icons.mic : Icons.mic_none,
+                              color: _isListening
+                                  ? const Color(0xFFBA1A1A)
+                                  : const Color(0xFF005EB8),
+                            ),
+                            tooltip: 'Voice Input',
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        TextButton.icon(
+                          onPressed: _pickImage,
+                          icon: const Icon(Icons.attach_file),
+                          label: const Text('Attach Photo'),
+                        ),
+                      ],
                     ),
                   ],
                 ),

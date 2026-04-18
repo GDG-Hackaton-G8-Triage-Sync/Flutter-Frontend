@@ -1,7 +1,9 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 
-class ProfileScreen extends StatelessWidget {
+import 'edit_profile_screen.dart';
+
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({
     super.key,
     required this.name,
@@ -12,6 +14,59 @@ class ProfileScreen extends StatelessWidget {
   final String name;
   final String email;
   final String role;
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  late String _name;
+  late String _email;
+  late String _role;
+
+  @override
+  void initState() {
+    super.initState();
+    _name = widget.name;
+    _email = widget.email;
+    _role = widget.role;
+  }
+
+  Future<void> _openEditProfile() async {
+    final updated = await Navigator.push<Map<String, String>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditProfileScreen(
+          initialName: _name,
+          initialEmail: _email,
+          role: _role,
+        ),
+      ),
+    );
+
+    if (updated == null || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _name = (updated['name'] ?? _name).trim();
+      _email = (updated['email'] ?? _email).trim();
+      final role = (updated['role'] ?? _role).trim();
+      if (role.isNotEmpty) {
+        _role = role;
+      }
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Profile updated successfully.')),
+    );
+  }
+
+  Map<String, String> _profileMap() => <String, String>{
+    'name': _name,
+    'email': _email,
+    'role': _role,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +84,7 @@ class ProfileScreen extends StatelessWidget {
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF005EB8)),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.pop(context, _profileMap()),
         ),
         title: ShaderMask(
           shaderCallback: (bounds) => const LinearGradient(
@@ -45,6 +100,13 @@ class ProfileScreen extends StatelessWidget {
             ),
           ),
         ),
+        actions: [
+          IconButton(
+            onPressed: _openEditProfile,
+            icon: const Icon(Icons.edit_outlined, color: Color(0xFF005EB8)),
+            tooltip: 'Edit Profile',
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
@@ -84,7 +146,7 @@ class ProfileScreen extends StatelessWidget {
                     ),
                     child: Center(
                       child: Text(
-                        name.isNotEmpty ? name[0].toUpperCase() : 'U',
+                        _name.isNotEmpty ? _name[0].toUpperCase() : 'U',
                         style: const TextStyle(
                           fontFamily: 'Manrope',
                           fontSize: 48,
@@ -99,7 +161,7 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             Text(
-              name.isEmpty ? 'Unknown User' : name,
+              _name.isEmpty ? 'Unknown User' : _name,
               style: const TextStyle(
                 fontFamily: 'Manrope',
                 fontSize: 28,
@@ -116,7 +178,7 @@ class ProfileScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
-                role.toUpperCase(),
+                _role.toUpperCase(),
                 style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
@@ -126,12 +188,12 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 48),
-            _buildInfoCard(Icons.person_outline, 'Full Name', name),
-            _buildInfoCard(Icons.email_outlined, 'Email Address', email),
+            _buildInfoCard(Icons.person_outline, 'Full Name', _name),
+            _buildInfoCard(Icons.email_outlined, 'Email Address', _email),
             _buildInfoCard(
               Icons.shield_outlined,
               'Account Role',
-              role.toUpperCase(),
+              _role.toUpperCase(),
             ),
           ],
         ),

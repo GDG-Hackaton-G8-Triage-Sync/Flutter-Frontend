@@ -149,162 +149,62 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
   Widget build(BuildContext context) {
     final waiting = _patients.where((p) => p.status == 'waiting').length;
     final inProgress = _patients.where((p) => p.status == 'in_progress').length;
-    final critical = _patients.where((p) => p.priority == 1).length;
+    final critical = _patients.where((p) => p.priority <= 2).length;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9FB),
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF7F9FB),
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-        title: const Text(
-          'Staff Queue',
-          style: TextStyle(
-            fontFamily: 'Manrope',
-            fontWeight: FontWeight.w800,
-            color: Color(0xFF00478D),
-          ),
+        automaticallyImplyLeading: false,
+        backgroundColor: Colors.white,
+        elevation: 1,
+        shadowColor: Colors.black12,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Intake Command Queue',
+              style: TextStyle(
+                fontFamily: 'Manrope',
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF003366),
+              ),
+            ),
+            Text(
+              'Hospital Unit: Emergency Dept D-4',
+              style: TextStyle(fontSize: 12, color: Colors.grey[600], fontWeight: FontWeight.normal),
+            ),
+          ],
         ),
         actions: [
           IconButton(
             onPressed: () => _fetchPatients(),
             icon: const Icon(Icons.refresh, color: Color(0xFF005EB8)),
-            tooltip: 'Refresh',
           ),
           IconButton(
             onPressed: _logout,
             icon: const Icon(Icons.logout, color: Color(0xFF005EB8)),
-            tooltip: 'Log Out',
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: Column(
         children: [
-          // Stats summary bar
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Row(
-              children: [
-                _statChip('Waiting', waiting, const Color(0xFFBA1A1A)),
-                const SizedBox(width: 8),
-                _statChip('Active', inProgress, const Color(0xFFF57C00)),
-                const SizedBox(width: 8),
-                _statChip('Critical', critical, const Color(0xFF8B1A1A)),
-                const Spacer(),
-                Text(
-                  '${_patients.length} total',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF44474E),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Filter row
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _statusFilterController,
-                    decoration: InputDecoration(
-                      labelText: 'Filter by status',
-                      hintText: 'waiting / in_progress / completed',
-                      prefixIcon: const Icon(Icons.filter_list),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      isDense: true,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: _fetchPatients,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF005EB8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                  ),
-                  child: const Text(
-                    'Apply',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Priority filter chips
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: Row(
-              children: [
-                _priorityFilterChip(null, 'All'),
-                const SizedBox(width: 8),
-                _priorityFilterChip(1, 'P1 Critical'),
-                const SizedBox(width: 8),
-                _priorityFilterChip(2, 'P2 Urgent'),
-                const SizedBox(width: 8),
-                _priorityFilterChip(3, 'P3 Semi-Urgent'),
-                const SizedBox(width: 8),
-                _priorityFilterChip(4, 'P4 Low'),
-                const SizedBox(width: 8),
-                _priorityFilterChip(5, 'P5 Routine'),
-              ],
-            ),
-          ),
-
+          _buildQuickStatsStrip(waiting, inProgress, critical),
+          _buildFilterBar(),
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _error != null
-                ? Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          _error!,
-                          style: const TextStyle(color: Colors.red),
-                        ),
-                        const SizedBox(height: 12),
-                        ElevatedButton(
-                          onPressed: _fetchPatients,
-                          child: const Text('Retry'),
-                        ),
-                      ],
-                    ),
-                  )
+                ? _buildErrorView()
                 : _patients.isEmpty
-                ? const Center(
-                    child: Text(
-                      'No patients match the current filter.',
-                      style: TextStyle(color: Color(0xFF44474E)),
-                    ),
-                  )
+                ? _buildEmptyView()
                 : RefreshIndicator(
                     onRefresh: _fetchPatients,
                     child: ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                       itemCount: _patients.length,
-                      itemBuilder: (context, index) {
-                        final patient = _patients[index];
-                        return _buildPatientCard(patient);
-                      },
+                      itemBuilder: (context, index) => _buildPatientRow(_patients[index]),
                     ),
                   ),
           ),
@@ -313,104 +213,138 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
     );
   }
 
-  Widget _buildPatientCard(TriageItem patient) {
+  Widget _buildQuickStatsStrip(int waiting, int inProgress, int critical) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(bottom: BorderSide(color: Color(0xFFEEEEEE))),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _statItem('WAITING', waiting, const Color(0xFFBA1A1A)),
+          _statItem('ACTIVE', inProgress, const Color(0xFF005EB8)),
+          _statItem('CRITICAL', critical, const Color(0xFF8B1A1A)),
+        ],
+      ),
+    );
+  }
+
+  Widget _statItem(String label, int value, Color color) {
+    return Column(
+      children: [
+        Text(
+          '$value',
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: color),
+        ),
+        Text(
+          label,
+          style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey[600], letterSpacing: 1.0),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFilterBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+          children: [
+            _priorityFilterChip(null, 'All Priorities'),
+            const SizedBox(width: 8),
+            _priorityFilterChip(1, 'Critical (P1)'),
+            const SizedBox(width: 8),
+            _priorityFilterChip(2, 'Urgent (P2)'),
+            const SizedBox(width: 8),
+            _priorityFilterChip(3, 'Routine'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPatientRow(TriageItem patient) {
     final color = _priorityColor(patient.priority);
+    final waitingTime = DateTime.now().difference(patient.createdAt).inMinutes;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      clipBehavior: Clip.antiAlias,
       elevation: 0,
-      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: color.withOpacity(0.15)),
+      ),
       child: InkWell(
         onTap: () => _navigateToDetail(patient),
-        borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: Column(
+          child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 10,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      color: color,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Patient #${patient.id}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1A1C1E),
-                    ),
-                  ),
-                  const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      _priorityLabel(patient.priority),
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: color,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                patient.condition,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF00478D),
+              Container(
+                width: 4,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                patient.description,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 13, color: Color(0xFF44474E)),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  _statusChip(patient.status),
-                  const Spacer(),
-                  // Quick-action status buttons
-                  _quickActionButton(
-                    patient,
-                    'waiting',
-                    Icons.pause_circle_outline,
-                    const Color(0xFF44474E),
-                  ),
-                  const SizedBox(width: 6),
-                  _quickActionButton(
-                    patient,
-                    'in_progress',
-                    Icons.play_circle_outline,
-                    const Color(0xFFF57C00),
-                  ),
-                  const SizedBox(width: 6),
-                  _quickActionButton(
-                    patient,
-                    'completed',
-                    Icons.check_circle_outline,
-                    const Color(0xFF146C2E),
-                  ),
-                ],
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          'P${patient.priority}',
+                          style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 16),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          patient.condition,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF002347)),
+                        ),
+                        const Spacer(),
+                        Text(
+                          '${waitingTime}m ago',
+                          style: TextStyle(color: waitingTime > 20 ? Colors.red : Colors.grey, fontSize: 12, fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      patient.description,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        _statusIndicator(patient.status),
+                        const Spacer(),
+                        if (patient.status == 'waiting')
+                          TextButton.icon(
+                            onPressed: () => _updateStatus(patient, 'in_progress'),
+                            icon: const Icon(Icons.play_arrow, size: 16),
+                            label: const Text('BEGIN'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: const Color(0xFF005EB8),
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -419,89 +353,48 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
     );
   }
 
-  Widget _quickActionButton(
-    TriageItem patient,
-    String status,
-    IconData icon,
-    Color color,
-  ) {
-    final isActive = patient.status == status;
-    return InkWell(
-      onTap: isActive ? null : () => _updateStatus(patient, status),
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(
-          color: isActive ? color.withValues(alpha: 0.15) : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Icon(
-          icon,
-          size: 20,
-          color: isActive ? color : color.withValues(alpha: 0.4),
-        ),
-      ),
-    );
-  }
-
-  Widget _statusChip(String status) {
-    Color bg;
-    Color fg;
-    switch (status) {
-      case 'waiting':
-        bg = const Color(0xFFFFDAD6);
-        fg = const Color(0xFFBA1A1A);
-        break;
-      case 'in_progress':
-        bg = const Color(0xFFFFF3E0);
-        fg = const Color(0xFFF57C00);
-        break;
-      default:
-        bg = const Color(0xFFD8F3DC);
-        fg = const Color(0xFF146C2E);
-    }
+  Widget _statusIndicator(String status) {
+    final isWaiting = status == 'waiting';
+    final isInProgress = status == 'in_progress';
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(8),
+        color: isWaiting ? Colors.red[50] : (isInProgress ? Colors.blue[50] : Colors.green[50]),
+        borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
-        status.replaceAll('_', ' ').toUpperCase(),
+        status.toUpperCase(),
         style: TextStyle(
           fontSize: 10,
-          fontWeight: FontWeight.bold,
-          color: fg,
-          letterSpacing: 0.5,
+          fontWeight: FontWeight.w900,
+          color: isWaiting ? Colors.red[700] : (isInProgress ? Colors.blue[700] : Colors.green[700]),
         ),
       ),
     );
   }
 
-  Widget _statChip(String label, int count, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
+  Widget _buildErrorView() {
+    return Center(
+      child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            '$count $label',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
+          const Icon(Icons.error_outline, size: 48, color: Colors.red),
+          const SizedBox(height: 16),
+          Text(_error!),
+          TextButton(onPressed: _fetchPatients, child: const Text('RETRY CONNECTION')),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyView() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.check_circle_outline, size: 48, color: Colors.grey[400]),
+          const SizedBox(height: 16),
+          const Text('No pending patients in queue', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
         ],
       ),
     );

@@ -233,6 +233,33 @@ class BackendService {
     return AppUser.fromJson(response.data ?? <String, dynamic>{});
   }
 
+  Future<Map<String, String>> updateProfile({
+    required String name,
+    required String email,
+  }) async {
+    final response = await _dio.patch<Map<String, dynamic>>(
+      '/api/profile/',
+      data: <String, dynamic>{'name': name, 'email': email},
+    );
+
+    final data = response.data ?? <String, dynamic>{};
+    final updatedName = (data['name'] ?? name).toString();
+    final updatedEmail = (data['email'] ?? email).toString();
+    final updatedRole = (data['role'] ?? '').toString();
+
+    await _sessionService.updateProfile(
+      name: updatedName,
+      email: updatedEmail,
+      role: updatedRole,
+    );
+
+    return <String, String>{
+      'name': updatedName,
+      'email': updatedEmail,
+      'role': updatedRole,
+    };
+  }
+
   Future<void> deletePatient(int id) async {
     await _dio.delete<void>('/api/admin/patient/$id/');
   }

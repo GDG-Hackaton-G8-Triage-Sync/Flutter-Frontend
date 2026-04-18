@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/api_models.dart';
 import '../../services/backend_service.dart';
 import '../../services/session_service.dart';
+import 'triage_history_screen.dart';
 
 class StatusScreen extends StatefulWidget {
   const StatusScreen({super.key, this.refreshTrigger = 0});
@@ -155,6 +156,19 @@ class _StatusScreenState extends State<StatusScreen> {
                     style: TextStyle(color: Color(0xFF44474E)),
                   ),
                   const SizedBox(height: 16),
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const TriageHistoryScreen(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.history_outlined),
+                    label: const Text('Open Triage History'),
+                  ),
+                  const SizedBox(height: 8),
                   OutlinedButton.icon(
                     onPressed: _refresh,
                     icon: const Icon(Icons.refresh),
@@ -386,6 +400,22 @@ class _StatusScreenState extends State<StatusScreen> {
                 ),
 
               const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const TriageHistoryScreen(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.history_outlined),
+                  label: const Text('View Full Triage History'),
+                ),
+              ),
+              const SizedBox(height: 4),
               // Refresh hint
               Center(
                 child: TextButton.icon(
