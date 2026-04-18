@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/api_models.dart';
 import '../../services/backend_service.dart';
+import '../../services/session_service.dart';
 
 class PatientDetailScreen extends StatefulWidget {
   const PatientDetailScreen({super.key, required this.patient});
@@ -554,57 +555,97 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
     );
   }
 
+  Future<void> _confirmAIPriority() async {
+    setState(() => _isUpdating = true);
+    try {
+      final nurseName = await SessionService().getName() ?? 'Authenticated Staff';
+      final updated = await _backend.verifyTriage(
+        id: _patient.id,
+        nurseName: nurseName,
+      );
+      if (!mounted) return;
+      setState(() => _patient = updated);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('AI Triage confirmed and signed by $nurseName')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to verify AI decision.')),
+      );
+    } finally {
+      if (mounted) setState(() => _isUpdating = false);
+    }
+  }
+
   Widget _buildAICopilotCard() {
+    final isVerified = _patient.verifiedBy != null;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFFE8DEF8), // Material 3 Light Purple Secondary
+        color: isVerified ? const Color(0xFFE6F4EA) : const Color(0xFFE8DEF8),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFD0BCFF), width: 1),
+        border: Border.all(
+          color: isVerified ? const Color(0xFF34A853) : const Color(0xFFD0BCFF),
+          width: 1,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.auto_awesome, color: Color(0xFF6750A4), size: 20),
-              SizedBox(width: 8),
+              Icon(
+                isVerified ? Icons.verified : Icons.auto_awesome,
+                color: isVerified ? const Color(0xFF137333) : const Color(0xFF6750A4),
+                size: 20,
+              ),
+              const SizedBox(width: 8),
               Text(
-                'AI Triage Copilot',
+                isVerified ? 'Clinical Verification' : 'AI Triage Copilot',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF6750A4),
+                  color: isVerified ? const Color(0xFF137333) : const Color(0xFF6750A4),
                 ),
               ),
+              if (isVerified) ...[
+                const Spacer(),
+                const Icon(Icons.lock, size: 14, color: Color(0xFF137333)),
+                const SizedBox(width: 4),
+                const Text(
+                  'AUDITED',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF137333),
+                    letterSpacing: 1.0,
+                  ),
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 12),
           Text(
-            'Suggested Level: ${_patient.priority}\nReasoning: Analysis of presented condition "${_patient.condition}" indicates symptom vectors mapping to ESI Priority ${_patient.priority}. Clinical correlation recommended.',
-            style: const TextStyle(
+            isVerified
+                ? 'This decision has been manually verified by ${_patient.verifiedBy} to ensure clinical accuracy and HIPAA compliance.'
+                : 'Suggested Level: ${_patient.priority}\nReasoning: Analysis of presented condition "${_patient.condition}" indicates symptom vectors mapping to ESI Priority ${_patient.priority}. Clinical correlation recommended.',
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: Color(0xFF1D192B),
+              color: isVerified ? const Color(0xFF137333) : const Color(0xFF1D192B),
               height: 1.5,
             ),
           ),
           const SizedBox(height: 16),
-          if (!_isUpdating)
+          if (!isVerified && !_isUpdating)
             SizedBox(
               width: double.infinity,
               height: 48,
               child: OutlinedButton.icon(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'AI Priority medically confirmed & audited.',
-                      ),
-                    ),
-                  );
-                },
+                onPressed: _confirmAIPriority,
                 icon: const Icon(
                   Icons.verified_user,
                   color: Color(0xFF6750A4),

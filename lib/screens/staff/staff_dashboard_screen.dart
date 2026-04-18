@@ -299,14 +299,36 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          patient.condition.toUpperCase(),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w900,
-                            fontSize: 13,
-                            color: Color(0xFF003366),
-                            letterSpacing: 0.5,
-                          ),
+                        Row(
+                          children: [
+                            Text(
+                              patient.condition.toUpperCase(),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w900,
+                                fontSize: 13,
+                                color: Color(0xFF003366),
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            const Spacer(),
+                            if (patient.status == 'waiting' &&
+                                ((patient.priority == 1 && waitingTime > 10) ||
+                                 (patient.priority == 2 && waitingTime > 20)))
+                              const Row(
+                                children: [
+                                  Icon(Icons.warning_amber_rounded, color: Color(0xFFBA1A1A), size: 14),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'SLA BREACH',
+                                    style: TextStyle(
+                                      color: Color(0xFFBA1A1A),
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                          ],
                         ),
                         const SizedBox(height: 2),
                         Text(
@@ -318,13 +340,18 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                       ],
                     ),
                   ),
+                  const SizedBox(width: 12),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
                         '${waitingTime}m',
                         style: TextStyle(
-                          color: waitingTime > 20 ? const Color(0xFFBA1A1A) : const Color(0xFF44474E),
+                          color: (patient.status == 'waiting' &&
+                                  ((patient.priority == 1 && waitingTime > 10) ||
+                                   (patient.priority == 2 && waitingTime > 20)))
+                              ? const Color(0xFFBA1A1A)
+                              : const Color(0xFF44474E),
                           fontWeight: FontWeight.w900,
                           fontSize: 16,
                         ),

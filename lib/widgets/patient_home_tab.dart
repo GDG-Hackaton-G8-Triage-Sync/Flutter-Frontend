@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/api_models.dart';
 import '../services/backend_service.dart';
 import '../screens/patient/hospital_info_screen.dart';
+import '../screens/patient/timeline_screen.dart';
 import 'premium_interactive.dart';
 
 class PatientHomeTab extends StatefulWidget {
@@ -292,12 +293,23 @@ class _PatientHomeTabState extends State<PatientHomeTab> {
               () => _showEmergencyDialog(context),
             ),
             _actionTile(
-              'Lab Results',
-              Icons.biotech_outlined,
+              'Care Journey',
+              Icons.auto_graph_outlined,
               const Color(0xFFFF8F00),
-              () => ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('No new lab results available at this time.')),
-              ),
+              () {
+                if (_latestTriage != null) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => PatientTimelineScreen(item: _latestTriage!),
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('No active care journey found.')),
+                  );
+                }
+              },
             ),
           ],
         ),

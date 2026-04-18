@@ -37,6 +37,8 @@ class TriageItem {
     required this.status,
     required this.createdAt,
     this.photoName,
+    this.verifiedBy,
+    this.verifiedAt,
   });
 
   final int id;
@@ -47,6 +49,8 @@ class TriageItem {
   final String status;
   final DateTime createdAt;
   final String? photoName;
+  final String? verifiedBy;
+  final DateTime? verifiedAt;
 
   factory TriageItem.fromJson(Map<String, dynamic> json) {
     return TriageItem(
@@ -60,6 +64,10 @@ class TriageItem {
           DateTime.tryParse((json['created_at'] ?? '') as String) ??
           DateTime.now(),
       photoName: json['photo_name'] as String?,
+      verifiedBy: json['verified_by'] as String?,
+      verifiedAt: json['verified_at'] != null 
+          ? DateTime.tryParse(json['verified_at'] as String) 
+          : null,
     );
   }
 }

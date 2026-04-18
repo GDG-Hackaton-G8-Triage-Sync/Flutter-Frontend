@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
+import '../../models/api_models.dart';
 
 class PatientTimelineScreen extends StatelessWidget {
-  const PatientTimelineScreen({super.key});
+  final TriageItem item;
+
+  const PatientTimelineScreen({super.key, required this.item});
 
   @override
   Widget build(BuildContext context) {
+    final status = item.status;
+    final isVerified = item.verifiedBy != null;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -17,29 +23,42 @@ class PatientTimelineScreen extends StatelessWidget {
         children: [
           _buildTimelineStep(
             'In Treatment',
-            'Triage Nurse (ID: 402) has begun your assessment in Bay 4.',
-            '09:42 AM',
+            status == 'in_progress' 
+              ? 'A medical team member has begun your assessment in the designated care bay.'
+              : 'Waiting for clinical bay assignment.',
+            'EST. NOW',
             isFirst: true,
-            isActive: true,
+            isActive: status == 'in_progress',
             icon: Icons.personal_video_outlined,
           ),
+          if (isVerified)
+            _buildTimelineStep(
+              'Clinical Verification',
+              'Nurse ${item.verifiedBy} has manually verified your AI triage score for clinical safety.',
+              item.verifiedAt?.toLocal().toString().substring(11, 16) ?? '',
+              isActive: true,
+              icon: Icons.verified_user_outlined,
+            ),
           _buildTimelineStep(
             'Priority Assigned',
-            'Clinical engine designated Priority 2 (Urgent).',
-            '09:35 AM',
+            'Symptom analysis complete. Priority Level ${item.priority} designated.',
+            item.createdAt.add(const Duration(minutes: 2)).toLocal().toString().substring(11, 16),
+            isActive: true,
             icon: Icons.priority_high,
           ),
           _buildTimelineStep(
-            'Processing Symptoms',
-            'AI analyzing symptom patterns and vital signs.',
-            '09:32 AM',
+            'AI Assessment',
+            'TriageSync AI analyzed your symptoms and calculated an urgency score of ${item.urgencyScore}/100.',
+            item.createdAt.add(const Duration(minutes: 1)).toLocal().toString().substring(11, 16),
+            isActive: true,
             icon: Icons.psychology_outlined,
           ),
           _buildTimelineStep(
-            'Registration Complete',
-            'Profile synched with hospital database.',
-            '09:30 AM',
+            'Request Submitted',
+            'Your clinical assessment request was successfully synched with the hospital database.',
+            item.createdAt.toLocal().toString().substring(11, 16),
             isLast: true,
+            isActive: true,
             icon: Icons.check_circle_outline,
           ),
         ],

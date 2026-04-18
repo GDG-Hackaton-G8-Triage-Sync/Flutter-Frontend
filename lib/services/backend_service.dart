@@ -199,6 +199,18 @@ class BackendService {
     return TriageItem.fromJson(response.data ?? <String, dynamic>{});
   }
 
+  Future<TriageItem> verifyTriage({
+    required int id,
+    required String nurseName,
+  }) async {
+    final response = await _dio.patch<Map<String, dynamic>>(
+      '/api/triage/$id/verify/',
+      data: <String, dynamic>{'verified_by': nurseName},
+    );
+
+    return TriageItem.fromJson(response.data ?? <String, dynamic>{});
+  }
+
   Future<AdminOverview> getAdminOverview() async {
     final response = await _dio.get<Map<String, dynamic>>(
       '/api/dashboard/admin/overview/',
