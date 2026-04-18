@@ -101,9 +101,8 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder:
-                  (_) =>
-                      ProfileScreen(name: _name, email: _email, role: _role),
+              builder: (_) =>
+                  ProfileScreen(name: _name, email: _email, role: _role),
             ),
           );
         },
@@ -118,10 +117,9 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         title: ShaderMask(
-          shaderCallback:
-              (bounds) => const LinearGradient(
-                colors: [Color(0xFF00478D), Color(0xFF005EB8)],
-              ).createShader(bounds),
+          shaderCallback: (bounds) => const LinearGradient(
+            colors: [Color(0xFF00478D), Color(0xFF005EB8)],
+          ).createShader(bounds),
           child: const Text(
             'TriageSync',
             style: TextStyle(
@@ -150,12 +148,8 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder:
-                        (_) => ProfileScreen(
-                          name: _name,
-                          email: _email,
-                          role: _role,
-                        ),
+                    builder: (_) =>
+                        ProfileScreen(name: _name, email: _email, role: _role),
                   ),
                 );
               },
@@ -179,8 +173,7 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         backgroundColor: Colors.white,
-        onDestinationSelected:
-            (index) => setState(() => _currentIndex = index),
+        onDestinationSelected: (index) => setState(() => _currentIndex = index),
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.bar_chart_outlined),

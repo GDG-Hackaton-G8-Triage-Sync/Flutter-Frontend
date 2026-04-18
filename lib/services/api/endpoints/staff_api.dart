@@ -22,10 +22,7 @@ class StaffApi {
         .toList();
   }
 
-  Future<TriageItem> updatePatientStatus(
-    int patientId,
-    String status,
-  ) async {
+  Future<TriageItem> updatePatientStatus(int patientId, String status) async {
     final response = await _dio.patch<Map<String, dynamic>>(
       '/api/dashboard/staff/patient/$patientId/status/',
       data: <String, dynamic>{'status': status},

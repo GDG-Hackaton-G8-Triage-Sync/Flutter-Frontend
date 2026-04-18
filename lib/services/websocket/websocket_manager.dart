@@ -27,6 +27,7 @@ class WebSocketManager {
     }
     return 'ws://localhost:3002';
   }
+
   static const _reconnectDelay = Duration(seconds: 3);
   static const _heartbeatInterval = Duration(seconds: 20);
 
@@ -71,8 +72,7 @@ class WebSocketManager {
         return;
       }
 
-      final Map<String, dynamic> json =
-          jsonDecode(raw) as Map<String, dynamic>;
+      final Map<String, dynamic> json = jsonDecode(raw) as Map<String, dynamic>;
 
       final type = json['type'];
       if (type == 'queue_update' ||

@@ -32,10 +32,9 @@ class ProfileScreen extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
         title: ShaderMask(
-          shaderCallback:
-              (bounds) => const LinearGradient(
-                colors: [Color(0xFF00478D), Color(0xFF005EB8)],
-              ).createShader(bounds),
+          shaderCallback: (bounds) => const LinearGradient(
+            colors: [Color(0xFF00478D), Color(0xFF005EB8)],
+          ).createShader(bounds),
           child: const Text(
             'Patient Profile',
             style: TextStyle(
@@ -196,4 +195,3 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 }
-

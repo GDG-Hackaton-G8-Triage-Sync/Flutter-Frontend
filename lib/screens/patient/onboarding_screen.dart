@@ -27,14 +27,21 @@ class OnboardingScreen extends StatelessWidget {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFE0F0FF),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: const Row(
                       children: [
-                        Icon(Icons.verified_user, size: 14, color: Color(0xFF005EB8)),
+                        Icon(
+                          Icons.verified_user,
+                          size: 14,
+                          color: Color(0xFF005EB8),
+                        ),
                         SizedBox(width: 4),
                         Text(
                           'Secure Medical Portal',
@@ -50,7 +57,7 @@ class OnboardingScreen extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -59,7 +66,10 @@ class OnboardingScreen extends StatelessWidget {
                   children: [
                     const SizedBox(height: 24),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFD3E3F8),
                         borderRadius: BorderRadius.circular(8),
@@ -97,7 +107,7 @@ class OnboardingScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 48),
-                    
+
                     // Main Image Card
                     Container(
                       height: 240,
@@ -107,7 +117,9 @@ class OnboardingScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(32),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF005EB8).withValues(alpha: 0.15),
+                            color: const Color(
+                              0xFF005EB8,
+                            ).withValues(alpha: 0.15),
                             blurRadius: 40,
                             offset: const Offset(0, 20),
                           ),
@@ -119,7 +131,11 @@ class OnboardingScreen extends StatelessWidget {
                           'https://lh3.googleusercontent.com/aida-public/AB6AXuDdgkbRwHlXUAnQO8oT0asZbTpnWHg4htmEWRbgUHEzKXVrnBtUDIpSdClEijR3ue0nWiL4kwfUqz6iyU8AR2roDwFPYARnY2QDHYx58_Ir8Kwh4zc6Abzxqz2lAj90Y2ntcM-L2_SlVvaUbDouPHTc5Q3rkM7Hhk0OKYXLo7VRb8ky2uqRSdE5LuWlwzW8-zbYzApvIXpoKxSsDTWt-n5CMrog10CBTbdQvNniY5ottiv997YQe5KAzNoAebraQfaiVddYy4OF3Og',
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) => const Center(
-                            child: Icon(Icons.monitor_heart, color: Colors.white, size: 64),
+                            child: Icon(
+                              Icons.monitor_heart,
+                              color: Colors.white,
+                              size: 64,
+                            ),
                           ),
                         ),
                       ),
@@ -130,25 +146,28 @@ class OnboardingScreen extends StatelessWidget {
                     _buildFeatureCard(
                       icon: Icons.assignment,
                       title: 'Narrative Entry',
-                      description: 'Simply speak or type your symptoms. Our AI understands medical nuance better than standard forms.',
+                      description:
+                          'Simply speak or type your symptoms. Our AI understands medical nuance better than standard forms.',
                     ),
                     const SizedBox(height: 16),
                     // Feature 2
                     _buildFeatureCard(
                       icon: Icons.analytics,
                       title: 'Live Triage',
-                      description: 'The system evaluates urgency scores and routes your data directly to the supervising physician\'s dashboard.',
+                      description:
+                          'The system evaluates urgency scores and routes your data directly to the supervising physician\'s dashboard.',
                     ),
                     const SizedBox(height: 16),
                     // Feature 3
                     _buildFeatureCard(
                       icon: Icons.medical_services,
                       title: 'Direct Care',
-                      description: 'Skip the administrative backlog. Your care team is prepared for your specific needs before you even arrive.',
+                      description:
+                          'Skip the administrative backlog. Your care team is prepared for your specific needs before you even arrive.',
                     ),
-                    
+
                     const SizedBox(height: 48),
-                    
+
                     // Get Started Button
                     SizedBox(
                       width: double.infinity,
@@ -168,7 +187,9 @@ class OnboardingScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(16),
                           ),
                           elevation: 8,
-                          shadowColor: const Color(0xFF005EB8).withValues(alpha: 0.3),
+                          shadowColor: const Color(
+                            0xFF005EB8,
+                          ).withValues(alpha: 0.3),
                         ),
                         child: const Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -182,14 +203,18 @@ class OnboardingScreen extends StatelessWidget {
                               ),
                             ),
                             SizedBox(width: 8),
-                            Icon(Icons.arrow_forward, color: Colors.white, size: 20),
+                            Icon(
+                              Icons.arrow_forward,
+                              color: Colors.white,
+                              size: 20,
+                            ),
                           ],
                         ),
                       ),
                     ),
-                    
+
                     const SizedBox(height: 32),
-                    
+
                     // Disclaimer
                     Container(
                       padding: const EdgeInsets.all(20),
@@ -235,18 +260,39 @@ class OnboardingScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-                    
+
                     const SizedBox(height: 48),
-                    
+
                     // Footer Links
                     const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('Privacy Policy', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFF44474E))),
+                        Text(
+                          'Privacy Policy',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF44474E),
+                          ),
+                        ),
                         SizedBox(width: 16),
-                        Text('Terms of Use', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFF44474E))),
+                        Text(
+                          'Terms of Use',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF44474E),
+                          ),
+                        ),
                         SizedBox(width: 16),
-                        Text('HIPAA Compliance', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFF44474E))),
+                        Text(
+                          'HIPAA Compliance',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF44474E),
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -270,7 +316,11 @@ class OnboardingScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildFeatureCard({required IconData icon, required String title, required String description}) {
+  Widget _buildFeatureCard({
+    required IconData icon,
+    required String title,
+    required String description,
+  }) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),

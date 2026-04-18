@@ -2,8 +2,12 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
+import 'package:flutter/services.dart';
+import 'package:local_auth/local_auth.dart';
+
 import '../models/api_models.dart';
 import '../services/backend_service.dart';
+import '../services/session_service.dart';
 import 'dashboard/patient_dashboard_screen.dart';
 import 'patient/signup_screen.dart';
 import 'staff/admin_portal_screen.dart';
@@ -39,17 +43,67 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final auth = await _backend.login(email: email, password: password);
+      // Store locally for future biometric fast-lane bypass
+      await SessionService().saveBiometricCredentials(email, password);
+
       if (!mounted) return;
       _routeByRole(auth);
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Invalid credentials or backend is offline.')),
+        const SnackBar(
+          content: Text('Invalid credentials or backend is offline.'),
+        ),
       );
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
       }
+    }
+  }
+
+  Future<void> _handleBiometricLogin() async {
+    final LocalAuthentication auth = LocalAuthentication();
+    final bool canAuthenticateWithBiometrics = await auth.canCheckBiometrics;
+    final bool canAuthenticate =
+        canAuthenticateWithBiometrics || await auth.isDeviceSupported();
+
+    if (!canAuthenticate) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Biometrics aren\'t available on this device.'),
+        ),
+      );
+      return;
+    }
+
+    try {
+      final bool didAuthenticate = await auth.authenticate(
+        localizedReason: 'Secure access to TriageSync',
+      );
+
+      if (didAuthenticate) {
+        final creds = await SessionService().getBiometricCredentials();
+        if (creds == null) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'No secure credentials found. Please login normally first.',
+              ),
+            ),
+          );
+          return;
+        }
+
+        // Apply fast lane login bypass quietly
+        _emailController.text = creds['email']!;
+        _passwordController.text = creds['password']!;
+        _handleLogin();
+      }
+    } on PlatformException catch (e) {
+      debugPrint('Biometric Error: $e');
     }
   }
 
@@ -193,16 +247,48 @@ class _LoginScreenState extends State<LoginScreen> {
                               : const Text('Sign In'),
                         ),
                       ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: OutlinedButton.icon(
+                          onPressed: _isLoading ? null : _handleBiometricLogin,
+                          icon: const Icon(
+                            Icons.fingerprint,
+                            color: Color(0xFF005EB8),
+                          ),
+                          label: const Text(
+                            'Sign In with Touch ID / Face ID',
+                            style: TextStyle(
+                              color: Color(0xFF005EB8),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(
+                              color: Color(0xFFE0F0FF),
+                              width: 2,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
                       const SizedBox(height: 12),
                       Center(
                         child: TextButton(
                           onPressed: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (_) => const SignupScreen()),
+                              MaterialPageRoute(
+                                builder: (_) => const SignupScreen(),
+                              ),
                             );
                           },
-                          child: const Text('New patient? Register your profile'),
+                          child: const Text(
+                            'New patient? Register your profile',
+                          ),
                         ),
                       ),
                       const SizedBox(height: 8),

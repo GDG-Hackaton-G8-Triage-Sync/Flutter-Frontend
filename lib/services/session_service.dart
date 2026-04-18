@@ -1,3 +1,4 @@
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SessionService {
@@ -59,5 +60,24 @@ class SessionService {
     await prefs.remove(_roleKey);
     await prefs.remove(_emailKey);
     await prefs.remove(_nameKey);
+  }
+
+  // --- Biometric Enclave Handling ---
+  static const _secureStorage = FlutterSecureStorage();
+  static const _bioEmailKey = 'bio_email';
+  static const _bioPasswordKey = 'bio_password';
+
+  Future<void> saveBiometricCredentials(String email, String password) async {
+    await _secureStorage.write(key: _bioEmailKey, value: email);
+    await _secureStorage.write(key: _bioPasswordKey, value: password);
+  }
+
+  Future<Map<String, String>?> getBiometricCredentials() async {
+    final email = await _secureStorage.read(key: _bioEmailKey);
+    final password = await _secureStorage.read(key: _bioPasswordKey);
+    if (email != null && password != null) {
+      return {'email': email, 'password': password};
+    }
+    return null;
   }
 }

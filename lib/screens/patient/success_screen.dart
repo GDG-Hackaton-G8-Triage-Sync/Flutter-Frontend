@@ -97,7 +97,9 @@ class SuccessScreen extends StatelessWidget {
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF146C2E).withValues(alpha: 0.3),
+                              color: const Color(
+                                0xFF146C2E,
+                              ).withValues(alpha: 0.3),
                               blurRadius: 20,
                               offset: const Offset(0, 8),
                             ),

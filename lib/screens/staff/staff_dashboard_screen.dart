@@ -88,9 +88,9 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
       );
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Status update failed.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Status update failed.')));
     }
   }
 
@@ -137,9 +137,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
   void _navigateToDetail(TriageItem patient) async {
     final updated = await Navigator.push<TriageItem>(
       context,
-      MaterialPageRoute(
-        builder: (_) => PatientDetailScreen(patient: patient),
-      ),
+      MaterialPageRoute(builder: (_) => PatientDetailScreen(patient: patient)),
     );
     // Refresh if the patient was updated in detail view
     if (updated != null || mounted) {
@@ -384,10 +382,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                 patient.description,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: Color(0xFF44474E),
-                ),
+                style: const TextStyle(fontSize: 13, color: Color(0xFF44474E)),
               ),
               const SizedBox(height: 12),
               Row(
@@ -496,10 +491,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
           Container(
             width: 8,
             height: 8,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
           const SizedBox(width: 6),
           Text(

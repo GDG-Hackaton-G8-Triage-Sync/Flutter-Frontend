@@ -104,7 +104,9 @@ class _StatusScreenState extends State<StatusScreen> {
                     color: Color(0xFF44474E),
                   ),
                   const SizedBox(height: 12),
-                  const Text('Failed to load your status. Is the backend running?'),
+                  const Text(
+                    'Failed to load your status. Is the backend running?',
+                  ),
                   const SizedBox(height: 12),
                   ElevatedButton(
                     onPressed: _refresh,

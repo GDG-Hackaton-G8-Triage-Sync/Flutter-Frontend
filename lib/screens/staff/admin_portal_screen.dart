@@ -67,38 +67,34 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
       );
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Role update failed.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Role update failed.')));
     }
   }
 
   Future<void> _deletePatient(AppUser user) async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder:
-          (ctx) => AlertDialog(
-            title: const Text('Confirm Delete'),
-            content: Text(
-              'Are you sure you want to remove ${user.name} from the system?',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Cancel'),
-              ),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(ctx, true),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFBA1A1A),
-                ),
-                child: const Text(
-                  'Delete',
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
-            ],
+      builder: (ctx) => AlertDialog(
+        title: const Text('Confirm Delete'),
+        content: Text(
+          'Are you sure you want to remove ${user.name} from the system?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
           ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFBA1A1A),
+            ),
+            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
     );
     if (confirm != true) return;
 
@@ -106,14 +102,14 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
       await _backend.deletePatient(user.id);
       await _loadAll();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${user.name} removed.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('${user.name} removed.')));
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Delete failed.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Delete failed.')));
     }
   }
 
@@ -308,21 +304,20 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
                                 color: Color(0xFF005EB8),
                               ),
                               tooltip: 'Change Role',
-                              itemBuilder:
-                                  (context) => const [
-                                    PopupMenuItem(
-                                      value: 'patient',
-                                      child: Text('patient'),
-                                    ),
-                                    PopupMenuItem(
-                                      value: 'staff',
-                                      child: Text('staff'),
-                                    ),
-                                    PopupMenuItem(
-                                      value: 'admin',
-                                      child: Text('admin'),
-                                    ),
-                                  ],
+                              itemBuilder: (context) => const [
+                                PopupMenuItem(
+                                  value: 'patient',
+                                  child: Text('patient'),
+                                ),
+                                PopupMenuItem(
+                                  value: 'staff',
+                                  child: Text('staff'),
+                                ),
+                                PopupMenuItem(
+                                  value: 'admin',
+                                  child: Text('admin'),
+                                ),
+                              ],
                             ),
                             // Delete
                             IconButton(
@@ -377,10 +372,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
               ),
               Text(
                 label,
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: Color(0xFF44474E),
-                ),
+                style: const TextStyle(fontSize: 11, color: Color(0xFF44474E)),
               ),
             ],
           ),
