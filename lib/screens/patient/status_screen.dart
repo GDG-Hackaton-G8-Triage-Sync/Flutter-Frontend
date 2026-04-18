@@ -260,7 +260,7 @@ class _StatusScreenState extends State<StatusScreen> {
                           SizedBox(
                             width: double.infinity,
                             child: TextButton.icon(
-                              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PatientTimelineScreen())),
+                              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => PatientTimelineScreen(item: result))),
                               icon: const Icon(Icons.timeline_outlined, size: 16),
                               label: const Text('VIEW LIVE CARE TIMELINE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.1)),
                               style: TextButton.styleFrom(
