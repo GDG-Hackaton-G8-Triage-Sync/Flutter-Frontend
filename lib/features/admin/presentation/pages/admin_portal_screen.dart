@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../../models/api_models.dart';
-import '../../services/backend_service.dart';
-import '../../services/session_service.dart';
-import '../login_screen.dart';
-import 'command_center_screen.dart';
+import 'package:flutter_frontend/core/models/api_models.dart';
+import 'package:flutter_frontend/core/services/backend_service.dart';
+import 'package:flutter_frontend/core/services/session_service.dart';
+import 'package:flutter_frontend/features/auth/presentation/pages/login_screen.dart';
+import 'package:flutter_frontend/features/staff/presentation/pages/command_center_screen.dart';
 
 class AdminPortalScreen extends StatefulWidget {
   const AdminPortalScreen({super.key});

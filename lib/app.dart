@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'screens/splash_screen.dart';
+import 'package:flutter_frontend/screens/splash_screen.dart';
 
 class TriageSyncApp extends StatelessWidget {
   const TriageSyncApp({super.key});

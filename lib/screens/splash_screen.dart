@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-import '../../services/session_service.dart';
+import 'package:flutter_frontend/core/services/session_service.dart';
 
-import 'dashboard/patient_dashboard_screen.dart';
-import 'staff/staff_dashboard_screen.dart';
-import 'staff/admin_portal_screen.dart';
-import 'patient/onboarding_screen.dart';
+import 'package:flutter_frontend/screens/dashboard/patient_dashboard_screen.dart';
+import 'package:flutter_frontend/features/staff/presentation/pages/staff_dashboard_screen.dart';
+import 'package:flutter_frontend/features/admin/presentation/pages/admin_portal_screen.dart';
+import 'package:flutter_frontend/screens/patient/onboarding_screen.dart';
 
 /// Checks stored session and routes the user to the appropriate screen.
 /// Acts as the entry point when the app is launched.

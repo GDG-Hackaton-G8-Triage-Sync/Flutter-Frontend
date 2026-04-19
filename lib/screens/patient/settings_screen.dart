@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'privacy_security_screen.dart';
-import '../common/accessibility_screen.dart';
-import '../common/help_screen.dart';
-import '../common/about_screen.dart';
-import '../common/notification_screen.dart';
-import '../common/platform_briefing_screen.dart';
-import '../../widgets/premium_interactive.dart';
-import '../../utils/navigation_transitions.dart';
+import 'package:flutter_frontend/features/auth/presentation/pages/privacy_security_screen.dart';
+import 'package:flutter_frontend/screens/common/accessibility_screen.dart';
+import 'package:flutter_frontend/screens/common/help_screen.dart';
+import 'package:flutter_frontend/screens/common/about_screen.dart';
+import 'package:flutter_frontend/screens/common/notification_screen.dart';
+import 'package:flutter_frontend/screens/common/platform_briefing_screen.dart';
+import 'package:flutter_frontend/core/presentation/widgets/premium_interactive.dart';
+import 'package:flutter_frontend/core/utils/navigation_transitions.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({

@@ -6,8 +6,8 @@ import 'package:flutter/foundation.dart';
 
 import 'package:web_socket_channel/web_socket_channel.dart';
 
-import '../../models/api_models.dart';
-import '../session_service.dart';
+import 'package:flutter_frontend/core/models/api_models.dart';
+import 'package:flutter_frontend/core/services/session_service.dart';
 
 /// Manages a persistent WebSocket connection to the updates gateway.
 /// Emits [TriageItem] events whenever the server broadcasts a queue_update.

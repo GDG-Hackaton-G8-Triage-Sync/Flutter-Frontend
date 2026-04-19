@@ -2,13 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../../models/api_models.dart';
-import '../../services/backend_service.dart';
-import '../../services/session_service.dart';
-import '../../services/websocket/websocket_manager.dart';
-import '../../widgets/state_visuals.dart';
-import '../login_screen.dart';
-import 'patient_detail_screen.dart';
+import 'package:flutter_frontend/core/models/api_models.dart';
+import 'package:flutter_frontend/core/services/backend_service.dart';
+import 'package:flutter_frontend/core/services/session_service.dart';
+import 'package:flutter_frontend/core/services/websocket_manager.dart';
+import 'package:flutter_frontend/core/presentation/widgets/state_visuals.dart';
+import 'package:flutter_frontend/features/auth/presentation/pages/login_screen.dart';
+import 'package:flutter_frontend/features/staff/presentation/pages/patient_detail_screen.dart';
 
 class StaffDashboardScreen extends StatefulWidget {
   const StaffDashboardScreen({super.key});

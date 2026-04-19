@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../models/api_models.dart';
-import '../services/backend_service.dart';
-import '../screens/patient/hospital_info_screen.dart';
-import '../screens/patient/timeline_screen.dart';
-import 'premium_interactive.dart';
+import 'package:flutter_frontend/core/models/api_models.dart';
+import 'package:flutter_frontend/core/services/backend_service.dart';
+import 'package:flutter_frontend/screens/patient/hospital_info_screen.dart';
+import 'package:flutter_frontend/screens/patient/timeline_screen.dart';
+import 'package:flutter_frontend/core/presentation/widgets/premium_interactive.dart';
 
 class PatientHomeTab extends StatefulWidget {
   final String name;

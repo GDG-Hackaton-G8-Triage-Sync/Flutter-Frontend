@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-import '../../models/api_models.dart';
-import '../../services/backend_service.dart';
-import '../../services/session_service.dart';
-import '../../widgets/state_visuals.dart';
-import 'triage_history_screen.dart';
-import 'timeline_screen.dart';
+import 'package:flutter_frontend/core/models/api_models.dart';
+import 'package:flutter_frontend/core/services/backend_service.dart';
+import 'package:flutter_frontend/core/services/session_service.dart';
+import 'package:flutter_frontend/core/presentation/widgets/state_visuals.dart';
+import 'package:flutter_frontend/screens/patient/triage_history_screen.dart';
+import 'package:flutter_frontend/screens/patient/timeline_screen.dart';
 
 class StatusScreen extends StatefulWidget {
   const StatusScreen({super.key, this.refreshTrigger = 0});

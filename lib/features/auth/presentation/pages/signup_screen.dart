@@ -2,9 +2,9 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
-import '../../services/api_error_mapper.dart';
-import '../../services/backend_service.dart';
-import '../login_screen.dart';
+import 'package:flutter_frontend/core/error/api_error_mapper.dart';
+import 'package:flutter_frontend/core/services/backend_service.dart';
+import 'package:flutter_frontend/features/auth/presentation/pages/login_screen.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});

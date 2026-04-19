@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 
-import '../../../models/api_models.dart';
-import '../dio_client.dart';
+import 'package:flutter_frontend/core/models/api_models.dart';
+import 'package:flutter_frontend/core/network/dio_client.dart';
 
 class AdminApi {
   final Dio _dio = DioClient.instance;

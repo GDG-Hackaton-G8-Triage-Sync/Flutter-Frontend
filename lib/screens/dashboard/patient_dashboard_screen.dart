@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 
-import '../../services/session_service.dart';
-import '../../services/websocket/websocket_manager.dart';
-import '../login_screen.dart';
-import '../staff/admin_portal_screen.dart';
-import '../staff/staff_dashboard_screen.dart';
-import '../patient/profile_screen.dart';
-import '../patient/settings_screen.dart';
-import '../patient/status_screen.dart';
-import '../patient/symptom_input_screen.dart';
-import '../common/consent_screen.dart';
-import '../../widgets/patient_home_tab.dart';
-import '../../utils/navigation_transitions.dart';
+import 'package:flutter_frontend/core/services/session_service.dart';
+import 'package:flutter_frontend/core/services/websocket_manager.dart';
+import 'package:flutter_frontend/features/auth/presentation/pages/login_screen.dart';
+import 'package:flutter_frontend/features/admin/presentation/pages/admin_portal_screen.dart';
+import 'package:flutter_frontend/features/staff/presentation/pages/staff_dashboard_screen.dart';
+import 'package:flutter_frontend/screens/patient/profile_screen.dart';
+import 'package:flutter_frontend/screens/patient/settings_screen.dart';
+import 'package:flutter_frontend/features/patient/presentation/pages/status_screen.dart';
+import 'package:flutter_frontend/screens/patient/symptom_input_screen.dart';
+import 'package:flutter_frontend/screens/common/consent_screen.dart';
+import 'package:flutter_frontend/features/patient/presentation/widgets/patient_home_tab.dart';
+import 'package:flutter_frontend/core/utils/navigation_transitions.dart';
 
 class PatientDashboardScreen extends StatefulWidget {
   const PatientDashboardScreen({super.key});

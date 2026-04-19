@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
-import '../../services/backend_service.dart';
-import '../../widgets/premium_interactive.dart';
-import 'success_screen.dart';
+import 'package:flutter_frontend/core/services/backend_service.dart';
+import 'package:flutter_frontend/core/presentation/widgets/premium_interactive.dart';
+import 'package:flutter_frontend/screens/patient/success_screen.dart';
 
 class SymptomInputScreen extends StatefulWidget {
   const SymptomInputScreen({super.key, this.onSubmitted});

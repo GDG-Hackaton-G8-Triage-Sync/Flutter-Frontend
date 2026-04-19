@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../widgets/state_visuals.dart';
+import 'package:flutter_frontend/core/presentation/widgets/state_visuals.dart';
 
 class ConnectivityScreen extends StatelessWidget {
   final VoidCallback onRetry;

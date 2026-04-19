@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../services/backend_service.dart';
+import 'package:flutter_frontend/core/services/backend_service.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({

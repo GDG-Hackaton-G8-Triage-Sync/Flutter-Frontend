@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import 'app_colors.dart';
-import 'app_iconography.dart';
-import 'app_radii.dart';
-import 'app_typography.dart';
+import 'package:flutter_frontend/core/theme/app_colors.dart';
+import 'package:flutter_frontend/core/theme/app_iconography.dart';
+import 'package:flutter_frontend/core/theme/app_radii.dart';
+import 'package:flutter_frontend/core/theme/app_typography.dart';
 
 abstract final class AppTheme {
   static const ColorScheme _lightColorScheme = ColorScheme(

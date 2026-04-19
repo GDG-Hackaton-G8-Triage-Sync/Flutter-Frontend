@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../models/api_models.dart';
+import 'package:flutter_frontend/core/models/api_models.dart';
 
 class PatientTimelineScreen extends StatelessWidget {
   final TriageItem item;

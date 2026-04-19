@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_frontend/screens/login_screen.dart';
+import 'package:flutter_frontend/features/auth/presentation/pages/login_screen.dart';
 
-import '../common/terms_of_use_screen.dart';
-import 'privacy_security_screen.dart';
+import 'package:flutter_frontend/features/auth/presentation/pages/terms_of_use_screen.dart';
+import 'package:flutter_frontend/features/auth/presentation/pages/privacy_security_screen.dart';
 
 class OnboardingScreen extends StatelessWidget {
   const OnboardingScreen({super.key});

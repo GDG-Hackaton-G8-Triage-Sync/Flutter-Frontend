@@ -5,16 +5,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
 
-import '../models/api_models.dart';
-import '../services/api_error_mapper.dart';
-import '../services/backend_service.dart';
-import '../services/session_service.dart';
-import 'common/terms_of_use_screen.dart';
-import 'dashboard/patient_dashboard_screen.dart';
-import 'patient/privacy_security_screen.dart';
-import 'patient/signup_screen.dart';
-import 'staff/admin_portal_screen.dart';
-import 'staff/staff_dashboard_screen.dart';
+import 'package:flutter_frontend/core/models/api_models.dart';
+import 'package:flutter_frontend/core/error/api_error_mapper.dart';
+import 'package:flutter_frontend/core/services/backend_service.dart';
+import 'package:flutter_frontend/core/services/session_service.dart';
+import 'package:flutter_frontend/features/auth/presentation/pages/terms_of_use_screen.dart';
+import 'package:flutter_frontend/screens/dashboard/patient_dashboard_screen.dart';
+import 'package:flutter_frontend/features/auth/presentation/pages/privacy_security_screen.dart';
+import 'package:flutter_frontend/features/auth/presentation/pages/signup_screen.dart';
+import 'package:flutter_frontend/features/admin/presentation/pages/admin_portal_screen.dart';
+import 'package:flutter_frontend/features/staff/presentation/pages/staff_dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
