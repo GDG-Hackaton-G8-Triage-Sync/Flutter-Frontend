@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
 import 'queue_dashboard/queue_dashboard_screen.dart';
+
 
 class StaffDashboardScreen extends StatefulWidget {
   const StaffDashboardScreen({super.key});
@@ -14,10 +14,10 @@ class StaffDashboardScreen extends StatefulWidget {
 class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
   int currentIndex = 0;
 
-  final screens = [
-    const QueueDashboardScreen(),
-    const Placeholder(),
-    const Placeholder(),
+  final screens = const [
+    QueueDashboardScreen(),
+    Placeholder(),
+    Placeholder(),
   ];
 
   @override
@@ -25,7 +25,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
     return Scaffold(
       body: screens[currentIndex],
 
-      /// Floating + Button
+      /// Floating Button
       floatingActionButton: FloatingActionButton(
         onPressed: () {},
         backgroundColor: AppColors.primary,
@@ -36,52 +36,74 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
           FloatingActionButtonLocation.centerDocked,
 
       /// Bottom Navigation
-      bottomNavigationBar: BottomAppBar(
-        shape: const CircularNotchedRectangle(),
-        notchMargin: 8,
-        child: SizedBox(
-          height: 60,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _navItem(Icons.list, 0),
-              _navItem(Icons.people, 1),
-
-              const SizedBox(width: 40),
-
-              _navItem(Icons.settings, 2),
-            ],
-          ),
-        ),
+    bottomNavigationBar: Container(
+  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+  decoration: BoxDecoration(
+    color: Colors.white,
+    borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+    boxShadow: [
+      BoxShadow(
+        color: Colors.black.withOpacity(0.05),
+        blurRadius: 10,
+        offset: const Offset(0, -2),
       ),
+    ],
+  ),
+  child: Row(
+    mainAxisAlignment: MainAxisAlignment.spaceAround,
+    children: [
+      _navItem(Icons.bar_chart, "Status", 0),
+      _navItem(Icons.mic, "Symptoms", 1),
+
+      const SizedBox(width: 40), // space for FAB
+
+      _navItem(Icons.settings, "Settings", 2),
+    ],
+  ),
+),
     );
   }
 
-  Widget _navItem(IconData icon, int index) {
-    final isSelected = currentIndex == index;
+Widget _navItem(IconData icon, String label, int index) {
+  final isSelected = currentIndex == index;
 
-    return IconButton(
-      icon: Icon(
-        icon,
+  return GestureDetector(
+    onTap: () {
+      setState(() {
+        currentIndex = index;
+      });
+    },
+    child: AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
         color: isSelected
-            ? AppColors.primary
-            : AppColors.onSurfaceVariant,
+            ? AppColors.primary.withOpacity(0.15)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
       ),
-      onPressed: () {
-        setState(() {
-          currentIndex = index;
-        });
-      },
-    );
-  }
-}
-void main() {
-  runApp(
-    const ProviderScope(
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        home: StaffDashboardScreen(),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            color: isSelected
+                ? AppColors.primary
+                : AppColors.onSurfaceVariant,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: isSelected
+                  ? AppColors.primary
+                  : AppColors.onSurfaceVariant,
+            ),
+          ),
+        ],
       ),
     ),
   );
+}
 }

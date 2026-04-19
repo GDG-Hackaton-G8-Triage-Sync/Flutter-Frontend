@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_radii.dart';
-import '../../../../core/theme/app_typography.dart';
+import 'package:flutter_frontend/core/theme/app_typography.dart';
+import 'package:flutter_frontend/features/shared/models/queue_models.dart';
 
 class PatientQueueCard extends StatelessWidget {
-  final Map<String, dynamic> patient;
+  final QueuePatient patient;
 
   const PatientQueueCard({
     super.key,
@@ -14,106 +12,166 @@ class PatientQueueCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final color = _priorityColor(patient.priority);
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLowest,
-        borderRadius: AppRadii.x2lBorder,
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(.03),
+            color: Colors.black.withOpacity(0.03),
             blurRadius: 8,
-            offset: const Offset(0, 2),
-          )
+            offset: const Offset(0, 3),
+          ),
         ],
       ),
       child: Row(
         children: [
-          /// Urgency bar
-          _urgencyIndicator(),
+          /// LEFT COLOR BAR
+          Container(
+            width: 6,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: const BorderRadius.horizontal(
+                left: Radius.circular(18),
+              ),
+            ),
+          ),
 
+          const SizedBox(width: 12),
+
+          /// MAIN CONTENT
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  /// Text section
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          patient["name"],
-                          style:
-                              AppTypography.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                  /// TOP ROW (ID + TAG)
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          "#TS-${patient.id}",
+                          style: AppTypography.textTheme.labelMedium
+                              ?.copyWith(color: Colors.grey),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                         ),
+                      ),
+                      
+                      const SizedBox(width: 8),
 
-                        const SizedBox(height: 4),
-
-                        Text(
-                          patient["symptom"],
-                          style:
-                              AppTypography.textTheme.bodyMedium?.copyWith(
-                            color: AppColors.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
+                      _priorityBadge(),
+                    ],
                   ),
 
-                  /// Time badge
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
+                  const SizedBox(height: 8),
+
+                  /// NAME (using condition as name fallback)
+                  Text(
+                    patient.condition,
+                    style: AppTypography.textTheme.titleLarge
+                        ?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+
+                  const SizedBox(height: 6),
+
+                  /// DESCRIPTION
+                  Text(
+                    patient.description,
+                    style: AppTypography.textTheme.bodyMedium?.copyWith(
+                      color: Colors.grey.shade600,
                     ),
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceContainerLow,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      patient["time"],
-                      style: AppTypography.textTheme.labelLarge,
-                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
-          )
+          ),
+
+          /// RIGHT SIDE SCORE
+          
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  patient.urgencyScore.toString(),
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  "URGENCY",
+                  style: TextStyle(
+                    fontSize: 10,
+                    letterSpacing: 1,
+                    color: Colors.grey,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _urgencyIndicator() {
-    Color color;
-
-    switch (patient["urgency"]) {
-      case "Critical":
-        color = AppColors.error;
-        break;
-      case "High":
-        color = Colors.orange;
-        break;
-      case "Medium":
-        color = Colors.amber;
-        break;
+  /// COLOR MAPPING
+  Color _priorityColor(int priority) {
+    switch (priority) {
+      case 1:
+        return Colors.red;
+      case 2:
+        return Colors.orange;
+      case 3:
+        return Colors.blue;
       default:
-        color = AppColors.outline;
+        return Colors.green;
     }
+  }
+
+  /// BADGE (mapped from priority)
+  Widget _priorityBadge() {
+    final label = _priorityLabel(patient.priority);
+    final color = _priorityColor(patient.priority);
 
     return Container(
-      width: 6,
-      height: 72,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(16),
-          bottomLeft: Radius.circular(16),
+        color: color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: color,
         ),
       ),
     );
+  }
+
+  /// LABEL MAPPING (UI ONLY)
+  String _priorityLabel(int priority) {
+    switch (priority) {
+      case 1:
+        return "IMMEDIATE";
+      case 2:
+        return "HIGH RISK";
+      case 3:
+        return "STANDARD";
+      default:
+        return "STABLE";
+    }
   }
 }
