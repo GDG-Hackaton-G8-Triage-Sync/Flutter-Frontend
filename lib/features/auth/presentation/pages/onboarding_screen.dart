@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_frontend/features/auth/presentation/pages/login_screen.dart';
 
@@ -176,14 +177,28 @@ class OnboardingScreen extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            // Hero Asset
+                            // Hero Asset (Platform Aware)
                             Center(
-                              child: Image.file(
-                                File(
-                                  'C:/Users/ms/.gemini/antigravity/brain/935f1e90-cd78-4fb3-b776-aa0c23c57abb/medical_ai_triage_hero_1776637124258.png',
-                                ),
-                                fit: BoxFit.contain,
-                              ),
+                              child: kIsWeb 
+                                ? Container(
+                                    width: 120,
+                                    height: 120,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.1),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.monitor_heart,
+                                      color: Colors.white,
+                                      size: 64,
+                                    ),
+                                  )
+                                : Image.file(
+                                    File(
+                                      'C:/Users/ms/.gemini/antigravity/brain/935f1e90-cd78-4fb3-b776-aa0c23c57abb/medical_ai_triage_hero_1776637124258.png',
+                                    ),
+                                    fit: BoxFit.contain,
+                                  ),
                             ),
                             // Gradient Overlay for depth
                             Positioned.fill(
@@ -492,14 +507,21 @@ class HeartbeatPainter extends CustomPainter {
 
     canvas.drawPath(path, paint);
     
-    // Add a glow layer
-    final glowPaint = Paint()
-      ..color = const Color(0xFF00BFFF).withValues(alpha: 0.1)
-      ..strokeWidth = 6
+    // Add a Web-safe glow layer (avoiding MaskFilter.blur which triggers JS interop crashes on Flutter Web)
+    final glowPaint1 = Paint()
+      ..color = const Color(0xFF00BFFF).withValues(alpha: 0.08)
+      ..strokeWidth = 8
       ..style = PaintingStyle.stroke
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+      ..strokeCap = StrokeCap.round;
       
-    canvas.drawPath(path, glowPaint);
+    final glowPaint2 = Paint()
+      ..color = const Color(0xFF00BFFF).withValues(alpha: 0.12)
+      ..strokeWidth = 4
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+      
+    canvas.drawPath(path, glowPaint1);
+    canvas.drawPath(path, glowPaint2);
   }
 
   @override

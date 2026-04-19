@@ -343,8 +343,9 @@ class _SignupScreenState extends State<SignupScreen> {
           ),
           validator: (v) {
             if (v == null || v.isEmpty) return 'Please enter your full name';
-            if (!_isValidFullName(v))
+            if (!_isValidFullName(v)) {
               return 'Please enter both first and last name';
+            }
             return null;
           },
         ),
@@ -452,8 +453,9 @@ class _SignupScreenState extends State<SignupScreen> {
           validator: (v) {
             if (v == null || v.isEmpty) return 'Age is required';
             final age = int.tryParse(v);
-            if (age == null || age <= 0 || age > 120)
+            if (age == null || age <= 0 || age > 120) {
               return 'Please enter a valid age';
+            }
             return null;
           },
         ),
