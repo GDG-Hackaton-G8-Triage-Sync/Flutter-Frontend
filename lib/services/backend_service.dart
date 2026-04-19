@@ -135,6 +135,7 @@ class BackendService {
     String? healthHistory,
     String? allergies,
     String? currentMedications,
+    String? badHabits,
   }) async {
     await _dio.post<void>(
       '/api/v1/auth/register/',
@@ -149,6 +150,7 @@ class BackendService {
         if (healthHistory != null) 'health_history': healthHistory,
         if (allergies != null) 'allergies': allergies,
         if (currentMedications != null) 'current_medications': currentMedications,
+        if (badHabits != null) 'bad_habits': badHabits,
       },
     );
   }

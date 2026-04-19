@@ -12,6 +12,7 @@ class AuthResponse {
     this.healthHistory,
     this.allergies,
     this.currentMedications,
+    this.badHabits,
   });
 
   final String accessToken;
@@ -26,6 +27,7 @@ class AuthResponse {
   final String? healthHistory;
   final String? allergies;
   final String? currentMedications;
+  final String? badHabits;
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) {
     return AuthResponse(
@@ -41,6 +43,7 @@ class AuthResponse {
       healthHistory: json['health_history'] as String?,
       allergies: json['allergies'] as String?,
       currentMedications: json['current_medications'] as String?,
+      badHabits: json['bad_habits'] as String?,
     );
   }
 }
@@ -64,6 +67,7 @@ class TriageItem {
     this.healthHistory,
     this.allergies,
     this.currentMedications,
+    this.badHabits,
   });
 
   final int id;
@@ -83,6 +87,7 @@ class TriageItem {
   final String? healthHistory;
   final String? allergies;
   final String? currentMedications;
+  final String? badHabits;
 
   factory TriageItem.fromJson(Map<String, dynamic> json) {
     return TriageItem(
@@ -107,6 +112,7 @@ class TriageItem {
       healthHistory: json['health_history'] as String?,
       allergies: json['allergies'] as String?,
       currentMedications: json['current_medications'] as String?,
+      badHabits: json['bad_habits'] as String?,
     );
   }
 }
@@ -171,6 +177,7 @@ class AppUser {
     this.healthHistory,
     this.allergies,
     this.currentMedications,
+    this.badHabits,
   });
 
   final int id;
@@ -183,6 +190,7 @@ class AppUser {
   final String? healthHistory;
   final String? allergies;
   final String? currentMedications;
+  final String? badHabits;
 
   factory AppUser.fromJson(Map<String, dynamic> json) {
     return AppUser(
@@ -196,6 +204,7 @@ class AppUser {
       healthHistory: json['health_history'] as String?,
       allergies: json['allergies'] as String?,
       currentMedications: json['current_medications'] as String?,
+      badHabits: json['bad_habits'] as String?,
     );
   }
 }

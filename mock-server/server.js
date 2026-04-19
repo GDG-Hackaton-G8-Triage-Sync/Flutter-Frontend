@@ -77,7 +77,8 @@ app.post("/api/v1/auth/register/", (req, res) => {
     const { 
         name, email, password, role = "patient",
         gender = "", age = null, blood_type = "",
-        health_history = "", allergies = "", current_medications = ""
+        health_history = "", allergies = "", current_medications = "",
+        bad_habits = ""
     } = req.body;
 
     if (!name || !email || !password) {
@@ -93,7 +94,8 @@ app.post("/api/v1/auth/register/", (req, res) => {
     const newUser = { 
         id: Date.now(), 
         name, email, password: hashedPassword, role,
-        gender, age, blood_type, health_history, allergies, current_medications
+        gender, age, blood_type, health_history, allergies, current_medications,
+        bad_habits
     };
     
     db.authUsers.push(newUser);
@@ -192,7 +194,8 @@ app.post("/api/v1/triage/", authenticateToken, requireRole(["patient"]), (req, r
         blood_type: user?.blood_type || "",
         health_history: user?.health_history || "",
         allergies: user?.allergies || "",
-        current_medications: user?.current_medications || ""
+        current_medications: user?.current_medications || "",
+        bad_habits: user?.bad_habits || ""
     };
 
     db.triageSubmissions.push(newTriage);
@@ -246,7 +249,7 @@ app.get("/api/v1/admin/users/", authenticateToken, requireRole(["admin"]), (req,
 app.patch("/api/v1/profile/", authenticateToken, (req, res) => {
     const { 
         name, email, gender, age, blood_type, 
-        health_history, allergies, current_medications 
+        health_history, allergies, current_medications, bad_habits 
     } = req.body;
 
     const db = getDB();
@@ -263,6 +266,7 @@ app.patch("/api/v1/profile/", authenticateToken, (req, res) => {
     if (health_history !== undefined) user.health_history = health_history;
     if (allergies !== undefined) user.allergies = allergies;
     if (current_medications !== undefined) user.current_medications = current_medications;
+    if (bad_habits !== undefined) user.bad_habits = bad_habits;
 
     db.authUsers[userIndex] = user;
     

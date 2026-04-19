@@ -750,6 +750,9 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
           const SizedBox(height: 16),
           _buildInfoRow(Icons.medication, 'Current Medications', 
             _patient.currentMedications?.isNotEmpty == true ? _patient.currentMedications! : 'None listed'),
+          const SizedBox(height: 16),
+          _buildInfoRow(Icons.smoke_free_outlined, 'Lifestyle Habits', 
+            _patient.badHabits?.isNotEmpty == true ? _patient.badHabits! : 'No habits reported'),
         ],
       ),
     );

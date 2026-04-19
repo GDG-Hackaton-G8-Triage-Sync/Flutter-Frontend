@@ -34,6 +34,7 @@ class _SignupScreenState extends State<SignupScreen> {
   final TextEditingController _historyController = TextEditingController();
   final TextEditingController _allergiesController = TextEditingController();
   final TextEditingController _medicationsController = TextEditingController();
+  final TextEditingController _habitsController = TextEditingController();
 
   final BackendService _backend = BackendService.instance;
   bool _isLoading = false;
@@ -49,6 +50,7 @@ class _SignupScreenState extends State<SignupScreen> {
     _historyController.dispose();
     _allergiesController.dispose();
     _medicationsController.dispose();
+    _habitsController.dispose();
     super.dispose();
   }
 
@@ -61,6 +63,8 @@ class _SignupScreenState extends State<SignupScreen> {
         );
         return;
       }
+    } else if (_currentStep == 1) {
+      if (!_formKey.currentState!.validate()) return;
     }
     setState(() => _currentStep++);
   }
@@ -84,6 +88,7 @@ class _SignupScreenState extends State<SignupScreen> {
         healthHistory: _historyController.text.trim(),
         allergies: _allergiesController.text.trim(),
         currentMedications: _medicationsController.text.trim(),
+        badHabits: _habitsController.text.trim(),
       );
 
       if (!mounted) return;
@@ -114,6 +119,22 @@ class _SignupScreenState extends State<SignupScreen> {
     }
   }
 
+  bool _isValidFullName(String name) {
+    // Robust name validation:
+    // 1. Minimum 2 parts (First + Last)
+    // 2. Minimum length (3 chars)
+    // 3. No weird special characters (allowing unicode letters ' and -)
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.length < 2) return false;
+    
+    // Check if each part is at least 1 character and contains valid name characters
+    // Using simple character matching to be script-agnostic
+    for (var part in parts) {
+      if (part.length < 1) return false;
+    }
+    return true;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -126,7 +147,7 @@ class _SignupScreenState extends State<SignupScreen> {
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
                 child: Container(
-                  width: 580,
+                  width: 620,
                   padding: const EdgeInsets.all(32),
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -145,6 +166,8 @@ class _SignupScreenState extends State<SignupScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildHeader(),
+                        const SizedBox(height: 16),
+                        _buildOnboardingHint(),
                         const SizedBox(height: 24),
                         _buildProgressBar(),
                         const SizedBox(height: 32),
@@ -155,6 +178,33 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                   ),
                 ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOnboardingHint() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF005EB8).withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF005EB8).withValues(alpha: 0.1)),
+      ),
+      child: const Row(
+        children: [
+          Icon(Icons.info_outline, size: 16, color: Color(0xFF005EB8)),
+          SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Optional fields can be left blank and updated later in your clinical profile.',
+              style: TextStyle(
+                fontSize: 12,
+                color: Color(0xFF00478D),
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),
@@ -183,10 +233,10 @@ class _SignupScreenState extends State<SignupScreen> {
             Expanded(
               child: Text(
                 _currentStep == 0
-                    ? 'Create Account'
+                    ? 'Account Setup'
                     : _currentStep == 1
-                        ? 'Demographics'
-                        : 'Medical Background',
+                        ? 'Identification'
+                        : 'Clinical History',
                 style: const TextStyle(
                   fontFamily: 'Manrope',
                   fontSize: 24,
@@ -196,13 +246,6 @@ class _SignupScreenState extends State<SignupScreen> {
               ),
             ),
           ],
-        ),
-        const Padding(
-          padding: EdgeInsets.only(left: 48, top: 4),
-          child: Text(
-            'Complete your medical profile to help our clinical team.',
-            style: TextStyle(color: Color(0xFF73777F), fontSize: 13),
-          ),
         ),
       ],
     );
@@ -239,23 +282,56 @@ class _SignupScreenState extends State<SignupScreen> {
     }
   }
 
+  Widget _buildRequiredLabel(String label) {
+    return RichText(
+      text: TextSpan(
+        text: label,
+        style: const TextStyle(color: Color(0xFF44474E), fontSize: 13, fontWeight: FontWeight.w600),
+        children: const [
+          TextSpan(text: ' *', style: TextStyle(color: Color(0xFFBA1A1A))),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOptionalLabel(String label) {
+    return RichText(
+      text: TextSpan(
+        text: label,
+        style: const TextStyle(color: Color(0xFF44474E), fontSize: 13, fontWeight: FontWeight.w600),
+        children: const [
+          TextSpan(text: ' (Optional)', style: TextStyle(color: Color(0xFF73777F), fontSize: 11, fontWeight: FontWeight.normal)),
+        ],
+      ),
+    );
+  }
+
   Widget _buildAccountStep() {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        _buildRequiredLabel('Full Name'),
+        const SizedBox(height: 8),
         TextFormField(
           controller: _nameController,
           decoration: const InputDecoration(
-            labelText: 'Full Name',
+            hintText: 'e.g. Jean-Luc Picard',
             prefixIcon: Icon(Icons.person_outline),
           ),
-          validator: (v) => v?.isEmpty == true ? 'Name is required' : null,
+          validator: (v) {
+            if (v == null || v.isEmpty) return 'Please enter your full name';
+            if (!_isValidFullName(v)) return 'Please enter both first and last name';
+            return null;
+          },
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
+        _buildRequiredLabel('Email Address'),
+        const SizedBox(height: 8),
         TextFormField(
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
           decoration: const InputDecoration(
-            labelText: 'Email Address',
+            hintText: 'your@email.com',
             prefixIcon: Icon(Icons.email_outlined),
           ),
           validator: (v) {
@@ -264,12 +340,14 @@ class _SignupScreenState extends State<SignupScreen> {
             return null;
           },
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
+        _buildRequiredLabel('Password'),
+        const SizedBox(height: 8),
         TextFormField(
           controller: _passwordController,
           obscureText: _obscurePassword,
           decoration: InputDecoration(
-            labelText: 'Create Password',
+            hintText: 'Minimum 6 characters',
             prefixIcon: const Icon(Icons.lock_outline),
             suffixIcon: IconButton(
               icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
@@ -278,12 +356,13 @@ class _SignupScreenState extends State<SignupScreen> {
           ),
           validator: (v) => (v?.length ?? 0) < 6 ? 'Min 6 characters' : null,
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
+        _buildRequiredLabel('Confirm Password'),
+        const SizedBox(height: 8),
         TextFormField(
           controller: _confirmPasswordController,
           obscureText: _obscurePassword,
           decoration: const InputDecoration(
-            labelText: 'Confirm Password',
             prefixIcon: Icon(Icons.lock_reset),
           ),
         ),
@@ -293,26 +372,38 @@ class _SignupScreenState extends State<SignupScreen> {
 
   Widget _buildDemographicsStep() {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        _buildRequiredLabel('Gender'),
+        const SizedBox(height: 8),
         DropdownButtonFormField<String>(
           value: _gender,
           decoration: const InputDecoration(
-            labelText: 'Gender',
+            hintText: 'Select gender',
             prefixIcon: Icon(Icons.people_outline),
           ),
           items: ['Male', 'Female', 'Other', 'Prefer not to say']
               .map((e) => DropdownMenuItem(value: e, child: Text(e)))
               .toList(),
           onChanged: (v) => setState(() => _gender = v),
+          validator: (v) => v == null ? 'Gender is required for clinical records' : null,
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
+        _buildRequiredLabel('Age'),
+        const SizedBox(height: 8),
         TextFormField(
           controller: _ageController,
           keyboardType: TextInputType.number,
           decoration: const InputDecoration(
-            labelText: 'Age',
+            hintText: 'Enter your age',
             prefixIcon: Icon(Icons.calendar_today_outlined),
           ),
+          validator: (v) {
+            if (v == null || v.isEmpty) return 'Age is required';
+            final age = int.tryParse(v);
+            if (age == null || age <= 0 || age > 120) return 'Please enter a valid age';
+            return null;
+          },
         ),
       ],
     );
@@ -320,12 +411,13 @@ class _SignupScreenState extends State<SignupScreen> {
 
   Widget _buildClinicalStep() {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        _buildOptionalLabel('Blood Type'),
+        const SizedBox(height: 8),
         DropdownButtonFormField<String>(
           value: _bloodType,
           decoration: const InputDecoration(
-            labelText: 'Blood Type (Optional)',
-            hintText: 'Select if known',
             prefixIcon: Icon(Icons.bloodtype_outlined),
           ),
           items: ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-']
@@ -333,32 +425,46 @@ class _SignupScreenState extends State<SignupScreen> {
               .toList(),
           onChanged: (v) => setState(() => _bloodType = v),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
+        _buildOptionalLabel('Medical History'),
+        const SizedBox(height: 8),
         TextFormField(
           controller: _historyController,
-          maxLines: 2,
+          maxLines: 3,
           decoration: const InputDecoration(
-            labelText: 'Medical History',
-            hintText: 'e.g. Hypertension, Diabetes, Asthma',
+            hintText: 'Describe pre-existing conditions (e.g. Hypertension, Diabetes)',
             prefixIcon: Icon(Icons.history_edu_outlined),
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
+        _buildOptionalLabel('Allergies'),
+        const SizedBox(height: 8),
         TextFormField(
           controller: _allergiesController,
+          maxLines: 2,
           decoration: const InputDecoration(
-            labelText: 'Known Allergies',
-            hintText: 'e.g. Penicillin, Peanuts',
+            hintText: 'e.g. Penicillin, Lactose, Peanuts',
             prefixIcon: Icon(Icons.warning_amber_outlined),
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
+        _buildOptionalLabel('Current Medications'),
+        const SizedBox(height: 8),
         TextFormField(
           controller: _medicationsController,
           decoration: const InputDecoration(
-            labelText: 'Current Medications',
-            hintText: 'List any regular medications',
+            hintText: 'List medications and dosage',
             prefixIcon: Icon(Icons.medication_outlined),
+          ),
+        ),
+        const SizedBox(height: 20),
+        _buildOptionalLabel('Lifestyle Habits'),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: _habitsController,
+          decoration: const InputDecoration(
+            hintText: 'e.g. Regular smoker, Alcohol consumer',
+            prefixIcon: Icon(Icons.smoke_free_outlined),
           ),
         ),
       ],
@@ -366,24 +472,29 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   Widget _buildNavigationButtons() {
-    return SizedBox(
-      width: double.infinity,
-      height: 54,
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+    return Row(
+      children: [
+        const Spacer(),
+        SizedBox(
+          width: 220,
+          height: 56,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            ),
+            onPressed: _isLoading
+                ? null
+                : (_currentStep == 2 ? _handleSignup : _nextStep),
+            child: _isLoading
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+                  )
+                : Text(_currentStep == 2 ? 'Complete Signup' : 'Continue'),
+          ),
         ),
-        onPressed: _isLoading
-            ? null
-            : (_currentStep == 2 ? _handleSignup : _nextStep),
-        child: _isLoading
-            ? const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
-              )
-            : Text(_currentStep == 2 ? 'Complete Registration' : 'Continue'),
-      ),
+      ],
     );
   }
 
