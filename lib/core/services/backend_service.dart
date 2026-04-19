@@ -5,6 +5,9 @@ import 'package:flutter/foundation.dart';
 
 import 'package:flutter_frontend/core/models/api_models.dart';
 import 'package:flutter_frontend/core/services/session_service.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_frontend/core/utils/globals.dart';
+import 'package:flutter_frontend/features/auth/presentation/pages/login_screen.dart';
 
 class BackendService {
   BackendService._();
@@ -64,6 +67,7 @@ class BackendService {
                 final refreshToken = await _sessionService.getRefreshToken();
                 if (refreshToken == null || refreshToken.isEmpty) {
                   await _sessionService.clear();
+                  _forceLogout();
                   handler.next(error);
                   return;
                 }
@@ -80,6 +84,7 @@ class BackendService {
                   return;
                 } catch (_) {
                   await _sessionService.clear();
+                  _forceLogout();
                 }
               }
 
@@ -87,6 +92,13 @@ class BackendService {
             },
           ),
         );
+
+  void _forceLogout() {
+    globalNavigatorKey.currentState?.pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (route) => false,
+    );
+  }
 
   Future<String> _refreshAccessToken(String refreshToken) async {
     final response = await _authDio.post<Map<String, dynamic>>(

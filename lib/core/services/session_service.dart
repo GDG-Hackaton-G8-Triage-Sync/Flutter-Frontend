@@ -2,11 +2,46 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SessionService {
+  static const _secureStorage = FlutterSecureStorage();
+
   static const _accessTokenKey = 'access_token';
   static const _refreshTokenKey = 'refresh_token';
   static const _roleKey = 'role';
   static const _emailKey = 'email';
   static const _nameKey = 'name';
+  static const _bioEmailKey = 'bio_email';
+  static const _bioPasswordKey = 'bio_password';
+  static const _consentAcceptedPrefix = 'consent_accepted_';
+
+  Future<void> _writeSessionValue(String key, String value) async {
+    await _secureStorage.write(key: key, value: value);
+  }
+
+  Future<String?> _readSessionValue(String key) async {
+    final secureValue = await _secureStorage.read(key: key);
+    if (secureValue != null && secureValue.isNotEmpty) {
+      return secureValue;
+    }
+
+    // Backward-compatibility migration from SharedPreferences.
+    final prefs = await SharedPreferences.getInstance();
+    final legacyValue = prefs.getString(key);
+    if (legacyValue != null && legacyValue.isNotEmpty) {
+      await _secureStorage.write(key: key, value: legacyValue);
+      await prefs.remove(key);
+      return legacyValue;
+    }
+
+    return null;
+  }
+
+  String _consentKey(String? email) {
+    final normalizedEmail = (email ?? '').trim().toLowerCase();
+    if (normalizedEmail.isEmpty) {
+      return '${_consentAcceptedPrefix}default';
+    }
+    return '$_consentAcceptedPrefix$normalizedEmail';
+  }
 
   Future<void> saveSession({
     required String accessToken,
@@ -15,42 +50,35 @@ class SessionService {
     required String email,
     required String name,
   }) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_accessTokenKey, accessToken);
-    await prefs.setString(_refreshTokenKey, refreshToken);
-    await prefs.setString(_roleKey, role);
-    await prefs.setString(_emailKey, email);
-    await prefs.setString(_nameKey, name);
+    await _writeSessionValue(_accessTokenKey, accessToken);
+    await _writeSessionValue(_refreshTokenKey, refreshToken);
+    await _writeSessionValue(_roleKey, role);
+    await _writeSessionValue(_emailKey, email);
+    await _writeSessionValue(_nameKey, name);
   }
 
   Future<String?> getAccessToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_accessTokenKey);
+    return _readSessionValue(_accessTokenKey);
   }
 
   Future<String?> getRefreshToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_refreshTokenKey);
+    return _readSessionValue(_refreshTokenKey);
   }
 
   Future<void> updateAccessToken(String accessToken) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_accessTokenKey, accessToken);
+    await _writeSessionValue(_accessTokenKey, accessToken);
   }
 
   Future<String?> getRole() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_roleKey);
+    return _readSessionValue(_roleKey);
   }
 
   Future<String?> getName() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_nameKey);
+    return _readSessionValue(_nameKey);
   }
 
   Future<String?> getEmail() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_emailKey);
+    return _readSessionValue(_emailKey);
   }
 
   Future<void> updateProfile({
@@ -58,15 +86,33 @@ class SessionService {
     required String email,
     String? role,
   }) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_nameKey, name);
-    await prefs.setString(_emailKey, email);
+    await _writeSessionValue(_nameKey, name);
+    await _writeSessionValue(_emailKey, email);
     if (role != null && role.isNotEmpty) {
-      await prefs.setString(_roleKey, role);
+      await _writeSessionValue(_roleKey, role);
     }
   }
 
+  Future<bool> getDataConsentAccepted({String? email}) async {
+    final key = _consentKey(email);
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(key) ?? false;
+  }
+
+  Future<void> setDataConsentAccepted(bool accepted, {String? email}) async {
+    final key = _consentKey(email);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(key, accepted);
+  }
+
   Future<void> clear() async {
+    await _secureStorage.delete(key: _accessTokenKey);
+    await _secureStorage.delete(key: _refreshTokenKey);
+    await _secureStorage.delete(key: _roleKey);
+    await _secureStorage.delete(key: _emailKey);
+    await _secureStorage.delete(key: _nameKey);
+
+    // Cleanup any legacy values from older builds.
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_accessTokenKey);
     await prefs.remove(_refreshTokenKey);
@@ -76,10 +122,6 @@ class SessionService {
   }
 
   // --- Biometric Enclave Handling ---
-  static const _secureStorage = FlutterSecureStorage();
-  static const _bioEmailKey = 'bio_email';
-  static const _bioPasswordKey = 'bio_password';
-
   Future<void> saveBiometricCredentials(String email, String password) async {
     await _secureStorage.write(key: _bioEmailKey, value: email);
     await _secureStorage.write(key: _bioPasswordKey, value: password);

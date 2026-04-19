@@ -25,15 +25,19 @@ class OnboardingScreen extends StatelessWidget {
   }
 
   Widget _footerLink(BuildContext context, String label) {
-    return InkWell(
-      onTap: () => _openLegalPage(context, label),
+    return TextButton(
+      onPressed: () => _openLegalPage(context, label),
+      style: TextButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
       child: Text(
         label,
         style: const TextStyle(
           fontSize: 12,
-          fontWeight: FontWeight.w500,
-          color: Color(0xFF44474E),
-          decoration: TextDecoration.underline,
+          fontWeight: FontWeight.w600,
+          color: Color(0xFF005EB8),
         ),
       ),
     );
@@ -248,6 +252,26 @@ class OnboardingScreen extends StatelessWidget {
                       ),
                     ),
 
+                    const SizedBox(height: 10),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const LoginScreen(),
+                          ),
+                        );
+                      },
+                      child: const Text(
+                        'Already have an account? Sign in',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF00478D),
+                        ),
+                      ),
+                    ),
+
                     const SizedBox(height: 32),
 
                     // Disclaimer
@@ -298,16 +322,44 @@ class OnboardingScreen extends StatelessWidget {
 
                     const SizedBox(height: 48),
 
-                    // Footer Links
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _footerLink(context, 'Privacy Policy'),
-                        const SizedBox(width: 16),
-                        _footerLink(context, 'Terms of Use'),
-                        const SizedBox(width: 16),
-                        _footerLink(context, 'HIPAA Compliance'),
-                      ],
+                    // Compliance Footer
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF0F4F9),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: const Color(0xFFD6DEE8),
+                          width: 1,
+                        ),
+                      ),
+                      child: Wrap(
+                        alignment: WrapAlignment.center,
+                        spacing: 4,
+                        runSpacing: 2,
+                        children: [
+                          const Icon(
+                            Icons.shield_outlined,
+                            size: 14,
+                            color: Color(0xFF005EB8),
+                          ),
+                          _footerLink(context, 'Privacy Policy'),
+                          const Text(
+                            '•',
+                            style: TextStyle(color: Color(0xFF7A8088)),
+                          ),
+                          _footerLink(context, 'Terms of Use'),
+                          const Text(
+                            '•',
+                            style: TextStyle(color: Color(0xFF7A8088)),
+                          ),
+                          _footerLink(context, 'HIPAA Compliance'),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 16),
                     const Text(

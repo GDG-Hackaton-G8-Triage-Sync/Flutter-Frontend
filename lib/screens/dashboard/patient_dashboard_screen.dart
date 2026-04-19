@@ -26,6 +26,7 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
   String _name = '';
   String _email = '';
   String _role = 'patient';
+  bool _consentLoaded = false;
 
   /// Bumped after each successful symptom submit to force StatusScreen reload.
   int _statusRefreshTrigger = 0;
@@ -48,11 +49,14 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
     final name = await _session.getName() ?? '';
     final email = await _session.getEmail() ?? '';
     final role = await _session.getRole() ?? 'patient';
+    final hasConsented = await _session.getDataConsentAccepted(email: email);
     if (!mounted) return;
     setState(() {
       _name = name;
       _email = email;
       _role = role;
+      _hasConsented = hasConsented;
+      _consentLoaded = true;
     });
   }
 
@@ -117,8 +121,23 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_consentLoaded) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFF7F9FB),
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     if (!_hasConsented) {
-      return DataConsentScreen(onAccepted: () => setState(() => _hasConsented = true));
+      return DataConsentScreen(
+        onAccepted: () async {
+          await _session.setDataConsentAccepted(true, email: _email);
+          if (!mounted) {
+            return;
+          }
+          setState(() => _hasConsented = true);
+        },
+      );
     }
 
     final screens = <Widget>[

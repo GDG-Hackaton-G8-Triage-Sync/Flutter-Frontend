@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_frontend/screens/splash_screen.dart';
+import 'package:flutter_frontend/core/utils/globals.dart';
 
 class TriageSyncApp extends StatelessWidget {
   const TriageSyncApp({super.key});
@@ -8,6 +9,7 @@ class TriageSyncApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: globalNavigatorKey,
       debugShowCheckedModeBanner: false,
       title: 'TriageSync',
       theme: ThemeData(
