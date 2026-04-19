@@ -1,467 +1,340 @@
-const jsonServer = require("json-server");
-const path = require("path");
+const express = require("express");
+const http = require("http");
 const { WebSocketServer } = require("ws");
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
+const fs = require("fs");
+const path = require("path");
+const morgan = require("morgan");
 
-const server = jsonServer.create();
-const router = jsonServer.router(path.join(__dirname, "db.json"));
-const middlewares = jsonServer.defaults();
-
-server.use(middlewares);
-server.use(jsonServer.bodyParser);
-
-// --- WebSocket Server ---
+// --- Configuration ---
+const API_PORT = 3001;
 const WS_PORT = 3002;
-const wss = new WebSocketServer({ port: WS_PORT });
+const JWT_SECRET = "triage-sync-high-grade-secret-99";
+const DB_PATH = path.join(__dirname, "db.json");
 
-function broadcastEvent(type, payload) {
-  const msg = JSON.stringify({ type: type, data: payload });
-  wss.clients.forEach((client) => {
-    if (client.readyState === 1 /* OPEN */) {
-      client.send(msg);
-    }
-  });
+// --- Utility: DB Management ---
+function getDB() {
+    return JSON.parse(fs.readFileSync(DB_PATH, "utf-8"));
 }
 
-function broadcastQueueUpdate(payload, type = "queue_update") {
-    broadcastEvent(type, payload);
+function saveDB(db) {
+    fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2));
 }
 
-wss.on("connection", (ws) => {
-  console.log(`[WS] Client connected (${wss.clients.size} total)`);
-  ws.on("close", () =>
-    console.log(`[WS] Client disconnected (${wss.clients.size} remaining)`)
-  );
+// --- App Initialization ---
+const app = express();
+app.use(express.json());
+app.use(morgan("dev"));
+
+// CORS shim
+app.use((req, res, next) => {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    if (req.method === "OPTIONS") return res.sendStatus(200);
+    next();
 });
 
-console.log(`WebSocket server running on ws://localhost:${WS_PORT}`);
-// --------------------------------
+// --- Auth Middleware ---
+function authenticateToken(req, res, next) {
+    const authHeader = req.headers["authorization"];
+    const token = authHeader && authHeader.split(" ")[1];
 
-function tokenFor(user) {
-    return `mock-jwt-token-${user.id}-${user.role}`;
-}
-
-function parseToken(token) {
-    const prefix = "mock-jwt-token-";
-    if (!token || !token.startsWith(prefix)) {
-        return null;
-    }
-
-    const parts = token.substring(prefix.length).split("-");
-    if (parts.length < 2) {
-        return null;
-    }
-
-    const userId = Number(parts[0]);
-    const role = parts.slice(1).join("-");
-
-    if (!Number.isFinite(userId) || !role) {
-        return null;
-    }
-
-    return { userId, role };
-}
-
-function findUserByToken(db, token) {
-    const parsed = parseToken(token);
-    if (!parsed) {
-        return null;
-    }
-
-    const user = db.get("authUsers").find({ id: parsed.userId }).value();
-    if (!user || user.role !== parsed.role) {
-        return null;
-    }
-
-    return user;
-}
-
-function requireAnyRole(req, res, roles) {
-    if (!req.user) {
-        res.status(401).json({ error: "Unauthorized access" });
-        return false;
-    }
-
-    if (!roles.includes(req.user.role)) {
-        res.status(403).json({ error: "Permission denied" });
-        return false;
-    }
-
-    return true;
-}
-
-function authMiddleware(req, res, next) {
-    if (req.path.startsWith("/api/auth/")) {
-        return next();
-    }
-
-    const auth = req.headers.authorization || "";
-    if (!auth.startsWith("Bearer ")) {
-        return res.status(401).json({ error: "Unauthorized access" });
-    }
-
-    const token = auth.slice("Bearer ".length).trim();
-    const user = findUserByToken(router.db, token);
-    if (!user) {
-        return res.status(401).json({ error: "Unauthorized access" });
-    }
-
-    req.user = user;
-
-    return next();
-}
-
-server.use(authMiddleware);
-
-server.post("/api/auth/login/", (req, res) => {
-    const { email, password } = req.body || {};
-    const db = router.db;
-    const user = db.get("authUsers").find({ email, password }).value();
-
-    if (!user) {
-        return res.status(400).json({ error: "Invalid credentials" });
-    }
-
-    return res.json({
-        access_token: tokenFor(user),
-        refresh_token: `refresh-${tokenFor(user)}`,
-        role: user.role,
-        user_id: user.id,
-        name: user.name,
-        email: user.email,
-    });
-});
-
-server.post("/api/auth/refresh/", (req, res) => {
-    const { refresh_token } = req.body || {};
-    if (!refresh_token || typeof refresh_token !== "string") {
-        return res.status(400).json({ error: "Invalid refresh token" });
-    }
-
-    const prefix = "refresh-";
-    if (!refresh_token.startsWith(prefix)) {
-        return res.status(401).json({ error: "Unauthorized access" });
-    }
-
-    const token = refresh_token.slice(prefix.length);
-    const user = findUserByToken(router.db, token);
-    if (!user) {
-        return res.status(401).json({ error: "Unauthorized access" });
-    }
-
-    return res.json({ access_token: tokenFor(user) });
-});
-
-server.post("/api/auth/register/", (req, res) => {
-    const { name, email, password, role = "patient" } = req.body || {};
-    if (!name || !email || !password) {
-        return res.status(400).json({ error: "Invalid input" });
-    }
-
-    const db = router.db;
-    const exists = db.get("authUsers").find({ email }).value();
-    if (exists) {
-        return res.status(400).json({ error: "User already exists" });
-    }
-
-    const nextId = (db.get("authUsers").map("id").max().value() || 0) + 1;
-
-    db.get("authUsers")
-        .push({ id: nextId, name, email, password, role })
-        .write();
-
-    db.get("adminUsers").push({ id: nextId, name, email, role }).write();
-
-    return res.status(201).json({ message: "Registered" });
-});
-
-server.patch("/api/profile/", (req, res) => {
-    if (!requireAnyRole(req, res, ["patient", "staff", "admin"])) {
-        return;
-    }
-
-    const name = (req.body?.name || "").toString().trim();
-    const email = (req.body?.email || "").toString().trim().toLowerCase();
-
-    if (!name || !email) {
-        return res.status(400).json({ error: "Name and email are required" });
-    }
-
-    const db = router.db;
-    const currentUser = db.get("authUsers").find({ id: req.user.id }).value();
-    if (!currentUser) {
-        return res.status(404).json({ error: "User not found" });
-    }
-
-    const existing = db.get("authUsers").find({ email }).value();
-    if (existing && existing.id !== req.user.id) {
-        return res.status(400).json({ error: "Email already in use" });
-    }
-
-    db.get("authUsers")
-        .find({ id: req.user.id })
-        .assign({ name, email })
-        .write();
-
-    db.get("adminUsers")
-        .find({ id: req.user.id })
-        .assign({ name, email })
-        .write();
-
-    return res.json({
-        id: req.user.id,
-        name,
-        email,
-        role: currentUser.role,
-    });
-});
-
-server.post("/api/triage/", (req, res) => {
-    if (!requireAnyRole(req, res, ["patient"])) {
-        return;
-    }
-
-    const { description, photo_name = "" } = req.body || {};
-    if (!description || description.length > 500) {
-        return res.status(400).json({
-            error: "Invalid input",
-            details: { description: "Cannot exceed 500 characters" },
+    if (!token) {
+        return res.status(401).json({
+            code: "UNAUTHORIZED",
+            message: "Authentication credentials were not provided."
         });
     }
 
-    const db = router.db;
-    const nextId =
-        (db.get("triageSubmissions").map("id").max().value() || 100) + 1;
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+        if (err) {
+            return res.status(401).json({
+                code: "TOKEN_EXPIRED",
+                message: "Your session has expired. Please log in again."
+            });
+        }
+        req.user = user;
+        next();
+    });
+}
 
-    const urgencyScore = Math.min(
-        99,
-        Math.max(10, Math.round(description.length / 5)),
-    );
-    const priority =
-        urgencyScore > 85
-            ? 1
-            : urgencyScore > 70
-              ? 2
-              : urgencyScore > 45
-                ? 3
-                : urgencyScore > 25
-                  ? 4
-                  : 5;
-    const condition =
-        priority <= 2 ? "Needs Immediate Review" : "General Assessment";
+function requireRole(roles) {
+    return (req, res, next) => {
+        if (!roles.includes(req.user.role)) {
+            return res.status(403).json({
+                code: "PERMISSION_DENIED",
+                message: "You do not have permission to perform this action."
+            });
+        }
+        next();
+    };
+}
 
-    const item = {
-        id: nextId,
+// --- Routes: AUTH ---
+app.post("/api/v1/auth/register/", (req, res) => {
+    const { 
+        name, email, password, role = "patient",
+        gender = "", age = null, blood_type = "",
+        health_history = "", allergies = "", current_medications = ""
+    } = req.body;
+
+    if (!name || !email || !password) {
+        return res.status(400).json({ code: "VALIDATION_ERROR", message: "Name, email and password are required." });
+    }
+
+    const db = getDB();
+    if (db.authUsers.find(u => u.email === email)) {
+        return res.status(409).json({ code: "CONFLICT", message: "A user with this email already exists." });
+    }
+
+    const hashedPassword = bcrypt.hashSync(password, 8);
+    const newUser = { 
+        id: Date.now(), 
+        name, email, password: hashedPassword, role,
+        gender, age, blood_type, health_history, allergies, current_medications
+    };
+    
+    db.authUsers.push(newUser);
+    // Sync with adminUsers directory for UI consistency
+    db.adminUsers.push({ id: newUser.id, name, email, role });
+    saveDB(db);
+
+    res.status(201).json({ message: "Account created successfully." });
+});
+
+app.post("/api/v1/auth/login/", (req, res) => {
+    const { email, password } = req.body;
+    const db = getDB();
+    const user = db.authUsers.find(u => u.email === email);
+
+    // Initial sync for first-time users (demo convenience)
+    if (user && !user.password.startsWith("$2a$")) {
+        user.password = bcrypt.hashSync(user.password, 8);
+        saveDB(db);
+    }
+
+    if (!user || !bcrypt.compareSync(password, user.password)) {
+        return res.status(401).json({ code: "INVALID_CREDENTIALS", message: "Email or password is incorrect." });
+    }
+
+    const access_token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: "1h" });
+    const refresh_token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: "7d" });
+
+    res.json({
+        access_token,
+        refresh_token,
+        role: user.role,
+        user_id: user.id,
+        name: user.name,
+        email: user.email
+    });
+});
+
+app.post("/api/v1/auth/refresh/", (req, res) => {
+    const { refresh_token } = req.body;
+    if (!refresh_token) return res.status(400).json({ code: "BAD_REQUEST", message: "Refresh token is missing." });
+
+    jwt.verify(refresh_token, JWT_SECRET, (err, decoded) => {
+        if (err) return res.status(401).json({ code: "TOKEN_INVALID", message: "Refresh token is invalid." });
+        
+        const db = getDB();
+        const user = db.authUsers.find(u => u.id === decoded.id);
+        if (!user) return res.status(401).json({ code: "USER_NOT_FOUND", message: "User not found." });
+
+        const access_token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: "1h" });
+        const new_refresh_token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: "7d" });
+
+        res.json({ access_token, refresh_token: new_refresh_token });
+    });
+});
+
+// --- Routes: Clinical Data ---
+app.get("/api/v1/triage-submissions/", authenticateToken, (req, res) => {
+    const db = getDB();
+    let submissions = db.triageSubmissions;
+    
+    if (req.user.role === "patient") {
+        submissions = submissions.filter(s => s.email === req.user.email);
+    } else if (req.query.email) {
+        submissions = submissions.filter(s => s.email === req.query.email);
+    }
+
+    res.json(submissions.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
+});
+
+app.post("/api/v1/triage/", authenticateToken, requireRole(["patient"]), (req, res) => {
+    const { description, photo_name = "" } = req.body;
+    if (!description) return res.status(400).json({ code: "VALIDATION_ERROR", message: "Description is required." });
+
+    const db = getDB();
+    const user = db.authUsers.find(u => u.id === req.user.id);
+
+    // Mock AI categorization
+    const urgency = Math.min(100, Math.max(10, description.length / 4));
+    const priority = urgency > 80 ? 1 : urgency > 60 ? 2 : urgency > 40 ? 3 : 4;
+
+    const newTriage = {
+        id: Date.now(),
         email: req.user.email,
+        patient_name: user ? user.name : "Unknown",
         description,
         priority,
-        urgency_score: urgencyScore,
-        condition,
+        urgency_score: Math.round(urgency),
+        condition: priority <= 2 ? "Urgent Review Required" : "Standard Assessment",
         status: "waiting",
         created_at: new Date().toISOString(),
         photo_name,
+        // Carry clinical context
+        gender: user?.gender || "",
+        age: user?.age || null,
+        blood_type: user?.blood_type || "",
+        health_history: user?.health_history || "",
+        allergies: user?.allergies || "",
+        current_medications: user?.current_medications || ""
     };
 
-    db.get("triageSubmissions").push(item).write();
+    db.triageSubmissions.push(newTriage);
+    saveDB(db);
 
-    // Notify subscribers that a new queue entry exists.
-    broadcastQueueUpdate(item, "patient_created");
-
-    return res.status(201).json(item);
+    broadcast("TRIAGE_CREATED", newTriage);
+    res.status(201).json(newTriage);
 });
 
-server.get("/api/triage-submissions/", (req, res) => {
-    if (!requireAnyRole(req, res, ["patient", "staff", "admin"])) {
-        return;
-    }
-
-    const db = router.db;
-    const email = req.query.email;
-
-    let list = db.get("triageSubmissions").value();
-    if (req.user.role == "patient") {
-        list = list.filter((item) => item.email === req.user.email);
-    } else if (email) {
-        list = list.filter((item) => item.email === email);
-    }
-
-    return res.json(list);
+// Staff Queue
+app.get("/api/v1/staff/patients/", authenticateToken, requireRole(["staff", "admin"]), (req, res) => {
+    const db = getDB();
+    let patients = db.triageSubmissions;
+    if (req.query.status) patients = patients.filter(p => p.status === req.query.status);
+    res.json(patients.sort((a, b) => b.urgency_score - a.urgency_score));
 });
 
-server.get("/api/dashboard/staff/patients/", (req, res) => {
-    if (!requireAnyRole(req, res, ["staff", "admin"])) {
-        return;
-    }
+app.patch("/api/v1/staff/patient/:id/status/", authenticateToken, requireRole(["staff", "admin"]), (req, res) => {
+    const db = getDB();
+    const id = parseInt(req.params.id);
+    const { status } = req.body;
+    
+    const index = db.triageSubmissions.findIndex(s => s.id === id);
+    if (index === -1) return res.status(404).json({ code: "NOT_FOUND", message: "Triage entry not found." });
 
-    const db = router.db;
-    let list = db.get("triageSubmissions").value();
+    db.triageSubmissions[index].status = status;
+    saveDB(db);
 
-    if (req.query.priority) {
-        list = list.filter(
-            (p) => String(p.priority) === String(req.query.priority),
-        );
-    }
-
-    if (req.query.status) {
-        list = list.filter((p) => p.status === req.query.status);
-    }
-
-    list.sort((a, b) => b.urgency_score - a.urgency_score);
-    return res.json(list);
+    broadcast("TRIAGE_UPDATED", db.triageSubmissions[index]);
+    res.json(db.triageSubmissions[index]);
 });
 
-server.patch("/api/dashboard/staff/patient/:id/status/", (req, res) => {
-    if (!requireAnyRole(req, res, ["staff", "admin"])) {
-        return;
-    }
-
-    const id = Number(req.params.id);
-    const { status } = req.body || {};
-    const allowed = ["waiting", "in_progress", "completed"];
-
-    if (!allowed.includes(status)) {
-        return res.status(400).json({ error: "Invalid status" });
-    }
-
-    const db = router.db;
-    const found = db.get("triageSubmissions").find({ id }).value();
-    if (!found) {
-        return res.status(404).json({ error: "Patient not found" });
-    }
-
-    db.get("triageSubmissions").find({ id }).assign({ status }).write();
-    const updated = db.get("triageSubmissions").find({ id }).value();
-
-    // Broadcast real-time update to all WebSocket clients.
-    broadcastQueueUpdate(updated, "status_update");
-
-    return res.json(updated);
-});
-
-server.patch("/api/staff/queue/:id/priority", (req, res) => {
-    if (!requireAnyRole(req, res, ["staff", "admin"])) {
-        return;
-    }
-
-    const id = Number(req.params.id);
-    const priority = Number(req.body?.priority);
-
-    if (!Number.isFinite(priority) || priority < 1 || priority > 5) {
-        return res.status(400).json({ error: "Invalid priority" });
-    }
-
-    const db = router.db;
-    const found = db.get("triageSubmissions").find({ id }).value();
-    if (!found) {
-        return res.status(404).json({ error: "Patient not found" });
-    }
-
-    db.get("triageSubmissions").find({ id }).assign({ priority }).write();
-    const updated = db.get("triageSubmissions").find({ id }).value();
-
-    broadcastQueueUpdate(updated, "priority_override");
-
-    return res.json(updated);
-});
-
-server.get("/api/dashboard/admin/overview/", (req, res) => {
-    if (!requireAnyRole(req, res, ["admin"])) {
-        return;
-    }
-
-    const db = router.db;
-    const patients = db.get("triageSubmissions").value();
-
-    const waiting = patients.filter((p) => p.status === "waiting").length;
-    const inProgress = patients.filter(
-        (p) => p.status === "in_progress",
-    ).length;
-    const completed = patients.filter((p) => p.status === "completed").length;
-    const critical = patients.filter((p) => p.priority === 1).length;
-
-    return res.json({
-        total_patients: patients.length,
-        waiting,
-        in_progress: inProgress,
-        completed,
-        critical_cases: critical,
+// Admin Dashboard
+app.get("/api/v1/admin/overview/", authenticateToken, requireRole(["admin"]), (req, res) => {
+    const db = getDB();
+    const s = db.triageSubmissions;
+    res.json({
+        total_patients: s.length,
+        waiting: s.filter(p => p.status === "waiting").length,
+        in_progress: s.filter(p => p.status === "in_progress").length,
+        completed: s.filter(p => p.status === "completed").length,
+        critical_cases: s.filter(p => p.priority === 1).length
     });
 });
 
-server.get("/api/dashboard/admin/analytics/", (req, res) => {
-    if (!requireAnyRole(req, res, ["admin"])) {
-        return;
+app.get("/api/v1/admin/users/", authenticateToken, requireRole(["admin"]), (req, res) => {
+    const db = getDB();
+    res.json(db.adminUsers);
+});
+
+app.patch("/api/v1/profile/", authenticateToken, (req, res) => {
+    const { 
+        name, email, gender, age, blood_type, 
+        health_history, allergies, current_medications 
+    } = req.body;
+
+    const db = getDB();
+    const userIndex = db.authUsers.findIndex(u => u.id === req.user.id);
+    if (userIndex === -1) return res.status(404).json({ code: "NOT_FOUND", message: "User not found." });
+
+    const user = db.authUsers[userIndex];
+    
+    if (name) user.name = name;
+    if (email) user.email = email;
+    if (gender !== undefined) user.gender = gender;
+    if (age !== undefined) user.age = age;
+    if (blood_type !== undefined) user.blood_type = blood_type;
+    if (health_history !== undefined) user.health_history = health_history;
+    if (allergies !== undefined) user.allergies = allergies;
+    if (current_medications !== undefined) user.current_medications = current_medications;
+
+    db.authUsers[userIndex] = user;
+    
+    const adminIdx = db.adminUsers.findIndex(u => u.id === req.user.id);
+    if (adminIdx !== -1) {
+        db.adminUsers[adminIdx].name = user.name;
+        db.adminUsers[adminIdx].email = user.email;
     }
 
-    const db = router.db;
-    const patients = db.get("triageSubmissions").value();
-    const avg = patients.length
-        ? Math.round(
-              patients.reduce(
-                  (acc, item) => acc + (item.urgency_score || 0),
-                  0,
-              ) / patients.length,
-          )
-        : 0;
+    saveDB(db);
 
-    const conditions = [
-        ...new Set(patients.map((p) => p.condition).filter(Boolean)),
-    ].slice(0, 5);
+    const { password, ...sanitized } = user;
+    res.json(sanitized);
+});
 
-    return res.json({
-        avg_urgency_score: avg,
-        peak_hour: "14:00",
-        common_conditions: conditions,
+// --- Start API Server ---
+const PORT = process.env.PORT || API_PORT;
+app.listen(PORT, () => {
+    console.log(`\n🚀 High-Grade API Mock Running`);
+    console.log(`   API Root: http://localhost:${PORT}/api/v1/`);
+});
+
+// --- WebSocket Server (Port 3002) ---
+const wss = new WebSocketServer({ port: WS_PORT, path: "/ws/v1/updates/" });
+const clients = new Map();
+
+wss.on("connection", (ws) => {
+    console.log("[WS] New connection established on port 3002.");
+    let authenticated = false;
+
+    ws.on("message", (message) => {
+        try {
+            const data = JSON.parse(message);
+            
+            // Handshake Logic
+            if (data.type === "AUTH") {
+                jwt.verify(data.token, JWT_SECRET, (err, decoded) => {
+                    if (err) {
+                        ws.send(JSON.stringify({ type: "ERROR", message: "Auth failed" }));
+                        ws.terminate();
+                    } else {
+                        authenticated = true;
+                        clients.set(ws, decoded);
+                        ws.send(JSON.stringify({ type: "AUTH_SUCCESS" }));
+                        console.log(`[WS] Authenticated: ${decoded.email}`);
+                    }
+                });
+            }
+
+            // Heartbeat Logic
+            if (data.type === "PING") {
+                ws.send(JSON.stringify({ type: "PONG" }));
+            }
+        } catch (e) {
+            console.error("[WS] Parse error");
+        }
+    });
+
+    ws.on("close", () => {
+        clients.delete(ws);
+        console.log("[WS] Client disconnected.");
     });
 });
 
-server.get("/api/admin/users/", (req, res) => {
-    if (!requireAnyRole(req, res, ["admin"])) {
-        return;
-    }
+function broadcast(type, payload) {
+    const msg = JSON.stringify({ type, data: payload });
+    clients.forEach((user, ws) => {
+        if (ws.readyState === 1) {
+            ws.send(msg);
+        }
+    });
+}
 
-    const users = router.db.get("adminUsers").value();
-    return res.json(users);
-});
-
-server.patch("/api/admin/users/:id/role/", (req, res) => {
-    if (!requireAnyRole(req, res, ["admin"])) {
-        return;
-    }
-
-    const id = Number(req.params.id);
-    const { role } = req.body || {};
-    const allowed = ["patient", "staff", "admin"];
-
-    if (!allowed.includes(role)) {
-        return res.status(400).json({ error: "Permission denied" });
-    }
-
-    const db = router.db;
-    const exists = db.get("adminUsers").find({ id }).value();
-    if (!exists) {
-        return res.status(404).json({ error: "User not found" });
-    }
-
-    db.get("adminUsers").find({ id }).assign({ role }).write();
-    db.get("authUsers").find({ id }).assign({ role }).write();
-
-    return res.json(db.get("adminUsers").find({ id }).value());
-});
-
-server.delete("/api/admin/patient/:id/", (req, res) => {
-    if (!requireAnyRole(req, res, ["admin"])) {
-        return;
-    }
-
-    const id = Number(req.params.id);
-    const db = router.db;
-    db.get("triageSubmissions").remove({ id }).write();
-    return res.status(204).send();
-});
-
-server.use(router);
-
-const PORT = 3001;
-server.listen(PORT, () => {
-    console.log(`JSON mock server running on http://localhost:${PORT}`);
-});
+console.log(`🚀 High-Grade WebSocket Mock Running`);
+console.log(`   WS Root:  ws://localhost:${WS_PORT}/ws/v1/updates/\n`);

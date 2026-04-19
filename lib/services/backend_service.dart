@@ -129,6 +129,12 @@ class BackendService {
     required String email,
     required String password,
     String role = 'patient',
+    String? gender,
+    int? age,
+    String? bloodType,
+    String? healthHistory,
+    String? allergies,
+    String? currentMedications,
   }) async {
     await _dio.post<void>(
       '/api/v1/auth/register/',
@@ -137,6 +143,12 @@ class BackendService {
         'email': email,
         'password': password,
         'role': role,
+        if (gender != null) 'gender': gender,
+        if (age != null) 'age': age,
+        if (bloodType != null) 'blood_type': bloodType,
+        if (healthHistory != null) 'health_history': healthHistory,
+        if (allergies != null) 'allergies': allergies,
+        if (currentMedications != null) 'current_medications': currentMedications,
       },
     );
   }

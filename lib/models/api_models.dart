@@ -6,6 +6,12 @@ class AuthResponse {
     required this.userId,
     required this.name,
     required this.email,
+    this.gender,
+    this.age,
+    this.bloodType,
+    this.healthHistory,
+    this.allergies,
+    this.currentMedications,
   });
 
   final String accessToken;
@@ -14,6 +20,12 @@ class AuthResponse {
   final int userId;
   final String name;
   final String email;
+  final String? gender;
+  final int? age;
+  final String? bloodType;
+  final String? healthHistory;
+  final String? allergies;
+  final String? currentMedications;
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) {
     return AuthResponse(
@@ -23,6 +35,12 @@ class AuthResponse {
       userId: (json['user_id'] ?? 0) as int,
       name: (json['name'] ?? '') as String,
       email: (json['email'] ?? '') as String,
+      gender: json['gender'] as String?,
+      age: json['age'] as int?,
+      bloodType: json['blood_type'] as String?,
+      healthHistory: json['health_history'] as String?,
+      allergies: json['allergies'] as String?,
+      currentMedications: json['current_medications'] as String?,
     );
   }
 }
@@ -36,9 +54,16 @@ class TriageItem {
     required this.condition,
     required this.status,
     required this.createdAt,
+    this.patientName,
     this.photoName,
     this.verifiedBy,
     this.verifiedAt,
+    this.gender,
+    this.age,
+    this.bloodType,
+    this.healthHistory,
+    this.allergies,
+    this.currentMedications,
   });
 
   final int id;
@@ -48,9 +73,16 @@ class TriageItem {
   final String condition;
   final String status;
   final DateTime createdAt;
+  final String? patientName;
   final String? photoName;
   final String? verifiedBy;
   final DateTime? verifiedAt;
+  final String? gender;
+  final int? age;
+  final String? bloodType;
+  final String? healthHistory;
+  final String? allergies;
+  final String? currentMedications;
 
   factory TriageItem.fromJson(Map<String, dynamic> json) {
     return TriageItem(
@@ -63,11 +95,18 @@ class TriageItem {
       createdAt:
           DateTime.tryParse((json['created_at'] ?? '') as String) ??
           DateTime.now(),
+      patientName: json['patient_name'] as String?,
       photoName: json['photo_name'] as String?,
       verifiedBy: json['verified_by'] as String?,
       verifiedAt: json['verified_at'] != null 
           ? DateTime.tryParse(json['verified_at'] as String) 
           : null,
+      gender: json['gender'] as String?,
+      age: json['age'] as int?,
+      bloodType: json['blood_type'] as String?,
+      healthHistory: json['health_history'] as String?,
+      allergies: json['allergies'] as String?,
+      currentMedications: json['current_medications'] as String?,
     );
   }
 }
@@ -126,12 +165,24 @@ class AppUser {
     required this.name,
     required this.email,
     required this.role,
+    this.gender,
+    this.age,
+    this.bloodType,
+    this.healthHistory,
+    this.allergies,
+    this.currentMedications,
   });
 
   final int id;
   final String name;
   final String email;
   final String role;
+  final String? gender;
+  final int? age;
+  final String? bloodType;
+  final String? healthHistory;
+  final String? allergies;
+  final String? currentMedications;
 
   factory AppUser.fromJson(Map<String, dynamic> json) {
     return AppUser(
@@ -139,6 +190,12 @@ class AppUser {
       name: (json['name'] ?? '') as String,
       email: (json['email'] ?? '') as String,
       role: (json['role'] ?? 'patient') as String,
+      gender: json['gender'] as String?,
+      age: json['age'] as int?,
+      bloodType: json['blood_type'] as String?,
+      healthHistory: json['health_history'] as String?,
+      allergies: json['allergies'] as String?,
+      currentMedications: json['current_medications'] as String?,
     );
   }
 }

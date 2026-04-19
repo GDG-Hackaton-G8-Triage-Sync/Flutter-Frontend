@@ -244,6 +244,8 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
             const SizedBox(height: 24),
             _buildAICopilotCard(),
             const SizedBox(height: 24),
+            _buildMedicalProfileCard(),
+            const SizedBox(height: 24),
             _buildPrioritySentinelCard(),
             const SizedBox(height: 24),
             _buildSymptomDescription(),
@@ -708,6 +710,84 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
           ),
         ],
       ),
+    );
+  Widget _buildMedicalProfileCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE0E0E0), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.medical_information_outlined, color: Color(0xFF005EB8), size: 20),
+              SizedBox(width: 8),
+              Text(
+                'Clinical Profile',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF005EB8),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          _buildInfoRow(Icons.person_outline, 'Demographics', 
+            '${_patient.gender ?? "Unspecified"}, ${_patient.age ?? "N/A"}y, Blood: ${_patient.bloodType ?? "Unknown"}'),
+          const Divider(height: 32),
+          _buildInfoRow(Icons.history_edu, 'Medical History', 
+            _patient.healthHistory?.isNotEmpty == true ? _patient.healthHistory! : 'No history provided'),
+          const SizedBox(height: 16),
+          _buildInfoRow(Icons.warning_amber_rounded, 'Allergies', 
+            _patient.allergies?.isNotEmpty == true ? _patient.allergies! : 'No known allergies',
+            isWarning: _patient.allergies?.isNotEmpty == true),
+          const SizedBox(height: 16),
+          _buildInfoRow(Icons.medication, 'Current Medications', 
+            _patient.currentMedications?.isNotEmpty == true ? _patient.currentMedications! : 'None listed'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String label, String value, {bool isWarning = false}) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18, color: isWarning ? const Color(0xFFBA1A1A) : const Color(0xFF44474E)),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label.toUpperCase(),
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: isWarning ? const Color(0xFFBA1A1A) : Colors.grey,
+                  letterSpacing: 1.0,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: isWarning ? const Color(0xFFBA1A1A) : const Color(0xFF1A1C1E),
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

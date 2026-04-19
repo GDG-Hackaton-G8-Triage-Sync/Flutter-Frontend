@@ -4,28 +4,28 @@
       "id": 1,
       "name": "Patient Demo",
       "email": "patient@triagesync.com",
-      "password": "123456",
+      "password": "$2b$08$vH.nf1aW2TKkq0kpF9UJ7OtT0zDLxkOAcYkzyVeTQbPUOaxgRgfKi",
       "role": "patient"
     },
     {
       "id": 2,
       "name": "Staff Demo",
       "email": "staff@triagesync.com",
-      "password": "123456",
+      "password": "$2b$08$5TzC6jR9p/NnIdNLmByWYugxKlQqH7YmjT1hF2DBbO9SJjPEzk9z6",
       "role": "staff"
     },
     {
       "id": 3,
       "name": "Admin Demo",
       "email": "admin@triagesync.com",
-      "password": "123456",
+      "password": "$2b$08$HV6aG5TPb65WM.p1gXnAUeU797Hkir4HpiX/F3BLyvLa17kI4YfYi",
       "role": "admin"
     },
     {
       "id": 4,
       "name": "Abel Updated",
       "email": "abel.updated@gmail.com",
-      "password": "12345678",
+      "password": "$2b$08$jlDWq6dBZimiSEyAZBDYzO1nHbsqEbdfl9F7J0KS5RJPDDR1AfC2W",
       "role": "patient"
     }
   ],
