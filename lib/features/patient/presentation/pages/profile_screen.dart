@@ -1,7 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 
-import 'package:flutter_frontend/screens/patient/edit_profile_screen.dart';
+import 'package:flutter_frontend/features/patient/presentation/pages/edit_profile_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({

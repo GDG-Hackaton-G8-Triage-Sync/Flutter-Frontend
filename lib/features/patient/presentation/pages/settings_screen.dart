@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter_frontend/features/auth/presentation/pages/privacy_security_screen.dart';
-import 'package:flutter_frontend/screens/common/accessibility_screen.dart';
-import 'package:flutter_frontend/screens/common/help_screen.dart';
-import 'package:flutter_frontend/screens/common/about_screen.dart';
-import 'package:flutter_frontend/screens/common/notification_screen.dart';
-import 'package:flutter_frontend/screens/common/platform_briefing_screen.dart';
+import 'package:flutter_frontend/core/presentation/pages/accessibility_screen.dart';
+import 'package:flutter_frontend/core/presentation/pages/help_screen.dart';
+import 'package:flutter_frontend/core/presentation/pages/about_screen.dart';
+import 'package:flutter_frontend/core/presentation/pages/notification_screen.dart';
+import 'package:flutter_frontend/core/presentation/pages/platform_briefing_screen.dart';
 import 'package:flutter_frontend/core/presentation/widgets/premium_interactive.dart';
 import 'package:flutter_frontend/core/utils/navigation_transitions.dart';
 

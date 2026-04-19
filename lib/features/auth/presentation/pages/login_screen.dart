@@ -10,7 +10,7 @@ import 'package:flutter_frontend/core/error/api_error_mapper.dart';
 import 'package:flutter_frontend/core/services/backend_service.dart';
 import 'package:flutter_frontend/core/services/session_service.dart';
 import 'package:flutter_frontend/features/auth/presentation/pages/terms_of_use_screen.dart';
-import 'package:flutter_frontend/screens/dashboard/patient_dashboard_screen.dart';
+import 'package:flutter_frontend/features/patient/presentation/pages/patient_dashboard_screen.dart';
 import 'package:flutter_frontend/features/auth/presentation/pages/privacy_security_screen.dart';
 import 'package:flutter_frontend/features/auth/presentation/pages/signup_screen.dart';
 import 'package:flutter_frontend/features/admin/presentation/pages/admin_portal_screen.dart';

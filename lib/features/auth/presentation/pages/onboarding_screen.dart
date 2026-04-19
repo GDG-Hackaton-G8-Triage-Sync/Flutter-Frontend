@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_frontend/features/auth/presentation/pages/login_screen.dart';
 
@@ -147,18 +148,16 @@ class OnboardingScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 48),
 
-                    // Main Image Card
+                    // Main Image Card (Premium Cinematic Asset)
                     Container(
-                      height: 240,
+                      height: 320,
                       width: double.infinity,
                       decoration: BoxDecoration(
-                        color: Colors.black,
+                        color: const Color(0xFF001A33),
                         borderRadius: BorderRadius.circular(32),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(
-                              0xFF005EB8,
-                            ).withValues(alpha: 0.15),
+                            color: const Color(0xFF005EB8).withValues(alpha: 0.25),
                             blurRadius: 40,
                             offset: const Offset(0, 20),
                           ),
@@ -166,16 +165,42 @@ class OnboardingScreen extends StatelessWidget {
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(32),
-                        child: Image.network(
-                          'https://lh3.googleusercontent.com/aida-public/AB6AXuDdgkbRwHlXUAnQO8oT0asZbTpnWHg4htmEWRbgUHEzKXVrnBtUDIpSdClEijR3ue0nWiL4kwfUqz6iyU8AR2roDwFPYARnY2QDHYx58_Ir8Kwh4zc6Abzxqz2lAj90Y2ntcM-L2_SlVvaUbDouPHTc5Q3rkM7Hhk0OKYXLo7VRb8ky2uqRSdE5LuWlwzW8-zbYzApvIXpoKxSsDTWt-n5CMrog10CBTbdQvNniY5ottiv997YQe5KAzNoAebraQfaiVddYy4OF3Og',
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const Center(
-                            child: Icon(
-                              Icons.monitor_heart,
-                              color: Colors.white,
-                              size: 64,
+                        child: Stack(
+                          children: [
+                            // Neon pulse background
+                            Positioned.fill(
+                              child: Opacity(
+                                opacity: 0.4,
+                                child: CustomPaint(
+                                  painter: HeartbeatPainter(),
+                                ),
+                              ),
                             ),
-                          ),
+                            // Hero Asset
+                            Center(
+                              child: Image.file(
+                                File(
+                                  'C:/Users/ms/.gemini/antigravity/brain/935f1e90-cd78-4fb3-b776-aa0c23c57abb/medical_ai_triage_hero_1776637124258.png',
+                                ),
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                            // Gradient Overlay for depth
+                            Positioned.fill(
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      Colors.transparent,
+                                      const Color(0xFF001A33).withValues(alpha: 0.6),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -436,4 +461,47 @@ class OnboardingScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+class HeartbeatPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = const Color(0xFF00BFFF).withValues(alpha: 0.3)
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    final path = Path();
+    final y = size.height / 2;
+    
+    path.moveTo(0, y);
+    path.lineTo(size.width * 0.2, y);
+    path.lineTo(size.width * 0.25, y - 20);
+    path.lineTo(size.width * 0.3, y + 40);
+    path.lineTo(size.width * 0.35, y - 60);
+    path.lineTo(size.width * 0.4, y + 20);
+    path.lineTo(size.width * 0.45, y);
+    path.lineTo(size.width * 0.6, y);
+    path.lineTo(size.width * 0.65, y - 30);
+    path.lineTo(size.width * 0.7, y + 50);
+    path.lineTo(size.width * 0.75, y - 100);
+    path.lineTo(size.width * 0.8, y + 20);
+    path.lineTo(size.width * 0.85, y);
+    path.lineTo(size.width, y);
+
+    canvas.drawPath(path, paint);
+    
+    // Add a glow layer
+    final glowPaint = Paint()
+      ..color = const Color(0xFF00BFFF).withValues(alpha: 0.1)
+      ..strokeWidth = 6
+      ..style = PaintingStyle.stroke
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+      
+    canvas.drawPath(path, glowPaint);
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }
