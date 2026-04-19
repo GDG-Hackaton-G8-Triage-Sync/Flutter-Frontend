@@ -21,7 +21,8 @@ class _SignupScreenState extends State<SignupScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
 
   // Step 2: Demographics
   String? _gender;
@@ -37,6 +38,7 @@ class _SignupScreenState extends State<SignupScreen> {
   final BackendService _backend = BackendService.instance;
   bool _isLoading = false;
   bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   @override
   void dispose() {
@@ -56,9 +58,9 @@ class _SignupScreenState extends State<SignupScreen> {
     if (_currentStep == 0) {
       if (!_formKey.currentState!.validate()) return;
       if (_passwordController.text != _confirmPasswordController.text) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Passwords do not match')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Passwords do not match')));
         return;
       }
     } else if (_currentStep == 1) {
@@ -91,7 +93,9 @@ class _SignupScreenState extends State<SignupScreen> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Registration successful. Please sign in.')),
+        const SnackBar(
+          content: Text('Registration successful. Please sign in.'),
+        ),
       );
       Navigator.pushAndRemoveUntil(
         context,
@@ -105,7 +109,8 @@ class _SignupScreenState extends State<SignupScreen> {
           content: Text(
             ApiErrorMapper.toUserMessage(
               error,
-              fallbackMessage: 'Unable to complete registration. Please try again.',
+              fallbackMessage:
+                  'Unable to complete registration. Please try again.',
             ),
           ),
         ),
@@ -124,7 +129,7 @@ class _SignupScreenState extends State<SignupScreen> {
     // 3. No weird special characters (allowing unicode letters ' and -)
     final parts = name.trim().split(RegExp(r'\s+'));
     if (parts.length < 2) return false;
-    
+
     // Check if each part is at least 1 character and contains valid name characters
     // Using simple character matching to be script-agnostic
     for (var part in parts) {
@@ -190,7 +195,9 @@ class _SignupScreenState extends State<SignupScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFF005EB8).withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF005EB8).withValues(alpha: 0.1)),
+        border: Border.all(
+          color: const Color(0xFF005EB8).withValues(alpha: 0.1),
+        ),
       ),
       child: const Row(
         children: [
@@ -233,8 +240,8 @@ class _SignupScreenState extends State<SignupScreen> {
                 _currentStep == 0
                     ? 'Account Setup'
                     : _currentStep == 1
-                        ? 'Identification'
-                        : 'Clinical History',
+                    ? 'Identification'
+                    : 'Clinical History',
                 style: const TextStyle(
                   fontFamily: 'Manrope',
                   fontSize: 24,
@@ -284,9 +291,16 @@ class _SignupScreenState extends State<SignupScreen> {
     return RichText(
       text: TextSpan(
         text: label,
-        style: const TextStyle(color: Color(0xFF44474E), fontSize: 13, fontWeight: FontWeight.w600),
+        style: const TextStyle(
+          color: Color(0xFF44474E),
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+        ),
         children: const [
-          TextSpan(text: ' *', style: TextStyle(color: Color(0xFFBA1A1A))),
+          TextSpan(
+            text: ' *',
+            style: TextStyle(color: Color(0xFFBA1A1A)),
+          ),
         ],
       ),
     );
@@ -296,9 +310,20 @@ class _SignupScreenState extends State<SignupScreen> {
     return RichText(
       text: TextSpan(
         text: label,
-        style: const TextStyle(color: Color(0xFF44474E), fontSize: 13, fontWeight: FontWeight.w600),
+        style: const TextStyle(
+          color: Color(0xFF44474E),
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+        ),
         children: const [
-          TextSpan(text: ' (Optional)', style: TextStyle(color: Color(0xFF73777F), fontSize: 11, fontWeight: FontWeight.normal)),
+          TextSpan(
+            text: ' (Optional)',
+            style: TextStyle(
+              color: Color(0xFF73777F),
+              fontSize: 11,
+              fontWeight: FontWeight.normal,
+            ),
+          ),
         ],
       ),
     );
@@ -318,7 +343,8 @@ class _SignupScreenState extends State<SignupScreen> {
           ),
           validator: (v) {
             if (v == null || v.isEmpty) return 'Please enter your full name';
-            if (!_isValidFullName(v)) return 'Please enter both first and last name';
+            if (!_isValidFullName(v))
+              return 'Please enter both first and last name';
             return null;
           },
         ),
@@ -348,8 +374,11 @@ class _SignupScreenState extends State<SignupScreen> {
             hintText: 'Minimum 6 characters',
             prefixIcon: const Icon(Icons.lock_outline),
             suffixIcon: IconButton(
-              icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
-              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+              icon: Icon(
+                _obscurePassword ? Icons.visibility_off : Icons.visibility,
+              ),
+              onPressed: () =>
+                  setState(() => _obscurePassword = !_obscurePassword),
             ),
           ),
           validator: (v) => (v?.length ?? 0) < 6 ? 'Min 6 characters' : null,
@@ -359,10 +388,30 @@ class _SignupScreenState extends State<SignupScreen> {
         const SizedBox(height: 8),
         TextFormField(
           controller: _confirmPasswordController,
-          obscureText: _obscurePassword,
-          decoration: const InputDecoration(
-            prefixIcon: Icon(Icons.lock_reset),
+          obscureText: _obscureConfirmPassword,
+          decoration: InputDecoration(
+            hintText: 'Re-enter your password',
+            prefixIcon: const Icon(Icons.lock_reset),
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscureConfirmPassword
+                    ? Icons.visibility_off
+                    : Icons.visibility,
+              ),
+              onPressed: () => setState(
+                () => _obscureConfirmPassword = !_obscureConfirmPassword,
+              ),
+            ),
           ),
+          validator: (v) {
+            if (v == null || v.isEmpty) {
+              return 'Please confirm your password';
+            }
+            if (v != _passwordController.text) {
+              return 'Passwords do not match';
+            }
+            return null;
+          },
         ),
       ],
     );
@@ -380,11 +429,15 @@ class _SignupScreenState extends State<SignupScreen> {
             hintText: 'Select gender',
             prefixIcon: Icon(Icons.people_outline),
           ),
-          items: ['Male', 'Female', 'Other', 'Prefer not to say']
-              .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-              .toList(),
+          items: [
+            'Male',
+            'Female',
+            'Other',
+            'Prefer not to say',
+          ].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
           onChanged: (v) => setState(() => _gender = v),
-          validator: (v) => v == null ? 'Gender is required for clinical records' : null,
+          validator: (v) =>
+              v == null ? 'Gender is required for clinical records' : null,
         ),
         const SizedBox(height: 20),
         _buildRequiredLabel('Age'),
@@ -399,7 +452,8 @@ class _SignupScreenState extends State<SignupScreen> {
           validator: (v) {
             if (v == null || v.isEmpty) return 'Age is required';
             final age = int.tryParse(v);
-            if (age == null || age <= 0 || age > 120) return 'Please enter a valid age';
+            if (age == null || age <= 0 || age > 120)
+              return 'Please enter a valid age';
             return null;
           },
         ),
@@ -418,9 +472,16 @@ class _SignupScreenState extends State<SignupScreen> {
           decoration: const InputDecoration(
             prefixIcon: Icon(Icons.bloodtype_outlined),
           ),
-          items: ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-']
-              .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-              .toList(),
+          items: [
+            'A+',
+            'A-',
+            'B+',
+            'B-',
+            'O+',
+            'O-',
+            'AB+',
+            'AB-',
+          ].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
           onChanged: (v) => setState(() => _bloodType = v),
         ),
         const SizedBox(height: 20),
@@ -430,7 +491,8 @@ class _SignupScreenState extends State<SignupScreen> {
           controller: _historyController,
           maxLines: 3,
           decoration: const InputDecoration(
-            hintText: 'Describe pre-existing conditions (e.g. Hypertension, Diabetes)',
+            hintText:
+                'Describe pre-existing conditions (e.g. Hypertension, Diabetes)',
             prefixIcon: Icon(Icons.history_edu_outlined),
           ),
         ),
@@ -478,7 +540,9 @@ class _SignupScreenState extends State<SignupScreen> {
           height: 56,
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
             ),
             onPressed: _isLoading
                 ? null
@@ -487,7 +551,10 @@ class _SignupScreenState extends State<SignupScreen> {
                 ? const SizedBox(
                     width: 24,
                     height: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: Colors.white,
+                    ),
                   )
                 : Text(_currentStep == 2 ? 'Complete Signup' : 'Continue'),
           ),
