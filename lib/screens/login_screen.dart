@@ -6,9 +6,12 @@ import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
 
 import '../models/api_models.dart';
+import '../services/api_error_mapper.dart';
 import '../services/backend_service.dart';
 import '../services/session_service.dart';
+import 'common/terms_of_use_screen.dart';
 import 'dashboard/patient_dashboard_screen.dart';
+import 'patient/privacy_security_screen.dart';
 import 'patient/signup_screen.dart';
 import 'staff/admin_portal_screen.dart';
 import 'staff/staff_dashboard_screen.dart';
@@ -27,6 +30,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final BackendService _backend = BackendService.instance;
 
   bool _isLoading = false;
+  bool _isBiometricLoading = false;
 
   Future<void> _handleLogin() async {
     final email = _emailController.text.trim();
@@ -48,11 +52,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!mounted) return;
       _routeByRole(auth);
-    } catch (_) {
+    } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Invalid credentials or backend is offline.'),
+        SnackBar(
+          content: Text(
+            ApiErrorMapper.toUserMessage(
+              error,
+              fallbackMessage: 'Unable to sign in right now. Please try again.',
+            ),
+          ),
         ),
       );
     } finally {
@@ -63,48 +72,104 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _handleBiometricLogin() async {
-    final LocalAuthentication auth = LocalAuthentication();
-    final bool canAuthenticateWithBiometrics = await auth.canCheckBiometrics;
-    final bool canAuthenticate =
-        canAuthenticateWithBiometrics || await auth.isDeviceSupported();
-
-    if (!canAuthenticate) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Biometrics aren\'t available on this device.'),
-        ),
-      );
+    if (_isLoading || _isBiometricLoading) {
       return;
     }
 
+    setState(() => _isBiometricLoading = true);
     try {
+      final LocalAuthentication auth = LocalAuthentication();
+      final bool canAuthenticateWithBiometrics =
+          await auth.canCheckBiometrics;
+      final bool canAuthenticate =
+          canAuthenticateWithBiometrics || await auth.isDeviceSupported();
+
+      if (!canAuthenticate) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Biometrics are not available on this device.'),
+          ),
+        );
+        return;
+      }
+
       final bool didAuthenticate = await auth.authenticate(
-        localizedReason: 'Secure access to TriageSync',
+        localizedReason: 'Authenticate to sign in to TriageSync',
+        biometricOnly: true,
+        persistAcrossBackgrounding: true,
       );
 
-      if (didAuthenticate) {
-        final creds = await SessionService().getBiometricCredentials();
-        if (creds == null) {
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'No secure credentials found. Please login normally first.',
-              ),
-            ),
-          );
-          return;
-        }
-
-        // Apply fast lane login bypass quietly
-        _emailController.text = creds['email']!;
-        _passwordController.text = creds['password']!;
-        _handleLogin();
+      if (!didAuthenticate) {
+        return;
       }
-    } on PlatformException catch (e) {
-      debugPrint('Biometric Error: $e');
+
+      final creds = await SessionService().getBiometricCredentials();
+      if (creds == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'No saved biometric credentials found. Sign in once with email and password first.',
+            ),
+          ),
+        );
+        return;
+      }
+
+      final email = creds['email'];
+      final password = creds['password'];
+      if (email == null || password == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Saved credentials are incomplete. Please sign in again.'),
+          ),
+        );
+        return;
+      }
+
+      _emailController.text = email;
+      _passwordController.text = password;
+      await _handleLogin();
+    } on PlatformException {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Biometric sign-in could not be completed. Please try again.',
+          ),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Biometric sign-in is currently unavailable.'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isBiometricLoading = false);
+      }
     }
+  }
+
+  void _openFooterPage(String label) {
+    Widget destination;
+    switch (label) {
+      case 'Privacy Policy':
+      case 'HIPAA Compliance':
+        destination = const PrivacySecurityScreen();
+        break;
+      case 'Terms of Use':
+        destination = const TermsOfUseScreen();
+        break;
+      default:
+        return;
+    }
+
+    Navigator.push(context, MaterialPageRoute(builder: (_) => destination));
   }
 
   void _routeByRole(AuthResponse auth) {
@@ -252,7 +317,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         width: double.infinity,
                         height: 52,
                         child: OutlinedButton.icon(
-                          onPressed: _isLoading ? null : _handleBiometricLogin,
+                          onPressed: (_isLoading || _isBiometricLoading)
+                              ? null
+                              : () async {
+                            await HapticFeedback.mediumImpact();
+                            await _handleBiometricLogin();
+                          },
                           icon: const Icon(
                             Icons.fingerprint,
                             color: Color(0xFF005EB8),
@@ -291,10 +361,25 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Demo roles available from backend data: patient, staff, admin.',
-                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                      const SizedBox(height: 24),
+                      const Divider(),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _footerLink('Privacy Policy'),
+                          _footerBullet(),
+                          _footerLink('Terms of Use'),
+                          _footerBullet(),
+                          _footerLink('HIPAA Compliance'),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      const Center(
+                        child: Text(
+                          'Roles available: patient, staff, admin.',
+                          style: TextStyle(fontSize: 11, color: Colors.grey),
+                        ),
                       ),
                     ],
                   ),
@@ -304,6 +389,29 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _footerLink(String label) {
+    return InkWell(
+      onTap: () {
+        _openFooterPage(label);
+      },
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 11,
+          color: Color(0xFF005EB8),
+          decoration: TextDecoration.underline,
+        ),
+      ),
+    );
+  }
+
+  Widget _footerBullet() {
+    return const Padding(
+      padding: EdgeInsets.symmetric(horizontal: 8),
+      child: Text('•', style: TextStyle(color: Colors.grey, fontSize: 10)),
     );
   }
 }

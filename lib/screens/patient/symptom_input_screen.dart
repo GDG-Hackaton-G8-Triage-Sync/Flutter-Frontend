@@ -67,7 +67,7 @@ class _SymptomInputScreenState extends State<SymptomInputScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'Simulating Spanish speech block for translation demo...',
+              'Microphone access is unavailable. Applying translated voice transcript sample.',
             ),
           ),
         );

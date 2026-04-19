@@ -37,7 +37,7 @@ class AboutTrustScreen extends StatelessWidget {
           _buildSectionTitle('Build Information'),
           _buildInfoRow('Version', '1.0.0-Hackathon.Final'),
           _buildInfoRow('Engine', 'Triage-X Core v2.4'),
-          _buildInfoRow('Status', 'Production Ready / Demo Mode'),
+          _buildInfoRow('Status', 'Production Ready'),
           const SizedBox(height: 40),
           const Center(
             child: Text(

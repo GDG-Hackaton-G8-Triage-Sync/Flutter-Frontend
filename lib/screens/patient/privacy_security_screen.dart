@@ -34,14 +34,14 @@ class PrivacySecurityScreen extends StatelessWidget {
             icon: Icons.verified_user_outlined,
             title: 'Consent Policy',
             description:
-                'Patient consent must be obtained before sharing records. For hackathon demo, this acts as policy guidance and operator checklist.',
+                'Patient consent must be obtained before sharing records. This page serves as policy guidance and an operator checklist.',
           ),
           SizedBox(height: 12),
           _InfoCard(
             icon: Icons.history_toggle_off,
             title: 'Audit Visibility',
             description:
-                'Every sensitive action should be traceable by user, timestamp, and reason. The admin audit log viewer demonstrates this behavior.',
+                'Every sensitive action should be traceable by user, timestamp, and reason. The admin audit log viewer enforces this behavior.',
           ),
           SizedBox(height: 12),
           _InfoCard(

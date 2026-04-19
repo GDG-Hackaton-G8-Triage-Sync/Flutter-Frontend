@@ -250,6 +250,66 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
     );
   }
 
+  Future<void> _showRegisterDialog() async {
+    final TextEditingController nameCtrl = TextEditingController();
+    final TextEditingController emailCtrl = TextEditingController();
+    final TextEditingController passCtrl = TextEditingController();
+    String selectedRole = 'staff';
+
+    return showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Register Internal Member'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Name', prefixIcon: Icon(Icons.person))),
+              const SizedBox(height: 8),
+              TextField(controller: emailCtrl, decoration: const InputDecoration(labelText: 'Email', prefixIcon: Icon(Icons.email))),
+              const SizedBox(height: 8),
+              TextField(controller: passCtrl, obscureText: true, decoration: const InputDecoration(labelText: 'Password', prefixIcon: Icon(Icons.lock))),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: selectedRole,
+                decoration: const InputDecoration(labelText: 'System Role'),
+                items: const [
+                  DropdownMenuItem(value: 'staff', child: Text('Medical Staff')),
+                  DropdownMenuItem(value: 'admin', child: Text('Administrator')),
+                ],
+                onChanged: (v) => selectedRole = v!,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              if (nameCtrl.text.isEmpty || emailCtrl.text.isEmpty || passCtrl.text.isEmpty) return;
+              try {
+                await _backend.register(
+                  name: nameCtrl.text.trim(),
+                  email: emailCtrl.text.trim(),
+                  password: passCtrl.text.trim(),
+                  role: selectedRole,
+                );
+                _logAudit('MEMBER_REGISTERED', 'New $selectedRole: ${emailCtrl.text}', 'admin');
+                if (!mounted) return;
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Registered $selectedRole: ${nameCtrl.text}')));
+                _loadAll(); // Refresh directory
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Registration failed.')));
+              }
+            },
+            child: const Text('Register'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _logout() async {
     _logAudit('LOGOUT', 'Administrator session terminated.', 'admin');
     await _session.clear();
@@ -285,6 +345,11 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
           ],
         ),
         actions: [
+          IconButton(
+            onPressed: _showRegisterDialog,
+            icon: const Icon(Icons.person_add),
+            tooltip: 'Register Member',
+          ),
           IconButton(
             onPressed: _simulateExport,
             icon: const Icon(Icons.download),

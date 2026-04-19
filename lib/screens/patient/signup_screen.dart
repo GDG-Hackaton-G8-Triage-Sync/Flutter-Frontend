@@ -2,7 +2,11 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
+import '../../services/api_error_mapper.dart';
 import '../../services/backend_service.dart';
+import '../common/terms_of_use_screen.dart';
+import '../login_screen.dart';
+import 'privacy_security_screen.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -18,6 +22,44 @@ class _SignupScreenState extends State<SignupScreen> {
 
   final BackendService _backend = BackendService.instance;
   bool _isLoading = false;
+
+  void _openFooterPage(String label) {
+    Widget destination;
+    switch (label) {
+      case 'Privacy Policy':
+      case 'HIPAA Compliance':
+        destination = const PrivacySecurityScreen();
+        break;
+      case 'Terms of Use':
+        destination = const TermsOfUseScreen();
+        break;
+      default:
+        return;
+    }
+
+    Navigator.push(context, MaterialPageRoute(builder: (_) => destination));
+  }
+
+  Widget _footerLink(String label) {
+    return InkWell(
+      onTap: () => _openFooterPage(label),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 11,
+          color: Color(0xFF005EB8),
+          decoration: TextDecoration.underline,
+        ),
+      ),
+    );
+  }
+
+  Widget _footerBullet() {
+    return const Padding(
+      padding: EdgeInsets.symmetric(horizontal: 8),
+      child: Text('•', style: TextStyle(color: Colors.grey, fontSize: 10)),
+    );
+  }
 
   Future<void> _handleSignup() async {
     final name = _nameController.text.trim();
@@ -48,11 +90,17 @@ class _SignupScreenState extends State<SignupScreen> {
         ),
       );
       Navigator.pop(context);
-    } catch (_) {
+    } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Registration failed. Backend may be offline.'),
+        SnackBar(
+          content: Text(
+            ApiErrorMapper.toUserMessage(
+              error,
+              fallbackMessage:
+                  'Unable to complete registration right now. Please try again.',
+            ),
+          ),
         ),
       );
     } finally {
@@ -135,12 +183,15 @@ class _SignupScreenState extends State<SignupScreen> {
                             onPressed: () => Navigator.pop(context),
                             icon: const Icon(Icons.arrow_back_ios_new),
                           ),
-                          const Text(
-                            'Create Patient Account',
-                            style: TextStyle(
-                              fontFamily: 'Manrope',
-                              fontSize: 24,
-                              fontWeight: FontWeight.w800,
+                          const Expanded(
+                            child: Text(
+                              'Create Patient Account',
+                              style: TextStyle(
+                                fontFamily: 'Manrope',
+                                fontSize: 24,
+                                fontWeight: FontWeight.w800,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
@@ -183,6 +234,33 @@ class _SignupScreenState extends State<SignupScreen> {
                                 )
                               : const Text('Create Account'),
                         ),
+                      ),
+                      const SizedBox(height: 12),
+                      Center(
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const LoginScreen(),
+                              ),
+                            );
+                          },
+                          child: const Text('Already have an account? Sign in'),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Divider(),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _footerLink('Privacy Policy'),
+                          _footerBullet(),
+                          _footerLink('Terms of Use'),
+                          _footerBullet(),
+                          _footerLink('HIPAA Compliance'),
+                        ],
                       ),
                     ],
                   ),

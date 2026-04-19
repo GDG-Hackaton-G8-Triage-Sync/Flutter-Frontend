@@ -9,7 +9,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import '../../models/api_models.dart';
 import '../session_service.dart';
 
-/// Manages a persistent WebSocket connection to the mock server (ws://localhost:3002).
+/// Manages a persistent WebSocket connection to the updates gateway.
 /// Emits [TriageItem] events whenever the server broadcasts a queue_update.
 class WebSocketManager {
   WebSocketManager._();
@@ -127,10 +127,7 @@ class WebSocketManager {
   Future<void> _sendAuthFrame() async {
     final token = await SessionService().getAccessToken();
     if (token != null) {
-      _channel?.sink.add(jsonEncode({
-        'type': 'AUTH',
-        'token': token,
-      }));
+      _channel?.sink.add(jsonEncode({'type': 'AUTH', 'token': token}));
     }
   }
 

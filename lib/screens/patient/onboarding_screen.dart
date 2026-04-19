@@ -1,8 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_frontend/screens/login_screen.dart';
 
+import '../common/terms_of_use_screen.dart';
+import 'privacy_security_screen.dart';
+
 class OnboardingScreen extends StatelessWidget {
   const OnboardingScreen({super.key});
+
+  void _openLegalPage(BuildContext context, String label) {
+    Widget destination;
+    switch (label) {
+      case 'Privacy Policy':
+      case 'HIPAA Compliance':
+        destination = const PrivacySecurityScreen();
+        break;
+      case 'Terms of Use':
+        destination = const TermsOfUseScreen();
+        break;
+      default:
+        return;
+    }
+
+    Navigator.push(context, MaterialPageRoute(builder: (_) => destination));
+  }
+
+  Widget _footerLink(BuildContext context, String label) {
+    return InkWell(
+      onTap: () => _openLegalPage(context, label),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          color: Color(0xFF44474E),
+          decoration: TextDecoration.underline,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -264,35 +299,14 @@ class OnboardingScreen extends StatelessWidget {
                     const SizedBox(height: 48),
 
                     // Footer Links
-                    const Row(
+                    Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(
-                          'Privacy Policy',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF44474E),
-                          ),
-                        ),
-                        SizedBox(width: 16),
-                        Text(
-                          'Terms of Use',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF44474E),
-                          ),
-                        ),
-                        SizedBox(width: 16),
-                        Text(
-                          'HIPAA Compliance',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF44474E),
-                          ),
-                        ),
+                        _footerLink(context, 'Privacy Policy'),
+                        const SizedBox(width: 16),
+                        _footerLink(context, 'Terms of Use'),
+                        const SizedBox(width: 16),
+                        _footerLink(context, 'HIPAA Compliance'),
                       ],
                     ),
                     const SizedBox(height: 16),

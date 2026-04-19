@@ -6,7 +6,7 @@ import '../common/accessibility_screen.dart';
 import '../common/help_screen.dart';
 import '../common/about_screen.dart';
 import '../common/notification_screen.dart';
-import '../common/demo_story_screen.dart';
+import '../common/platform_briefing_screen.dart';
 import '../../widgets/premium_interactive.dart';
 import '../../utils/navigation_transitions.dart';
 
@@ -95,7 +95,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             leading: const Icon(Icons.security_outlined),
             title: const Text('Privacy & Security'),
             subtitle: const Text('Manage consent and security settings'),
-            onTap: () => Navigator.push(context, FadePageRoute(child: const PrivacySecurityScreen())),
+            onTap: () => Navigator.push(
+              context,
+              FadePageRoute(child: const PrivacySecurityScreen()),
+            ),
           ),
         ),
         Card(
@@ -103,7 +106,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             leading: const Icon(Icons.notifications_none_outlined),
             title: const Text('Notification Inbox'),
             subtitle: const Text('View system and clinical alerts'),
-            onTap: () => Navigator.push(context, FadePageRoute(child: const NotificationInboxScreen())),
+            onTap: () => Navigator.push(
+              context,
+              FadePageRoute(child: const NotificationInboxScreen()),
+            ),
           ),
         ),
         Card(
@@ -111,7 +117,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             leading: const Icon(Icons.accessibility_new_outlined),
             title: const Text('Accessibility'),
             subtitle: const Text('Text size, contrast, and language'),
-            onTap: () => Navigator.push(context, FadePageRoute(child: const AccessibilitySettingsScreen())),
+            onTap: () => Navigator.push(
+              context,
+              FadePageRoute(child: const AccessibilitySettingsScreen()),
+            ),
           ),
         ),
         Card(
@@ -119,7 +128,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             leading: const Icon(Icons.help_outline),
             title: const Text('Help & Support'),
             subtitle: const Text('FAQ, safety, and escalation'),
-            onTap: () => Navigator.push(context, FadePageRoute(child: const HelpEscalationScreen())),
+            onTap: () => Navigator.push(
+              context,
+              FadePageRoute(child: const HelpEscalationScreen()),
+            ),
           ),
         ),
         Card(
@@ -127,15 +139,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
             leading: const Icon(Icons.info_outline),
             title: const Text('About TriageSync'),
             subtitle: const Text('Architecture and Trust'),
-            onTap: () => Navigator.push(context, FadePageRoute(child: const AboutTrustScreen())),
+            onTap: () => Navigator.push(
+              context,
+              FadePageRoute(child: const AboutTrustScreen()),
+            ),
           ),
         ),
         Card(
           child: ListTile(
-            leading: const Icon(Icons.rocket_launch_outlined, color: Colors.blueAccent),
-            title: const Text('Launch Demo Briefing', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueAccent)),
+            leading: const Icon(
+              Icons.rocket_launch_outlined,
+              color: Colors.blueAccent,
+            ),
+            title: const Text(
+              'Launch Platform Briefing',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.blueAccent,
+              ),
+            ),
             subtitle: const Text('Initial mission control overview'),
-            onTap: () => Navigator.push(context, FadePageRoute(child: DemoStoryScreen(onStart: () => Navigator.pop(context)))),
+            onTap: () => Navigator.push(
+              context,
+              FadePageRoute(
+                child: PlatformBriefingScreen(
+                  onStart: () => Navigator.pop(context),
+                ),
+              ),
+            ),
           ),
         ),
         const SizedBox(height: 32),
