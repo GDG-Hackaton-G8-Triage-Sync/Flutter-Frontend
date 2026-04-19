@@ -4,9 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../services/api_error_mapper.dart';
 import '../../services/backend_service.dart';
-import '../common/terms_of_use_screen.dart';
 import '../login_screen.dart';
-import 'privacy_security_screen.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -130,7 +128,7 @@ class _SignupScreenState extends State<SignupScreen> {
     // Check if each part is at least 1 character and contains valid name characters
     // Using simple character matching to be script-agnostic
     for (var part in parts) {
-      if (part.length < 1) return false;
+      if (part.isEmpty) return false;
     }
     return true;
   }
@@ -377,7 +375,7 @@ class _SignupScreenState extends State<SignupScreen> {
         _buildRequiredLabel('Gender'),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
-          value: _gender,
+          initialValue: _gender,
           decoration: const InputDecoration(
             hintText: 'Select gender',
             prefixIcon: Icon(Icons.people_outline),
@@ -416,7 +414,7 @@ class _SignupScreenState extends State<SignupScreen> {
         _buildOptionalLabel('Blood Type'),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
-          value: _bloodType,
+          initialValue: _bloodType,
           decoration: const InputDecoration(
             prefixIcon: Icon(Icons.bloodtype_outlined),
           ),

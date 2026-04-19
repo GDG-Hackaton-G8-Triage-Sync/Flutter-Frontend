@@ -271,7 +271,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
               TextField(controller: passCtrl, obscureText: true, decoration: const InputDecoration(labelText: 'Password', prefixIcon: Icon(Icons.lock))),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: selectedRole,
+                initialValue: selectedRole,
                 decoration: const InputDecoration(labelText: 'System Role'),
                 items: const [
                   DropdownMenuItem(value: 'staff', child: Text('Medical Staff')),
@@ -295,11 +295,12 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                   role: selectedRole,
                 );
                 _logAudit('MEMBER_REGISTERED', 'New $selectedRole: ${emailCtrl.text}', 'admin');
-                if (!mounted) return;
+                if (!ctx.mounted || !mounted) return;
                 Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Registered $selectedRole: ${nameCtrl.text}')));
                 _loadAll(); // Refresh directory
               } catch (e) {
+                if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Registration failed.')));
               }
             },

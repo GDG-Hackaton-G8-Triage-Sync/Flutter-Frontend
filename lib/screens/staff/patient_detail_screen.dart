@@ -711,6 +711,8 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
         ],
       ),
     );
+  }
+
   Widget _buildMedicalProfileCard() {
     return Container(
       width: double.infinity,
