@@ -172,9 +172,7 @@ class OnboardingScreen extends StatelessWidget {
                             Positioned.fill(
                               child: Opacity(
                                 opacity: 0.4,
-                                child: CustomPaint(
-                                  painter: HeartbeatPainter(),
-                                ),
+                                child: const AnimatedHeartbeat(),
                               ),
                             ),
                             // Hero Asset (Platform Aware)
@@ -478,18 +476,57 @@ class OnboardingScreen extends StatelessWidget {
   }
 }
 
+class AnimatedHeartbeat extends StatefulWidget {
+  const AnimatedHeartbeat({super.key});
+
+  @override
+  State<AnimatedHeartbeat> createState() => _AnimatedHeartbeatState();
+}
+
+class _AnimatedHeartbeatState extends State<AnimatedHeartbeat>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    // A 3-second cycle creates a calm but active EKG monitor feel
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return CustomPaint(
+          painter: HeartbeatPainter(progress: _controller.value),
+        );
+      },
+    );
+  }
+}
+
 class HeartbeatPainter extends CustomPainter {
+  final double progress;
+
+  HeartbeatPainter({required this.progress});
+
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0xFF00BFFF).withValues(alpha: 0.3)
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    final path = Path();
     final y = size.height / 2;
     
+    // Define the base EKG pulse shape
+    final path = Path();
     path.moveTo(0, y);
     path.lineTo(size.width * 0.2, y);
     path.lineTo(size.width * 0.25, y - 20);
@@ -505,25 +542,51 @@ class HeartbeatPainter extends CustomPainter {
     path.lineTo(size.width * 0.85, y);
     path.lineTo(size.width, y);
 
-    canvas.drawPath(path, paint);
+    // Calculate shifting offset for the seamless loop
+    final shift = progress * size.width;
     
-    // Add a Web-safe glow layer (avoiding MaskFilter.blur which triggers JS interop crashes on Flutter Web)
+    canvas.save();
+    canvas.translate(-shift, 0);
+
+    // Layer 1: Wide, subtle glow
     final glowPaint1 = Paint()
-      ..color = const Color(0xFF00BFFF).withValues(alpha: 0.08)
-      ..strokeWidth = 8
+      ..color = const Color(0xFFFF2D55).withValues(alpha: 0.15)
+      ..strokeWidth = 10
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
-      
+
+    // Layer 2: Tighter, brighter glow
     final glowPaint2 = Paint()
-      ..color = const Color(0xFF00BFFF).withValues(alpha: 0.12)
-      ..strokeWidth = 4
+      ..color = const Color(0xFFFF2D55).withValues(alpha: 0.3)
+      ..strokeWidth = 5
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
-      
-    canvas.drawPath(path, glowPaint1);
-    canvas.drawPath(path, glowPaint2);
+
+    // Layer 3: Solid core
+    final corePaint = Paint()
+      ..color = const Color(0xFFFF2D55).withValues(alpha: 0.8)
+      ..strokeWidth = 2.5
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    void drawAllLayers() {
+      canvas.drawPath(path, glowPaint1);
+      canvas.drawPath(path, glowPaint2);
+      canvas.drawPath(path, corePaint);
+    }
+
+    // Segment 1 (Off-screen left moving to screen view)
+    drawAllLayers();
+
+    // Segment 2 (Seamless continuation)
+    canvas.translate(size.width, 0);
+    drawAllLayers();
+
+    canvas.restore();
   }
 
   @override
-  bool shouldRepaint(CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant HeartbeatPainter oldDelegate) {
+    return oldDelegate.progress != progress;
+  }
 }
