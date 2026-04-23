@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 
-import '../../../features/shared/models/queue_models.dart';
+import 'package:flutter_frontend/features/shared/models/queue_models.dart';
 import '../dio_client.dart';
 
 class StaffApi {
@@ -24,11 +24,11 @@ class StaffApi {
 
   Future<QueuePatient> updatePatientStatus(
     int patientId,
-    StatusUpdateRequest request,
+    String status,
   ) async {
     final response = await _dio.patch<dynamic>(
       '/api/staff/patient/$patientId/status/',
-      data: request.toJson(),
+      data: {'status': status},
     );
 
     return QueuePatient.fromJson(response.data as Map<String, dynamic>);
