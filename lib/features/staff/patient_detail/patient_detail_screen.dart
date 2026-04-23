@@ -1,32 +1,31 @@
+
 import 'package:flutter/material.dart';
-import 'package:flutter_frontend/features/staff/patient_detail/patient_detail_model.dart';
+import 'package:flutter_frontend/features/shared/models/queue_models.dart';
+import 'package:flutter_frontend/providers/queue_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class PatientDetailScreen extends StatelessWidget {
+class PatientDetailScreen extends ConsumerWidget {
+final String patientId;
 
-
-   const PatientDetailScreen({super.key});
+   const PatientDetailScreen({super.key, required this.patientId});
 
   @override
-  Widget build(BuildContext context) {
-    final patient = PatientDetail(
-  name: "Marcus Thorne",
-  age: 48,
-  gender: "Male",
-  bloodType: "O+",
-  heartRate: 112,
-  spo2: 91,
-  urgency: "Level 1: Critical",
-  symptoms: "Chest pain...",
-);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final patients = ref.watch(queueProvider);
+
+  patients.firstWhere(
+    (p) => p.id.toString() == patientId,
+  );
+  
     return Scaffold(
       bottomNavigationBar: const _BottomNav(),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
             children: [
-              _HeaderSection(patient),
-              _UrgencyCard(patient),
-              _SymptomCard(patient),
+              _HeaderSection(patientId as QueuePatient),
+              _UrgencyCard(patientId as QueuePatient),
+              _SymptomCard(patientId as QueuePatient),
               _AiReasoningCard(),
               _PriorityBreakdown(),
               _ActionButtons(),
@@ -39,7 +38,7 @@ class PatientDetailScreen extends StatelessWidget {
 }
 
 class _HeaderSection extends StatelessWidget {
-  final PatientDetail patient;
+  final QueuePatient  patient;
   const _HeaderSection(this.patient);
 
   @override
@@ -91,7 +90,7 @@ class _HeaderSection extends StatelessWidget {
 
           /// Name
           Text(
-            patient.name,
+            patient.name ?? "Unknown Patient",
             style: const TextStyle(
               fontSize: 26,
               fontWeight: FontWeight.bold,
@@ -112,7 +111,7 @@ class _HeaderSection extends StatelessWidget {
   }
 }
 class _UrgencyCard extends StatelessWidget {
-  final PatientDetail patient;
+  final QueuePatient patient;
   const _UrgencyCard(this.patient);
 
   @override
@@ -149,7 +148,7 @@ class _UrgencyCard extends StatelessWidget {
                 const SizedBox(height: 6),
 
                 Text(
-                  patient.urgency,
+                  "Level ${patient.priority} (${patient.urgencyScore})",
                   style: const TextStyle(
                       fontSize: 20, fontWeight: FontWeight.bold),
                 ),
@@ -160,12 +159,13 @@ class _UrgencyCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        "Heart Rate\n${patient.heartRate} bpm",
+                      "Heart Rate\n112 bpm",         
+                      style: const TextStyle(color: Colors.red),
                       ),
                     ),
                     Expanded(
                       child: Text(
-                        "SpO2\n${patient.spo2}%",
+                        "SpO2\n91%",
                         style: const TextStyle(color: Colors.red),
                       ),
                     ),
@@ -207,7 +207,7 @@ class _UrgencyCard extends StatelessWidget {
   }
 }
 class _SymptomCard extends StatelessWidget {
-  final PatientDetail patient;
+  final QueuePatient patient;
   const _SymptomCard(this.patient);
 
   @override
@@ -215,8 +215,7 @@ class _SymptomCard extends StatelessWidget {
     return _CardContainer(
       title: "Symptom Description",
       child: Text(
-        patient.symptoms,
-        style: const TextStyle(height: 1.5),
+        patient.description,
       ),
     );
   }
