@@ -52,6 +52,22 @@ function createAdminRoutes({ store }) {
             avg_urgency_score: avg,
             peak_hour: "14:00 - 16:00",
             common_conditions: commonConditions,
+            wait_time_trend: [
+                { time: "08:00", value: 12 },
+                { time: "10:00", value: 45 },
+                { time: "12:00", value: 30 },
+                { time: "14:00", value: 65 },
+                { time: "16:00", value: 20 },
+                { time: "18:00", value: 15 },
+            ],
+            sla_breach_trend: [
+                { time: "08:00", value: 0 },
+                { time: "10:00", value: 2 },
+                { time: "12:00", value: 1 },
+                { time: "14:00", value: 5 },
+                { time: "16:00", value: 1 },
+                { time: "18:00", value: 0 },
+            ],
         });
     });
 

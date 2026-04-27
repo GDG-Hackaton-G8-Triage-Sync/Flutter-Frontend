@@ -164,6 +164,42 @@ function createStaffRoutes({ store, realtime }) {
         return res.json(result.item);
     });
 
+    router.post("/staff/patient/:id/vitals/", (req, res) => {
+        if (!["staff", "admin"].includes(req.user.role)) {
+            return res.status(403).json({
+                code: "PERMISSION_DENIED",
+                message: "Staff or admin role required",
+            });
+        }
+
+        const id = Number(req.params.id);
+        const { bp, heart_rate, temperature } = req.body || {};
+
+        const result = store.update((db) => {
+            const index = db.triageSubmissions.findIndex((item) => item.id === id);
+            if (index === -1) {
+                return { notFound: true };
+            }
+
+            const triageItem = db.triageSubmissions[index];
+            triageItem.vitals = {
+                bp,
+                heart_rate,
+                temperature,
+                recorded_at: new Date().toISOString(),
+                recorded_by: req.user.name || "Staff",
+            };
+            return { item: triageItem };
+        });
+
+        if (result.notFound) {
+            return res.status(404).json({ code: "NOT_FOUND", message: "Triage entry not found" });
+        }
+
+        realtime.broadcast("TRIAGE_UPDATED", result.item);
+        return res.status(201).json(result.item);
+    });
+
     return router;
 }
 

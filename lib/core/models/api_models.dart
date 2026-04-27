@@ -48,6 +48,32 @@ class AuthResponse {
   }
 }
 
+class Vitals {
+  Vitals({
+    required this.bp,
+    required this.heartRate,
+    required this.temperature,
+    required this.recordedAt,
+    required this.recordedBy,
+  });
+
+  final String bp;
+  final String heartRate;
+  final String temperature;
+  final DateTime recordedAt;
+  final String recordedBy;
+
+  factory Vitals.fromJson(Map<String, dynamic> json) {
+    return Vitals(
+      bp: (json['bp'] ?? '') as String,
+      heartRate: (json['heart_rate'] ?? '') as String,
+      temperature: (json['temperature'] ?? '') as String,
+      recordedAt: DateTime.tryParse((json['recorded_at'] ?? '') as String) ?? DateTime.now(),
+      recordedBy: (json['recorded_by'] ?? '') as String,
+    );
+  }
+}
+
 class TriageItem {
   TriageItem({
     required this.id,
@@ -70,6 +96,7 @@ class TriageItem {
     this.badHabits,
     this.reasoning,
     this.confidence,
+    this.vitals,
   });
 
   final int id;
@@ -92,6 +119,7 @@ class TriageItem {
   final String? badHabits;
   final String? reasoning;
   final double? confidence;
+  final Vitals? vitals;
 
   factory TriageItem.fromJson(Map<String, dynamic> json) {
     return TriageItem(
@@ -119,6 +147,7 @@ class TriageItem {
       badHabits: json['bad_habits'] as String?,
       reasoning: json['reasoning'] as String?,
       confidence: (json['confidence'] as num?)?.toDouble(),
+      vitals: json['vitals'] != null ? Vitals.fromJson(json['vitals'] as Map<String, dynamic>) : null,
     );
   }
 }
@@ -149,24 +178,50 @@ class AdminOverview {
   }
 }
 
+class TrendPoint {
+  TrendPoint({required this.time, required this.value});
+  final String time;
+  final double value;
+
+  factory TrendPoint.fromJson(Map<String, dynamic> json) {
+    return TrendPoint(
+      time: (json['time'] ?? '') as String,
+      value: (json['value'] ?? 0.0).toDouble(),
+    );
+  }
+}
+
 class AdminAnalytics {
   AdminAnalytics({
     required this.avgUrgencyScore,
     required this.peakHour,
     required this.commonConditions,
+    required this.waitTimeTrend,
+    required this.slaBreachTrend,
   });
 
   final int avgUrgencyScore;
   final String peakHour;
   final List<String> commonConditions;
+  final List<TrendPoint> waitTimeTrend;
+  final List<TrendPoint> slaBreachTrend;
 
   factory AdminAnalytics.fromJson(Map<String, dynamic> json) {
     final conditionsRaw =
         (json['common_conditions'] ?? <dynamic>[]) as List<dynamic>;
+    final waitTrendRaw =
+        (json['wait_time_trend'] ?? <dynamic>[]) as List<dynamic>;
+    final slaTrendRaw =
+        (json['sla_breach_trend'] ?? <dynamic>[]) as List<dynamic>;
+
     return AdminAnalytics(
       avgUrgencyScore: (json['avg_urgency_score'] ?? 0) as int,
       peakHour: (json['peak_hour'] ?? '-') as String,
       commonConditions: conditionsRaw.map((e) => e.toString()).toList(),
+      waitTimeTrend:
+          waitTrendRaw.map((e) => TrendPoint.fromJson(e as Map<String, dynamic>)).toList(),
+      slaBreachTrend:
+          slaTrendRaw.map((e) => TrendPoint.fromJson(e as Map<String, dynamic>)).toList(),
     );
   }
 }

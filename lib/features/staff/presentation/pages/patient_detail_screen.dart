@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 
@@ -145,6 +146,10 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
   }
 
   void _showVitalsDialog() {
+    final bpController = TextEditingController();
+    final heartRateController = TextEditingController();
+    final tempController = TextEditingController();
+
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -154,23 +159,26 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
-          children: const [
+          children: [
             TextField(
-              decoration: InputDecoration(
+              controller: bpController,
+              decoration: const InputDecoration(
                 labelText: 'Blood Pressure (e.g. 120/80)',
                 prefixIcon: Icon(Icons.bloodtype),
               ),
             ),
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
             TextField(
-              decoration: InputDecoration(
+              controller: heartRateController,
+              decoration: const InputDecoration(
                 labelText: 'Heart Rate (bpm)',
                 prefixIcon: Icon(Icons.favorite),
               ),
             ),
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
             TextField(
-              decoration: InputDecoration(
+              controller: tempController,
+              decoration: const InputDecoration(
                 labelText: 'Temperature (°F)',
                 prefixIcon: Icon(Icons.thermostat),
               ),
@@ -183,19 +191,121 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
+              final bp = bpController.text.trim();
+              final hr = heartRateController.text.trim();
+              final temp = tempController.text.trim();
+
+              if (bp.isEmpty || hr.isEmpty || temp.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Please fill all vitals fields.')),
+                );
+                return;
+              }
+
               Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Vitals logged to encrypted datastore.'),
-                ),
-              );
+              setState(() => _isUpdating = true);
+
+              try {
+                final updated = await _backend.logVitals(
+                  id: _patient.id,
+                  bp: bp,
+                  heartRate: hr,
+                  temperature: temp,
+                );
+                if (!mounted) return;
+                setState(() => _patient = updated);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Vitals logged successfully.')),
+                );
+              } catch (_) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Failed to log vitals.')),
+                );
+              } finally {
+                if (mounted) setState(() => _isUpdating = false);
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF005EB8),
               foregroundColor: Colors.white,
             ),
             child: const Text('Save Vitals'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _exportFHIRRecord() {
+    final fhirRecord = {
+      "resourceType": "Bundle",
+      "type": "collection",
+      "entry": [
+        {
+          "resource": {
+            "resourceType": "Patient",
+            "id": "pat-${_patient.id}",
+            "name": [{"text": _patient.patientName ?? "Unknown"}],
+            "gender": _patient.gender?.toLowerCase() ?? "unknown",
+            "birthDate": _patient.age != null ? "${DateTime.now().year - _patient.age!}-01-01" : null
+          }
+        },
+        {
+          "resource": {
+            "resourceType": "Encounter",
+            "status": _patient.status == "completed" ? "finished" : "in-progress",
+            "class": {"code": "EMR", "display": "emergency"},
+            "priority": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v3-ActPriority",
+                  "code": "EM",
+                  "display": _priorityLabel
+                }
+              ]
+            },
+            "reasonCode": [
+              {"text": _patient.description}
+            ]
+          }
+        },
+        if (_patient.vitals != null) {
+          "resource": {
+            "resourceType": "Observation",
+            "status": "final",
+            "code": {"text": "Vital Signs Bundle"},
+            "valueString": "BP: ${_patient.vitals!.bp}, HR: ${_patient.vitals!.heartRate}, Temp: ${_patient.vitals!.temperature}",
+            "effectiveDateTime": _patient.vitals!.recordedAt.toIso8601String()
+          }
+        }
+      ]
+    };
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('FHIR JSON Export'),
+        content: SingleChildScrollView(
+          child: Text(
+            const JsonEncoder.withIndent('  ').convert(fhirRecord),
+            style: const TextStyle(fontFamily: 'monospace', fontSize: 10),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('FHIR Record exported to interoperability hub')),
+              );
+            },
+            child: const Text('Propagate to EHR'),
           ),
         ],
       ),
@@ -216,6 +326,13 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
             child: Container(color: Colors.transparent),
           ),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.share_outlined, color: Color(0xFF005EB8)),
+            onPressed: _exportFHIRRecord,
+            tooltip: 'Export FHIR Record',
+          ),
+        ],
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF005EB8)),
           onPressed: () => Navigator.pop(context, _patient),

@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 
 import 'package:flutter_frontend/core/models/api_models.dart';
 import 'package:flutter_frontend/core/services/session_service.dart';
+import 'package:flutter_frontend/core/services/cache_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_frontend/core/utils/globals.dart';
 import 'package:flutter_frontend/features/auth/presentation/pages/login_screen.dart';
@@ -186,19 +187,33 @@ class BackendService {
     int? priority,
     String? status,
   }) async {
-    final response = await _dio.get<List<dynamic>>(
-      '/api/v1/staff/patients/',
-      queryParameters: <String, dynamic>{
-        if (priority != null) 'priority': priority,
-        if (status != null && status.isNotEmpty) 'status': status,
-      },
-    );
+    try {
+      final response = await _dio.get<List<dynamic>>(
+        '/api/v1/staff/patients/',
+        queryParameters: <String, dynamic>{
+          if (priority != null) 'priority': priority,
+          if (status != null && status.isNotEmpty) 'status': status,
+        },
+      );
 
-    final data = response.data ?? <dynamic>[];
-    return data
-        .whereType<Map<String, dynamic>>()
-        .map(TriageItem.fromJson)
-        .toList();
+      final data = response.data ?? <dynamic>[];
+      final items = data
+          .whereType<Map<String, dynamic>>()
+          .map(TriageItem.fromJson)
+          .toList();
+      
+      // Cache the full list for offline redundancy
+      await CacheService.instance.cachePatients(items);
+      
+      return items;
+    } on DioException catch (e) {
+      // If offline or server down, fallback to cache
+      final cached = CacheService.instance.getCachedPatients();
+      if (cached.isNotEmpty) {
+        return cached;
+      }
+      rethrow;
+    }
   }
 
   Future<TriageItem> updatePatientStatus({
@@ -232,6 +247,24 @@ class BackendService {
     final response = await _dio.patch<Map<String, dynamic>>(
       '/api/v1/staff/patient/$id/verify/',
       data: <String, dynamic>{'verified_by': nurseName},
+    );
+
+    return TriageItem.fromJson(response.data ?? <String, dynamic>{});
+  }
+
+  Future<TriageItem> logVitals({
+    required int id,
+    required String bp,
+    required String heartRate,
+    required String temperature,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/v1/staff/patient/$id/vitals/',
+      data: <String, dynamic>{
+        'bp': bp,
+        'heart_rate': heartRate,
+        'temperature': temperature,
+      },
     );
 
     return TriageItem.fromJson(response.data ?? <String, dynamic>{});

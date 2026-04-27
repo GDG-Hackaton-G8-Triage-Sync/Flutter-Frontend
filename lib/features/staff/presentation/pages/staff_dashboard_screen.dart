@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 import 'package:flutter_frontend/core/models/api_models.dart';
 import 'package:flutter_frontend/core/services/backend_service.dart';
@@ -28,6 +29,9 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
   Timer? _poller;
   StreamSubscription<TriageItem>? _wsSub;
 
+  // Track recently added patients for "Sync" glow effects
+  final Set<int> _newPatientIds = <int>{};
+
   // Priority filter
   int? _selectedPriority;
 
@@ -49,10 +53,12 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
 
   Future<void> _fetchPatients({bool silent = false}) async {
     if (!silent) {
-      setState(() {
-        _isLoading = true;
-        _error = null;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = true;
+          _error = null;
+        });
+      }
     }
 
     try {
@@ -66,6 +72,19 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
       items.sort((a, b) => b.urgencyScore.compareTo(a.urgencyScore));
 
       if (!mounted) return;
+
+      // Detect new patients for the glow effect
+      final existingIds = _patients.map((p) => p.id).toSet();
+      for (final item in items) {
+        if (existingIds.isNotEmpty && !existingIds.contains(item.id)) {
+          setState(() => _newPatientIds.add(item.id));
+          // Remove glow after animation completes (3 seconds)
+          Timer(const Duration(seconds: 5), () {
+            if (mounted) setState(() => _newPatientIds.remove(item.id));
+          });
+        }
+      }
+
       setState(() {
         _patients = items;
         _isLoading = false;
@@ -259,16 +278,17 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
     );
   }
 
-  Widget _buildPatientRow(TriageItem patient) {
-    final color = _priorityColor(patient.priority);
-    final waitingTime = DateTime.now().difference(patient.createdAt).inMinutes;
+    final isNew = _newPatientIds.contains(patient.id);
 
-    return Card(
+    Widget row = Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: color.withValues(alpha: 0.1)),
+        side: BorderSide(
+          color: isNew ? const Color(0xFF00C853) : color.withValues(alpha: 0.1),
+          width: isNew ? 2 : 1,
+        ),
       ),
       child: InkWell(
         onTap: () => _navigateToDetail(patient),
@@ -329,23 +349,8 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                               ),
                             ],
                             const Spacer(),
-                            if (patient.status == 'waiting' &&
-                                ((patient.priority == 1 && waitingTime > 10) ||
-                                 (patient.priority == 2 && waitingTime > 20)))
-                              const Row(
-                                children: [
-                                  Icon(Icons.warning_amber_rounded, color: Color(0xFFBA1A1A), size: 14),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    'SLA BREACH',
-                                    style: TextStyle(
-                                      color: Color(0xFFBA1A1A),
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 10,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                            if (patient.status == 'waiting')
+                              SLACountdown(patient: patient),
                           ],
                         ),
                         const SizedBox(height: 2),
@@ -404,6 +409,17 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
         ),
       ),
     );
+
+    return row.animate(target: isNew ? 1 : 0)
+      .boxShadow(
+        begin: BoxShadow.shade(Colors.transparent, 0),
+        end: BoxShadow.shade(const Color(0xFF00C853).withValues(alpha: 0.4), 20),
+        duration: 2.seconds,
+      )
+      .shimmer(
+        duration: 2.seconds,
+        color: const Color(0xFF00C853).withValues(alpha: 0.1),
+      );
   }
 
   Widget _statusIndicator(String status) {
@@ -472,6 +488,84 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
       side: const BorderSide(color: Color(0xFFDDE4F0)),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       showCheckmark: false,
+    );
+  }
+}
+
+class SLACountdown extends StatefulWidget {
+  const SLACountdown({super.key, required this.patient});
+  final TriageItem patient;
+
+  @override
+  State<SLACountdown> createState() => _SLACountdownState();
+}
+
+class _SLACountdownState extends State<SLACountdown> {
+  late Timer _timer;
+  late Duration _remaining;
+
+  @override
+  void initState() {
+    super.initState();
+    _calculateRemaining();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _calculateRemaining());
+  }
+
+  void _calculateRemaining() {
+    final targetMinutes = widget.patient.priority == 1
+        ? 10
+        : widget.patient.priority == 2
+        ? 20
+        : 60;
+    final deadline = widget.patient.createdAt.add(Duration(minutes: targetMinutes));
+    final diff = deadline.difference(DateTime.now());
+
+    if (mounted) {
+      setState(() {
+        _remaining = diff;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isBreached = _remaining.isNegative;
+    final color = isBreached ? const Color(0xFFBA1A1A) : const Color(0xFFF57C00);
+
+    if (isBreached) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.warning_amber_rounded, color: color, size: 14),
+          const SizedBox(width: 4),
+          Text(
+            'SLA BREACH',
+            style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 10),
+          ),
+        ],
+      );
+    }
+
+    final minutes = _remaining.inMinutes;
+    final seconds = _remaining.inSeconds % 60;
+    final timeStr = '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        'BREACH IN $timeStr',
+        style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 9),
+      ),
     );
   }
 }
