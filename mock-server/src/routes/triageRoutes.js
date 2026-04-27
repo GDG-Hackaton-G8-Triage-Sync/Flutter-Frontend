@@ -1,8 +1,5 @@
-const express = require("express");
 const {
-    deriveUrgency,
-    derivePriority,
-    deriveCondition,
+    deriveTriageLogic,
 } = require("../services/triageService");
 
 function createTriageRoutes({ store, realtime }) {
@@ -40,17 +37,14 @@ function createTriageRoutes({ store, realtime }) {
 
         const result = store.update((db) => {
             const user = db.authUsers.find((u) => u.id === req.user.id);
-            const urgencyScore = deriveUrgency(description);
-            const priority = derivePriority(urgencyScore);
+            const logicResults = deriveTriageLogic(description);
 
             const triageItem = {
                 id: Date.now(),
                 email: req.user.email,
                 patient_name: user ? user.name : "Unknown",
                 description,
-                priority,
-                urgency_score: urgencyScore,
-                condition: deriveCondition(priority),
+                ...logicResults,
                 status: "waiting",
                 created_at: new Date().toISOString(),
                 photo_name,

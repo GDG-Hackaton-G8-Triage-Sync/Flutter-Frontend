@@ -68,6 +68,8 @@ class TriageItem {
     this.allergies,
     this.currentMedications,
     this.badHabits,
+    this.reasoning,
+    this.confidence,
   });
 
   final int id;
@@ -88,6 +90,8 @@ class TriageItem {
   final String? allergies;
   final String? currentMedications;
   final String? badHabits;
+  final String? reasoning;
+  final double? confidence;
 
   factory TriageItem.fromJson(Map<String, dynamic> json) {
     return TriageItem(
@@ -113,6 +117,8 @@ class TriageItem {
       allergies: json['allergies'] as String?,
       currentMedications: json['current_medications'] as String?,
       badHabits: json['bad_habits'] as String?,
+      reasoning: json['reasoning'] as String?,
+      confidence: (json['confidence'] as num?)?.toDouble(),
     );
   }
 }

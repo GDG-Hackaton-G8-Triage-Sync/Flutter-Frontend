@@ -310,6 +310,24 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                                 letterSpacing: 0.5,
                               ),
                             ),
+                            if (patient.confidence != null) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: (patient.confidence! > 0.85 ? const Color(0xFF00897B) : const Color(0xFF6750A4)).withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  '${(patient.confidence! * 100).toStringAsFixed(0)}%',
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w900,
+                                    color: patient.confidence! > 0.85 ? const Color(0xFF004D40) : const Color(0xFF6750A4),
+                                  ),
+                                ),
+                              ),
+                            ],
                             const Spacer(),
                             if (patient.status == 'waiting' &&
                                 ((patient.priority == 1 && waitingTime > 10) ||

@@ -582,16 +582,22 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
 
   Widget _buildAICopilotCard() {
     final isVerified = _patient.verifiedBy != null;
+    final double confidence = _patient.confidence ?? 0.0;
+    final bool isHighConfidence = confidence > 0.85;
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: isVerified ? const Color(0xFFE6F4EA) : const Color(0xFFE8DEF8),
+        color: isVerified 
+          ? const Color(0xFFE6F4EA) 
+          : (isHighConfidence ? const Color(0xFFE0F2F1) : const Color(0xFFE8DEF8)),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isVerified ? const Color(0xFF34A853) : const Color(0xFFD0BCFF),
-          width: 1,
+          color: isVerified 
+            ? const Color(0xFF34A853) 
+            : (isHighConfidence ? const Color(0xFF00897B) : const Color(0xFFD0BCFF)),
+          width: 1.5,
         ),
       ),
       child: Column(
@@ -600,21 +606,43 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
           Row(
             children: [
               Icon(
-                isVerified ? Icons.verified : Icons.auto_awesome,
-                color: isVerified ? const Color(0xFF137333) : const Color(0xFF6750A4),
+                isVerified ? Icons.verified : (isHighConfidence ? Icons.security_rounded : Icons.auto_awesome),
+                color: isVerified 
+                  ? const Color(0xFF137333) 
+                  : (isHighConfidence ? const Color(0xFF00695C) : const Color(0xFF6750A4)),
                 size: 20,
               ),
               const SizedBox(width: 8),
               Text(
-                isVerified ? 'Clinical Verification' : 'AI Triage Copilot',
+                isVerified 
+                  ? 'Clinical Verification' 
+                  : (isHighConfidence ? 'AI Trusted Triage' : 'AI Triage Copilot'),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
-                  color: isVerified ? const Color(0xFF137333) : const Color(0xFF6750A4),
+                  color: isVerified 
+                  ? const Color(0xFF137333) 
+                  : (isHighConfidence ? const Color(0xFF00695C) : const Color(0xFF6750A4)),
                 ),
               ),
+              const Spacer(),
+              if (!isVerified) 
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: (isHighConfidence ? const Color(0xFF00897B) : const Color(0xFF6750A4)).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${(confidence * 100).toStringAsFixed(0)}% CONFIDENCE',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      color: isHighConfidence ? const Color(0xFF004D40) : const Color(0xFF6750A4),
+                    ),
+                  ),
+                ),
               if (isVerified) ...[
-                const Spacer(),
                 const Icon(Icons.lock, size: 14, color: Color(0xFF137333)),
                 const SizedBox(width: 4),
                 const Text(
@@ -633,7 +661,7 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
           Text(
             isVerified
                 ? 'This decision has been manually verified by ${_patient.verifiedBy} to ensure clinical accuracy and HIPAA compliance.'
-                : 'Suggested Level: ${_patient.priority}\nReasoning: Analysis of presented condition "${_patient.condition}" indicates symptom vectors mapping to ESI Priority ${_patient.priority}. Clinical correlation recommended.',
+                : 'Suggested Level: ${_patient.priority}\nReasoning: ${_patient.reasoning ?? "Analysis of symptom vectors indicates clinical correlation required."}',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
@@ -648,20 +676,23 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
               height: 48,
               child: OutlinedButton.icon(
                 onPressed: _confirmAIPriority,
-                icon: const Icon(
-                  Icons.verified_user,
-                  color: Color(0xFF6750A4),
+                icon: Icon(
+                  isHighConfidence ? Icons.task_alt_rounded : Icons.verified_user,
+                  color: isHighConfidence ? const Color(0xFF00695C) : const Color(0xFF6750A4),
                   size: 18,
                 ),
-                label: const Text(
-                  'Confirm AI Priority',
+                label: Text(
+                  isHighConfidence ? 'Approve AI Triage' : 'Confirm AI Priority',
                   style: TextStyle(
-                    color: Color(0xFF6750A4),
+                    color: isHighConfidence ? const Color(0xFF00695C) : const Color(0xFF6750A4),
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Color(0xFF6750A4), width: 2),
+                  side: BorderSide(
+                    color: isHighConfidence ? const Color(0xFF00695C) : const Color(0xFF6750A4), 
+                    width: 2
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
