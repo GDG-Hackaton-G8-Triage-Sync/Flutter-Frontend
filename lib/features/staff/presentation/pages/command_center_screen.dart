@@ -48,7 +48,9 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final slaBreachesCount = widget.waiting > 0 ? (widget.waiting / 3).ceil() : 0;
+    final slaBreachesCount = widget.waiting > 0
+        ? (widget.waiting / 3).ceil()
+        : 0;
     final backlogRisk = widget.waiting >= 10
         ? 'High'
         : widget.waiting >= 5
@@ -136,7 +138,11 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                     color: Theme.of(context).cardTheme.color,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: (backlogRisk == 'High' ? const Color(0xFFBA1A1A) : Colors.transparent).withValues(alpha: 0.2),
+                      color:
+                          (backlogRisk == 'High'
+                                  ? const Color(0xFFBA1A1A)
+                                  : Colors.transparent)
+                              .withValues(alpha: 0.2),
                       width: 2,
                     ),
                   ),
@@ -147,7 +153,9 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                         children: [
                           Icon(
                             Icons.analytics_rounded,
-                            color: backlogRisk == 'High' ? const Color(0xFFBA1A1A) : const Color(0xFF005EB8),
+                            color: backlogRisk == 'High'
+                                ? const Color(0xFFBA1A1A)
+                                : const Color(0xFF005EB8),
                             size: 20,
                           ),
                           const SizedBox(width: 8),
@@ -170,7 +178,9 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                           fontSize: 14,
                           height: 1.6,
                           fontWeight: FontWeight.w500,
-                          color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.8),
+                          color: Theme.of(
+                            context,
+                          ).textTheme.bodyMedium?.color?.withValues(alpha: 0.8),
                         ),
                       ),
                       if (backlogRisk == 'High') ...[
@@ -182,7 +192,9 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   backgroundColor: Color(0xFFBA1A1A),
-                                  content: Text('EMERGENCY BACKUP REQUESTED: Clinical Lead Notified.'),
+                                  content: Text(
+                                    'EMERGENCY BACKUP REQUESTED: Clinical Lead Notified.',
+                                  ),
                                 ),
                               );
                             },
@@ -192,7 +204,9 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                               backgroundColor: const Color(0xFFBA1A1A),
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
                           ),
                         ),
@@ -206,7 +220,11 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
     );
   }
 
-  Widget _buildChartCard({required String title, required String subtitle, required Widget chart}) {
+  Widget _buildChartCard({
+    required String title,
+    required String subtitle,
+    required Widget chart,
+  }) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -225,7 +243,11 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
         children: [
           Text(
             title,
-            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Color(0xFF003366)),
+            style: const TextStyle(
+              fontWeight: FontWeight.w900,
+              fontSize: 16,
+              color: Color(0xFF003366),
+            ),
           ),
           const SizedBox(height: 4),
           Text(
@@ -240,26 +262,40 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
   }
 
   Widget _buildWaitTimeChart() {
-    if (_analytics == null || _analytics!.waitTimeTrend.isEmpty) return const SizedBox();
+    if (_analytics == null || _analytics!.waitTimeTrend.isEmpty) {
+      return const SizedBox();
+    }
     final points = _analytics!.waitTimeTrend;
 
     return LineChart(
       LineChartData(
-        gridData: FlGridData(show: true, drawVerticalLine: false, getDrawingHorizontalLine: (v) => FlLine(color: Colors.grey.withValues(alpha: 0.1), strokeWidth: 1)),
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: false,
+          getDrawingHorizontalLine: (v) =>
+              FlLine(color: Colors.grey.withValues(alpha: 0.1), strokeWidth: 1),
+        ),
         titlesData: const FlTitlesData(show: false),
         borderData: FlBorderData(show: false),
         lineBarsData: [
           LineChartBarData(
-            spots: points.asMap().entries.map((e) => FlSpot(e.key.toDouble(), e.value.value)).toList(),
+            spots: points
+                .asMap()
+                .entries
+                .map((e) => FlSpot(e.key.toDouble(), e.value.value))
+                .toList(),
             isCurved: true,
             color: const Color(0xFF005EB8),
             barWidth: 4,
             isStrokeCapRound: true,
             dotData: const FlDotData(show: false),
-            belowAdsArea: BarAreaData(
+            belowBarData: BarAreaData(
               show: true,
               gradient: LinearGradient(
-                colors: [const Color(0xFF005EB8).withValues(alpha: 0.2), const Color(0xFF005EB8).withValues(alpha: 0.0)],
+                colors: [
+                  const Color(0xFF005EB8).withValues(alpha: 0.2),
+                  const Color(0xFF005EB8).withValues(alpha: 0.0),
+                ],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
@@ -271,7 +307,9 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
   }
 
   Widget _buildSLABreachChart() {
-    if (_analytics == null || _analytics!.slaBreachTrend.isEmpty) return const SizedBox();
+    if (_analytics == null || _analytics!.slaBreachTrend.isEmpty) {
+      return const SizedBox();
+    }
     final points = _analytics!.slaBreachTrend;
 
     return BarChart(
@@ -279,17 +317,23 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
         gridData: const FlGridData(show: false),
         titlesData: const FlTitlesData(show: false),
         borderData: FlBorderData(show: false),
-        barGroups: points.asMap().entries.map((e) => BarChartGroupData(
-          x: e.key,
-          barRods: [
-            BarChartRodData(
-              toY: e.value.value,
-              color: const Color(0xFFBA1A1A),
-              width: 12,
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ],
-        )).toList(),
+        barGroups: points
+            .asMap()
+            .entries
+            .map(
+              (e) => BarChartGroupData(
+                x: e.key,
+                barRods: [
+                  BarChartRodData(
+                    toY: e.value.value,
+                    color: const Color(0xFFBA1A1A),
+                    width: 12,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ],
+              ),
+            )
+            .toList(),
       ),
     );
   }
@@ -330,7 +374,11 @@ class _MetricTile extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             title,
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey[600]),
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[600],
+            ),
           ),
           const SizedBox(height: 4),
           Text(

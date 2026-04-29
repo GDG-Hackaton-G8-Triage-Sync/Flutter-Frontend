@@ -198,7 +198,9 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
 
               if (bp.isEmpty || hr.isEmpty || temp.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Please fill all vitals fields.')),
+                  const SnackBar(
+                    content: Text('Please fill all vitals fields.'),
+                  ),
                 );
                 return;
               }
@@ -247,40 +249,50 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
           "resource": {
             "resourceType": "Patient",
             "id": "pat-${_patient.id}",
-            "name": [{"text": _patient.patientName ?? "Unknown"}],
+            "name": [
+              {"text": _patient.patientName ?? "Unknown"},
+            ],
             "gender": _patient.gender?.toLowerCase() ?? "unknown",
-            "birthDate": _patient.age != null ? "${DateTime.now().year - _patient.age!}-01-01" : null
-          }
+            "birthDate": _patient.age != null
+                ? "${DateTime.now().year - _patient.age!}-01-01"
+                : null,
+          },
         },
         {
           "resource": {
             "resourceType": "Encounter",
-            "status": _patient.status == "completed" ? "finished" : "in-progress",
+            "status": _patient.status == "completed"
+                ? "finished"
+                : "in-progress",
             "class": {"code": "EMR", "display": "emergency"},
             "priority": {
               "coding": [
                 {
-                  "system": "http://terminology.hl7.org/CodeSystem/v3-ActPriority",
+                  "system":
+                      "http://terminology.hl7.org/CodeSystem/v3-ActPriority",
                   "code": "EM",
-                  "display": _priorityLabel
-                }
-              ]
+                  "display": _priorityLabel,
+                },
+              ],
             },
             "reasonCode": [
-              {"text": _patient.description}
-            ]
-          }
+              {"text": _patient.description},
+            ],
+          },
         },
-        if (_patient.vitals != null) {
-          "resource": {
-            "resourceType": "Observation",
-            "status": "final",
-            "code": {"text": "Vital Signs Bundle"},
-            "valueString": "BP: ${_patient.vitals!.bp}, HR: ${_patient.vitals!.heartRate}, Temp: ${_patient.vitals!.temperature}",
-            "effectiveDateTime": _patient.vitals!.recordedAt.toIso8601String()
-          }
-        }
-      ]
+        if (_patient.vitals != null)
+          {
+            "resource": {
+              "resourceType": "Observation",
+              "status": "final",
+              "code": {"text": "Vital Signs Bundle"},
+              "valueString":
+                  "BP: ${_patient.vitals!.bp}, HR: ${_patient.vitals!.heartRate}, Temp: ${_patient.vitals!.temperature}",
+              "effectiveDateTime": _patient.vitals!.recordedAt
+                  .toIso8601String(),
+            },
+          },
+      ],
     };
 
     showDialog(
@@ -302,7 +314,9 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
             onPressed: () {
               Navigator.pop(ctx);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('FHIR Record exported to interoperability hub')),
+                const SnackBar(
+                  content: Text('FHIR Record exported to interoperability hub'),
+                ),
               );
             },
             child: const Text('Propagate to EHR'),
@@ -677,7 +691,8 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
   Future<void> _confirmAIPriority() async {
     setState(() => _isUpdating = true);
     try {
-      final nurseName = await SessionService().getName() ?? 'Authenticated Staff';
+      final nurseName =
+          await SessionService().getName() ?? 'Authenticated Staff';
       final updated = await _backend.verifyTriage(
         id: _patient.id,
         nurseName: nurseName,
@@ -706,14 +721,18 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: isVerified 
-          ? const Color(0xFFE6F4EA) 
-          : (isHighConfidence ? const Color(0xFFE0F2F1) : const Color(0xFFE8DEF8)),
+        color: isVerified
+            ? const Color(0xFFE6F4EA)
+            : (isHighConfidence
+                  ? const Color(0xFFE0F2F1)
+                  : const Color(0xFFE8DEF8)),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isVerified 
-            ? const Color(0xFF34A853) 
-            : (isHighConfidence ? const Color(0xFF00897B) : const Color(0xFFD0BCFF)),
+          color: isVerified
+              ? const Color(0xFF34A853)
+              : (isHighConfidence
+                    ? const Color(0xFF00897B)
+                    : const Color(0xFFD0BCFF)),
           width: 1.5,
         ),
       ),
@@ -723,31 +742,48 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
           Row(
             children: [
               Icon(
-                isVerified ? Icons.verified : (isHighConfidence ? Icons.security_rounded : Icons.auto_awesome),
-                color: isVerified 
-                  ? const Color(0xFF137333) 
-                  : (isHighConfidence ? const Color(0xFF00695C) : const Color(0xFF6750A4)),
+                isVerified
+                    ? Icons.verified
+                    : (isHighConfidence
+                          ? Icons.security_rounded
+                          : Icons.auto_awesome),
+                color: isVerified
+                    ? const Color(0xFF137333)
+                    : (isHighConfidence
+                          ? const Color(0xFF00695C)
+                          : const Color(0xFF6750A4)),
                 size: 20,
               ),
               const SizedBox(width: 8),
               Text(
-                isVerified 
-                  ? 'Clinical Verification' 
-                  : (isHighConfidence ? 'AI Trusted Triage' : 'AI Triage Copilot'),
+                isVerified
+                    ? 'Clinical Verification'
+                    : (isHighConfidence
+                          ? 'AI Trusted Triage'
+                          : 'AI Triage Copilot'),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
-                  color: isVerified 
-                  ? const Color(0xFF137333) 
-                  : (isHighConfidence ? const Color(0xFF00695C) : const Color(0xFF6750A4)),
+                  color: isVerified
+                      ? const Color(0xFF137333)
+                      : (isHighConfidence
+                            ? const Color(0xFF00695C)
+                            : const Color(0xFF6750A4)),
                 ),
               ),
               const Spacer(),
-              if (!isVerified) 
+              if (!isVerified)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
-                    color: (isHighConfidence ? const Color(0xFF00897B) : const Color(0xFF6750A4)).withValues(alpha: 0.1),
+                    color:
+                        (isHighConfidence
+                                ? const Color(0xFF00897B)
+                                : const Color(0xFF6750A4))
+                            .withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -755,7 +791,9 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w900,
-                      color: isHighConfidence ? const Color(0xFF004D40) : const Color(0xFF6750A4),
+                      color: isHighConfidence
+                          ? const Color(0xFF004D40)
+                          : const Color(0xFF6750A4),
                     ),
                   ),
                 ),
@@ -782,7 +820,9 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: isVerified ? const Color(0xFF137333) : const Color(0xFF1D192B),
+              color: isVerified
+                  ? const Color(0xFF137333)
+                  : const Color(0xFF1D192B),
               height: 1.5,
             ),
           ),
@@ -794,21 +834,31 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
               child: OutlinedButton.icon(
                 onPressed: _confirmAIPriority,
                 icon: Icon(
-                  isHighConfidence ? Icons.task_alt_rounded : Icons.verified_user,
-                  color: isHighConfidence ? const Color(0xFF00695C) : const Color(0xFF6750A4),
+                  isHighConfidence
+                      ? Icons.task_alt_rounded
+                      : Icons.verified_user,
+                  color: isHighConfidence
+                      ? const Color(0xFF00695C)
+                      : const Color(0xFF6750A4),
                   size: 18,
                 ),
                 label: Text(
-                  isHighConfidence ? 'Approve AI Triage' : 'Confirm AI Priority',
+                  isHighConfidence
+                      ? 'Approve AI Triage'
+                      : 'Confirm AI Priority',
                   style: TextStyle(
-                    color: isHighConfidence ? const Color(0xFF00695C) : const Color(0xFF6750A4),
+                    color: isHighConfidence
+                        ? const Color(0xFF00695C)
+                        : const Color(0xFF6750A4),
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 style: OutlinedButton.styleFrom(
                   side: BorderSide(
-                    color: isHighConfidence ? const Color(0xFF00695C) : const Color(0xFF6750A4), 
-                    width: 2
+                    color: isHighConfidence
+                        ? const Color(0xFF00695C)
+                        : const Color(0xFF6750A4),
+                    width: 2,
                   ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -875,7 +925,11 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
         children: [
           const Row(
             children: [
-              Icon(Icons.medical_information_outlined, color: Color(0xFF005EB8), size: 20),
+              Icon(
+                Icons.medical_information_outlined,
+                color: Color(0xFF005EB8),
+                size: 20,
+              ),
               SizedBox(width: 8),
               Text(
                 'Clinical Profile',
@@ -888,31 +942,63 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
             ],
           ),
           const SizedBox(height: 20),
-          _buildInfoRow(Icons.person_outline, 'Demographics', 
-            '${_patient.gender ?? "Unspecified"}, ${_patient.age ?? "N/A"}y, Blood: ${_patient.bloodType ?? "Unknown"}'),
+          _buildInfoRow(
+            Icons.person_outline,
+            'Demographics',
+            '${_patient.gender ?? "Unspecified"}, ${_patient.age ?? "N/A"}y, Blood: ${_patient.bloodType ?? "Unknown"}',
+          ),
           const Divider(height: 32),
-          _buildInfoRow(Icons.history_edu, 'Medical History', 
-            _patient.healthHistory?.isNotEmpty == true ? _patient.healthHistory! : 'No history provided'),
+          _buildInfoRow(
+            Icons.history_edu,
+            'Medical History',
+            _patient.healthHistory?.isNotEmpty == true
+                ? _patient.healthHistory!
+                : 'No history provided',
+          ),
           const SizedBox(height: 16),
-          _buildInfoRow(Icons.warning_amber_rounded, 'Allergies', 
-            _patient.allergies?.isNotEmpty == true ? _patient.allergies! : 'No known allergies',
-            isWarning: _patient.allergies?.isNotEmpty == true),
+          _buildInfoRow(
+            Icons.warning_amber_rounded,
+            'Allergies',
+            _patient.allergies?.isNotEmpty == true
+                ? _patient.allergies!
+                : 'No known allergies',
+            isWarning: _patient.allergies?.isNotEmpty == true,
+          ),
           const SizedBox(height: 16),
-          _buildInfoRow(Icons.medication, 'Current Medications', 
-            _patient.currentMedications?.isNotEmpty == true ? _patient.currentMedications! : 'None listed'),
+          _buildInfoRow(
+            Icons.medication,
+            'Current Medications',
+            _patient.currentMedications?.isNotEmpty == true
+                ? _patient.currentMedications!
+                : 'None listed',
+          ),
           const SizedBox(height: 16),
-          _buildInfoRow(Icons.smoke_free_outlined, 'Lifestyle Habits', 
-            _patient.badHabits?.isNotEmpty == true ? _patient.badHabits! : 'No habits reported'),
+          _buildInfoRow(
+            Icons.smoke_free_outlined,
+            'Lifestyle Habits',
+            _patient.badHabits?.isNotEmpty == true
+                ? _patient.badHabits!
+                : 'No habits reported',
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value, {bool isWarning = false}) {
+  Widget _buildInfoRow(
+    IconData icon,
+    String label,
+    String value, {
+    bool isWarning = false,
+  }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 18, color: isWarning ? const Color(0xFFBA1A1A) : const Color(0xFF44474E)),
+        Icon(
+          icon,
+          size: 18,
+          color: isWarning ? const Color(0xFFBA1A1A) : const Color(0xFF44474E),
+        ),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -933,7 +1019,9 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: isWarning ? const Color(0xFFBA1A1A) : const Color(0xFF1A1C1E),
+                  color: isWarning
+                      ? const Color(0xFFBA1A1A)
+                      : const Color(0xFF1A1C1E),
                   height: 1.4,
                 ),
               ),

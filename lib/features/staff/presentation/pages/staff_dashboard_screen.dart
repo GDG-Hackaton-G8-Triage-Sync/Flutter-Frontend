@@ -139,7 +139,6 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
     return const Color(0xFF146C2E);
   }
 
-
   void _navigateToDetail(TriageItem patient) async {
     final updated = await Navigator.push<TriageItem>(
       context,
@@ -214,9 +213,13 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                 : RefreshIndicator(
                     onRefresh: _fetchPatients,
                     child: ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 8,
+                      ),
                       itemCount: _patients.length,
-                      itemBuilder: (context, index) => _buildPatientRow(_patients[index]),
+                      itemBuilder: (context, index) =>
+                          _buildPatientRow(_patients[index]),
                     ),
                   ),
           ),
@@ -256,7 +259,10 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [const Color(0xFF003366), const Color(0xFF005EB8).withValues(alpha: 0.9)],
+          colors: [
+            const Color(0xFF003366),
+            const Color(0xFF005EB8).withValues(alpha: 0.9),
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -277,7 +283,11 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
               color: Colors.white.withValues(alpha: 0.2),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.auto_awesome, color: Colors.white, size: 20),
+            child: const Icon(
+              Icons.auto_awesome,
+              color: Colors.white,
+              size: 20,
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -299,7 +309,10 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                     Container(
                       width: 4,
                       height: 4,
-                      decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
                     ),
                     const SizedBox(width: 8),
                     Text(
@@ -334,11 +347,20 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
       children: [
         Text(
           '$value',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: color),
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w900,
+            color: color,
+          ),
         ),
         Text(
           label,
-          style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey[600], letterSpacing: 1.0),
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+            color: Colors.grey[600],
+            letterSpacing: 1.0,
+          ),
         ),
       ],
     );
@@ -365,6 +387,9 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
     );
   }
 
+  Widget _buildPatientRow(TriageItem patient) {
+    final color = _priorityColor(patient.priority);
+    final waitingTime = DateTime.now().difference(patient.createdAt).inMinutes;
     final isNew = _newPatientIds.contains(patient.id);
 
     Widget row = Card(
@@ -397,7 +422,11 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                     child: Center(
                       child: Text(
                         'P${patient.priority}',
-                        style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 16),
+                        style: TextStyle(
+                          color: color,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 16,
+                        ),
                       ),
                     ),
                   ),
@@ -420,9 +449,16 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                             if (patient.confidence != null) ...[
                               const SizedBox(width: 8),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: (patient.confidence! > 0.85 ? const Color(0xFF00897B) : const Color(0xFF6750A4)).withValues(alpha: 0.1),
+                                  color:
+                                      (patient.confidence! > 0.85
+                                              ? const Color(0xFF00897B)
+                                              : const Color(0xFF6750A4))
+                                          .withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
@@ -430,7 +466,9 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                                   style: TextStyle(
                                     fontSize: 9,
                                     fontWeight: FontWeight.w900,
-                                    color: patient.confidence! > 0.85 ? const Color(0xFF004D40) : const Color(0xFF6750A4),
+                                    color: patient.confidence! > 0.85
+                                        ? const Color(0xFF004D40)
+                                        : const Color(0xFF6750A4),
                                   ),
                                 ),
                               ),
@@ -445,7 +483,10 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                           patient.description,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 12,
+                          ),
                         ),
                       ],
                     ),
@@ -457,16 +498,26 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                       Text(
                         '${waitingTime}m',
                         style: TextStyle(
-                          color: (patient.status == 'waiting' &&
-                                  ((patient.priority == 1 && waitingTime > 10) ||
-                                   (patient.priority == 2 && waitingTime > 20)))
+                          color:
+                              (patient.status == 'waiting' &&
+                                  ((patient.priority == 1 &&
+                                          waitingTime > 10) ||
+                                      (patient.priority == 2 &&
+                                          waitingTime > 20)))
                               ? const Color(0xFFBA1A1A)
                               : const Color(0xFF44474E),
                           fontWeight: FontWeight.w900,
                           fontSize: 16,
                         ),
                       ),
-                      const Text('WAIT', style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.grey)),
+                      const Text(
+                        'WAIT',
+                        style: TextStyle(
+                          fontSize: 8,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey,
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -486,7 +537,13 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                           foregroundColor: color,
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                         ),
-                        child: const Text('BEGIN CARE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                        child: const Text(
+                          'BEGIN CARE',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ),
                 ],
@@ -497,16 +554,20 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
       ),
     );
 
-    return row.animate(target: isNew ? 1 : 0)
-      .boxShadow(
-        begin: BoxShadow.shade(Colors.transparent, 0),
-        end: BoxShadow.shade(const Color(0xFF00C853).withValues(alpha: 0.4), 20),
-        duration: 2.seconds,
-      )
-      .shimmer(
-        duration: 2.seconds,
-        color: const Color(0xFF00C853).withValues(alpha: 0.1),
-      );
+    return row
+        .animate(target: isNew ? 1 : 0)
+        .boxShadow(
+          begin: BoxShadow(color: Colors.transparent, blurRadius: 0),
+          end: BoxShadow(
+            color: const Color(0xFF00C853).withValues(alpha: 0.4),
+            blurRadius: 20,
+          ),
+          duration: 2.seconds,
+        )
+        .shimmer(
+          duration: 2.seconds,
+          color: const Color(0xFF00C853).withValues(alpha: 0.1),
+        );
   }
 
   Widget _statusIndicator(String status) {
@@ -515,7 +576,9 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: isWaiting ? Colors.red[50] : (isInProgress ? Colors.blue[50] : Colors.green[50]),
+        color: isWaiting
+            ? Colors.red[50]
+            : (isInProgress ? Colors.blue[50] : Colors.green[50]),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
@@ -523,7 +586,9 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
         style: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.w900,
-          color: isWaiting ? Colors.red[700] : (isInProgress ? Colors.blue[700] : Colors.green[700]),
+          color: isWaiting
+              ? Colors.red[700]
+              : (isInProgress ? Colors.blue[700] : Colors.green[700]),
         ),
       ),
     );
@@ -537,7 +602,10 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
           const Icon(Icons.error_outline, size: 48, color: Colors.red),
           const SizedBox(height: 16),
           Text(_error!),
-          TextButton(onPressed: _fetchPatients, child: const Text('RETRY CONNECTION')),
+          TextButton(
+            onPressed: _fetchPatients,
+            child: const Text('RETRY CONNECTION'),
+          ),
         ],
       ),
     );
@@ -547,7 +615,8 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
     return EmptyState(
       icon: Icons.done_all_rounded,
       title: 'Current Queue Clear',
-      message: 'Excellent work! All patients in this unit have been processed. New intake assessments will appear here automatically.',
+      message:
+          'Excellent work! All patients in this unit have been processed. New intake assessments will appear here automatically.',
       actionLabel: 'REFRESH FEED',
       onAction: _fetchPatients,
     );
@@ -595,7 +664,10 @@ class _SLACountdownState extends State<SLACountdown> {
   void initState() {
     super.initState();
     _calculateRemaining();
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _calculateRemaining());
+    _timer = Timer.periodic(
+      const Duration(seconds: 1),
+      (_) => _calculateRemaining(),
+    );
   }
 
   void _calculateRemaining() {
@@ -604,7 +676,9 @@ class _SLACountdownState extends State<SLACountdown> {
         : widget.patient.priority == 2
         ? 20
         : 60;
-    final deadline = widget.patient.createdAt.add(Duration(minutes: targetMinutes));
+    final deadline = widget.patient.createdAt.add(
+      Duration(minutes: targetMinutes),
+    );
     final diff = deadline.difference(DateTime.now());
 
     if (mounted) {
@@ -623,7 +697,9 @@ class _SLACountdownState extends State<SLACountdown> {
   @override
   Widget build(BuildContext context) {
     final isBreached = _remaining.isNegative;
-    final color = isBreached ? const Color(0xFFBA1A1A) : const Color(0xFFF57C00);
+    final color = isBreached
+        ? const Color(0xFFBA1A1A)
+        : const Color(0xFFF57C00);
 
     if (isBreached) {
       return Row(
@@ -633,7 +709,11 @@ class _SLACountdownState extends State<SLACountdown> {
           const SizedBox(width: 4),
           Text(
             'SLA BREACH',
-            style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 10),
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w900,
+              fontSize: 10,
+            ),
           ),
         ],
       );
@@ -641,7 +721,8 @@ class _SLACountdownState extends State<SLACountdown> {
 
     final minutes = _remaining.inMinutes;
     final seconds = _remaining.inSeconds % 60;
-    final timeStr = '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+    final timeStr =
+        '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -651,7 +732,11 @@ class _SLACountdownState extends State<SLACountdown> {
       ),
       child: Text(
         'BREACH IN $timeStr',
-        style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 9),
+        style: TextStyle(
+          color: color,
+          fontWeight: FontWeight.w900,
+          fontSize: 9,
+        ),
       ),
     );
   }

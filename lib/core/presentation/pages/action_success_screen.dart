@@ -47,7 +47,11 @@ class ActionSuccessScreen extends StatelessWidget {
               Text(
                 message,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16, color: Colors.grey[600], height: 1.5),
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey[600],
+                  height: 1.5,
+                ),
               ),
               const SizedBox(height: 56),
               SizedBox(
@@ -57,7 +61,9 @@ class ActionSuccessScreen extends StatelessWidget {
                   onPressed: onAction,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF003366),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                   ),
                   child: Text(actionLabel.toUpperCase()),
                 ),

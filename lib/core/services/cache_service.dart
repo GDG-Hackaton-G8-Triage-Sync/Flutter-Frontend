@@ -16,18 +16,22 @@ class CacheService {
 
   Future<void> cachePatients(List<TriageItem> patients) async {
     final box = Hive.box(_boxName);
-    final jsonList = patients.map((p) => jsonEncode({
-      'id': p.id,
-      'description': p.description,
-      'priority': p.priority,
-      'urgency_score': p.urgencyScore,
-      'condition': p.condition,
-      'status': p.status,
-      'created_at': p.createdAt.toIso8601String(),
-      'patient_name': p.patientName,
-      'confidence': p.confidence,
-      'reasoning': p.reasoning,
-    })).toList();
+    final jsonList = patients
+        .map(
+          (p) => jsonEncode({
+            'id': p.id,
+            'description': p.description,
+            'priority': p.priority,
+            'urgency_score': p.urgencyScore,
+            'condition': p.condition,
+            'status': p.status,
+            'created_at': p.createdAt.toIso8601String(),
+            'patient_name': p.patientName,
+            'confidence': p.confidence,
+            'reasoning': p.reasoning,
+          }),
+        )
+        .toList();
     await box.put(_patientsKey, jsonList);
   }
 

@@ -24,7 +24,8 @@ class PremiumButton extends StatefulWidget {
   State<PremiumButton> createState() => _PremiumButtonState();
 }
 
-class _PremiumButtonState extends State<PremiumButton> with SingleTickerProviderStateMixin {
+class _PremiumButtonState extends State<PremiumButton>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
 
@@ -35,9 +36,10 @@ class _PremiumButtonState extends State<PremiumButton> with SingleTickerProvider
       vsync: this,
       duration: const Duration(milliseconds: 100),
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.96).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.96,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -78,13 +80,20 @@ class _PremiumButtonState extends State<PremiumButton> with SingleTickerProvider
                 ? const SizedBox(
                     width: 24,
                     height: 24,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
                   )
                 : Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       if (widget.icon != null) ...[
-                        Icon(widget.icon, color: widget.textColor ?? Colors.white, size: 20),
+                        Icon(
+                          widget.icon,
+                          color: widget.textColor ?? Colors.white,
+                          size: 20,
+                        ),
                         const SizedBox(width: 10),
                       ],
                       Text(
@@ -144,7 +153,8 @@ class _PremiumLinkState extends State<PremiumLink> {
             children: [
               Text(
                 widget.text,
-                style: widget.style ??
+                style:
+                    widget.style ??
                     const TextStyle(
                       color: Color(0xFF005EB8),
                       fontWeight: FontWeight.bold,

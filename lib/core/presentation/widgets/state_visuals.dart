@@ -27,7 +27,9 @@ class StateVisual extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: (iconColor ?? const Color(0xFF005EB8)).withValues(alpha: 0.1),
+                color: (iconColor ?? const Color(0xFF005EB8)).withValues(
+                  alpha: 0.1,
+                ),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -59,10 +61,12 @@ class StateVisual extends StatelessWidget {
             ),
             if (actions != null && actions!.isNotEmpty) ...[
               const SizedBox(height: 40),
-              ...actions!.map((a) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: a,
-              )),
+              ...actions!.map(
+                (a) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: a,
+                ),
+              ),
             ],
           ],
         ),
@@ -93,16 +97,18 @@ class EmptyState extends StatelessWidget {
       icon: icon ?? Icons.folder_open_outlined,
       title: title,
       message: message,
-      actions: onAction != null ? [
-        SizedBox(
-          width: double.infinity,
-          height: 52,
-          child: ElevatedButton(
-            onPressed: onAction,
-            child: Text(actionLabel ?? 'Get Started'),
-          ),
-        )
-      ] : null,
+      actions: onAction != null
+          ? [
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: onAction,
+                  child: Text(actionLabel ?? 'Get Started'),
+                ),
+              ),
+            ]
+          : null,
     );
   }
 }
@@ -118,7 +124,8 @@ class OfflineVisual extends StatelessWidget {
       icon: Icons.wifi_off_rounded,
       iconColor: const Color(0xFFBA1A1A),
       title: 'Connection Lost',
-      message: 'TriageSync requires a secure connection to process your medical data. Please check your network and try again.',
+      message:
+          'TriageSync requires a secure connection to process your medical data. Please check your network and try again.',
       actions: [
         SizedBox(
           width: double.infinity,

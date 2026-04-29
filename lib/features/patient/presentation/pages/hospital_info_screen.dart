@@ -12,7 +12,10 @@ class HospitalInfoScreen extends StatelessWidget {
         elevation: 0,
         title: const Text(
           'Hospital Information',
-          style: TextStyle(color: Color(0xFF00478D), fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: Color(0xFF00478D),
+            fontWeight: FontWeight.bold,
+          ),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF005EB8)),
@@ -51,7 +54,10 @@ class HospitalInfoScreen extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+          ),
         ],
       ),
       child: Stack(
@@ -65,7 +71,10 @@ class HospitalInfoScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(Icons.map_outlined, size: 48, color: Colors.grey),
-                    Text('Interactive Hospital Map Loading...', style: TextStyle(color: Colors.grey)),
+                    Text(
+                      'Interactive Hospital Map Loading...',
+                      style: TextStyle(color: Colors.grey),
+                    ),
                   ],
                 ),
               ),
@@ -85,7 +94,12 @@ class HospitalInfoScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDetailCard(String title, String subtitle, IconData icon, Color color) {
+  Widget _buildDetailCard(
+    String title,
+    String subtitle,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -107,8 +121,17 @@ class HospitalInfoScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                Text(subtitle, style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                ),
               ],
             ),
           ),

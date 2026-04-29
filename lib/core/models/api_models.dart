@@ -68,7 +68,9 @@ class Vitals {
       bp: (json['bp'] ?? '') as String,
       heartRate: (json['heart_rate'] ?? '') as String,
       temperature: (json['temperature'] ?? '') as String,
-      recordedAt: DateTime.tryParse((json['recorded_at'] ?? '') as String) ?? DateTime.now(),
+      recordedAt:
+          DateTime.tryParse((json['recorded_at'] ?? '') as String) ??
+          DateTime.now(),
       recordedBy: (json['recorded_by'] ?? '') as String,
     );
   }
@@ -139,8 +141,8 @@ class TriageItem {
       patientName: json['patient_name'] as String?,
       photoName: json['photo_name'] as String?,
       verifiedBy: json['verified_by'] as String?,
-      verifiedAt: json['verified_at'] != null 
-          ? DateTime.tryParse(json['verified_at'] as String) 
+      verifiedAt: json['verified_at'] != null
+          ? DateTime.tryParse(json['verified_at'] as String)
           : null,
       gender: json['gender'] as String?,
       age: json['age'] as int?,
@@ -151,12 +153,14 @@ class TriageItem {
       badHabits: json['bad_habits'] as String?,
       reasoning: json['reasoning'] as String?,
       confidence: (json['confidence'] as num?)?.toDouble(),
-      vitals: json['vitals'] != null ? Vitals.fromJson(json['vitals'] as Map<String, dynamic>) : null,
-      startedAt: json['started_at'] != null 
-          ? DateTime.tryParse(json['started_at'] as String) 
+      vitals: json['vitals'] != null
+          ? Vitals.fromJson(json['vitals'] as Map<String, dynamic>)
           : null,
-      completedAt: json['completed_at'] != null 
-          ? DateTime.tryParse(json['completed_at'] as String) 
+      startedAt: json['started_at'] != null
+          ? DateTime.tryParse(json['started_at'] as String)
+          : null,
+      completedAt: json['completed_at'] != null
+          ? DateTime.tryParse(json['completed_at'] as String)
           : null,
     );
   }
@@ -228,10 +232,12 @@ class AdminAnalytics {
       avgUrgencyScore: (json['avg_urgency_score'] ?? 0) as int,
       peakHour: (json['peak_hour'] ?? '-') as String,
       commonConditions: conditionsRaw.map((e) => e.toString()).toList(),
-      waitTimeTrend:
-          waitTrendRaw.map((e) => TrendPoint.fromJson(e as Map<String, dynamic>)).toList(),
-      slaBreachTrend:
-          slaTrendRaw.map((e) => TrendPoint.fromJson(e as Map<String, dynamic>)).toList(),
+      waitTimeTrend: waitTrendRaw
+          .map((e) => TrendPoint.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      slaBreachTrend: slaTrendRaw
+          .map((e) => TrendPoint.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
   }
 }

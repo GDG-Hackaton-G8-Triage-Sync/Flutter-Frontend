@@ -41,7 +41,8 @@ class AuditLogViewerScreen extends StatelessWidget {
           ? const EmptyState(
               icon: Icons.history_edu_outlined,
               title: 'Log is Current',
-              message: 'No administrative or clinical actions have been recorded in this tracking period.',
+              message:
+                  'No administrative or clinical actions have been recorded in this tracking period.',
             )
           : ListView.separated(
               padding: const EdgeInsets.all(16),

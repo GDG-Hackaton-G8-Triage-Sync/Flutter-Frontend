@@ -158,7 +158,9 @@ class OnboardingScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(32),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF005EB8).withValues(alpha: 0.25),
+                            color: const Color(
+                              0xFF005EB8,
+                            ).withValues(alpha: 0.25),
                             blurRadius: 40,
                             offset: const Offset(0, 20),
                           ),
@@ -177,26 +179,28 @@ class OnboardingScreen extends StatelessWidget {
                             ),
                             // Hero Asset (Platform Aware)
                             Center(
-                              child: kIsWeb 
-                                ? Container(
-                                    width: 120,
-                                    height: 120,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.1),
-                                      shape: BoxShape.circle,
+                              child: kIsWeb
+                                  ? Container(
+                                      width: 120,
+                                      height: 120,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.1,
+                                        ),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.monitor_heart,
+                                        color: Colors.white,
+                                        size: 64,
+                                      ),
+                                    )
+                                  : Image.file(
+                                      File(
+                                        'C:/Users/ms/.gemini/antigravity/brain/935f1e90-cd78-4fb3-b776-aa0c23c57abb/medical_ai_triage_hero_1776637124258.png',
+                                      ),
+                                      fit: BoxFit.contain,
                                     ),
-                                    child: const Icon(
-                                      Icons.monitor_heart,
-                                      color: Colors.white,
-                                      size: 64,
-                                    ),
-                                  )
-                                : Image.file(
-                                    File(
-                                      'C:/Users/ms/.gemini/antigravity/brain/935f1e90-cd78-4fb3-b776-aa0c23c57abb/medical_ai_triage_hero_1776637124258.png',
-                                    ),
-                                    fit: BoxFit.contain,
-                                  ),
                             ),
                             // Gradient Overlay for depth
                             Positioned.fill(
@@ -207,7 +211,9 @@ class OnboardingScreen extends StatelessWidget {
                                     end: Alignment.bottomCenter,
                                     colors: [
                                       Colors.transparent,
-                                      const Color(0xFF001A33).withValues(alpha: 0.6),
+                                      const Color(
+                                        0xFF001A33,
+                                      ).withValues(alpha: 0.6),
                                     ],
                                   ),
                                 ),
@@ -524,7 +530,7 @@ class HeartbeatPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final y = size.height / 2;
-    
+
     // Define the base EKG pulse shape
     final path = Path();
     path.moveTo(0, y);
@@ -544,7 +550,7 @@ class HeartbeatPainter extends CustomPainter {
 
     // Calculate shifting offset for the seamless loop
     final shift = progress * size.width;
-    
+
     canvas.save();
     canvas.translate(-shift, 0);
 

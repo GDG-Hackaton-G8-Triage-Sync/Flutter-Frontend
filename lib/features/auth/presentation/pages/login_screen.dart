@@ -78,8 +78,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isBiometricLoading = true);
     try {
       final LocalAuthentication auth = LocalAuthentication();
-      final bool canAuthenticateWithBiometrics =
-          await auth.canCheckBiometrics;
+      final bool canAuthenticateWithBiometrics = await auth.canCheckBiometrics;
       final bool canAuthenticate =
           canAuthenticateWithBiometrics || await auth.isDeviceSupported();
 
@@ -122,7 +121,9 @@ class _LoginScreenState extends State<LoginScreen> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Saved credentials are incomplete. Please sign in again.'),
+            content: Text(
+              'Saved credentials are incomplete. Please sign in again.',
+            ),
           ),
         );
         return;
@@ -203,9 +204,42 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF7F9FB),
-      body: Stack(
+    // Force light theme for the login screen to match its white background
+    final lightTheme = Theme.of(context).copyWith(
+      brightness: Brightness.light,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: const Color(0xFF005EB8),
+        brightness: Brightness.light,
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: const Color(0xFFF7F9FB),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFDDE4F0)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFDDE4F0)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFF005EB8), width: 2),
+        ),
+        labelStyle: const TextStyle(color: Color(0xFF73777F)),
+        hintStyle: const TextStyle(color: Color(0xFF73777F)),
+      ),
+      textTheme: Theme.of(context).textTheme.apply(
+        bodyColor: const Color(0xFF1A1C1E),
+        displayColor: const Color(0xFF1A1C1E),
+      ),
+    );
+
+    return Theme(
+      data: lightTheme,
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF7F9FB),
+        body: Stack(
         children: [
           Positioned(
             top: -100,
@@ -286,7 +320,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             prefixIcon: Icon(Icons.email_outlined),
                           ),
                           validator: (v) {
-                            if (v == null || v.isEmpty) return 'Email is required';
+                            if (v == null || v.isEmpty) {
+                              return 'Email is required';
+                            }
                             if (!v.contains('@')) return 'Enter a valid email';
                             return null;
                           },
@@ -300,14 +336,20 @@ class _LoginScreenState extends State<LoginScreen> {
                             prefixIcon: const Icon(Icons.lock_outline),
                             suffixIcon: IconButton(
                               icon: Icon(
-                                _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                                _obscurePassword
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
                                 color: const Color(0xFF73777F),
                               ),
-                              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                              onPressed: () => setState(
+                                () => _obscurePassword = !_obscurePassword,
+                              ),
                             ),
                           ),
                           validator: (v) {
-                            if (v == null || v.isEmpty) return 'Password is required';
+                            if (v == null || v.isEmpty) {
+                              return 'Password is required';
+                            }
                             return null;
                           },
                         ),
@@ -339,14 +381,16 @@ class _LoginScreenState extends State<LoginScreen> {
                                 onPressed: (_isLoading || _isBiometricLoading)
                                     ? null
                                     : () async {
-                                  await HapticFeedback.mediumImpact();
-                                  await _handleBiometricLogin();
-                                },
+                                        await HapticFeedback.mediumImpact();
+                                        await _handleBiometricLogin();
+                                      },
                                 icon: _isBiometricLoading
                                     ? const SizedBox(
                                         width: 18,
                                         height: 18,
-                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
                                       )
                                     : const Icon(
                                         Icons.fingerprint,
@@ -361,7 +405,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                                 style: OutlinedButton.styleFrom(
                                   side: BorderSide(
-                                    color: const Color(0xFF005EB8).withValues(alpha: 0.15),
+                                    color: const Color(
+                                      0xFF005EB8,
+                                    ).withValues(alpha: 0.15),
                                     width: 1.5,
                                   ),
                                   shape: RoundedRectangleBorder(
@@ -383,9 +429,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               );
                             },
-                            child: const Text(
-                              'New here? Create your account',
-                            ),
+                            child: const Text('New here? Create your account'),
                           ),
                         ),
                         const SizedBox(height: 24),
@@ -417,7 +461,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ],
       ),
-    );
+    ));
   }
 
   Widget _footerLink(String label) {

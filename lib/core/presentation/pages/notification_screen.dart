@@ -8,7 +8,10 @@ class NotificationInboxScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9FB),
       appBar: AppBar(
-        title: const Text('Notifications', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Notifications',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: Colors.white,
         elevation: 0,
         actions: [
@@ -53,7 +56,14 @@ class NotificationInboxScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildNotification(String title, String desc, String time, IconData icon, Color color, {bool isNew = false}) {
+  Widget _buildNotification(
+    String title,
+    String desc,
+    String time,
+    IconData icon,
+    Color color, {
+    bool isNew = false,
+  }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -65,18 +75,32 @@ class NotificationInboxScreen extends StatelessWidget {
         contentPadding: const EdgeInsets.all(16),
         leading: Container(
           padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            shape: BoxShape.circle,
+          ),
           child: Icon(icon, color: color),
         ),
         title: Row(
           children: [
-            Expanded(child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold))),
-            Text(time, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            Text(
+              time,
+              style: const TextStyle(fontSize: 11, color: Colors.grey),
+            ),
           ],
         ),
         subtitle: Padding(
           padding: const EdgeInsets.only(top: 4),
-          child: Text(desc, style: TextStyle(color: Colors.grey[700], fontSize: 13)),
+          child: Text(
+            desc,
+            style: TextStyle(color: Colors.grey[700], fontSize: 13),
+          ),
         ),
       ),
     );

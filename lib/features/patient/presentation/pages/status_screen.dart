@@ -118,7 +118,8 @@ class _StatusScreenState extends State<StatusScreen> {
           return EmptyState(
             icon: Icons.assignment_outlined,
             title: 'No Pending Triage',
-            message: 'You have no active triage sessions. Submit your symptoms in the Triage tab to get a priority assessment from our clinical engine.',
+            message:
+                'You have no active triage sessions. Submit your symptoms in the Triage tab to get a priority assessment from our clinical engine.',
             actionLabel: 'OPEN HISTORY',
             onAction: () {
               Navigator.push(
@@ -142,7 +143,7 @@ class _StatusScreenState extends State<StatusScreen> {
               // AI Live Forecast Card (The "Wow" Factor)
               if (result.status == 'waiting' && analytics != null)
                 _buildAIForecast(analytics),
-              
+
               const SizedBox(height: 12),
 
               // Priority Hero Card
@@ -283,13 +284,33 @@ class _StatusScreenState extends State<StatusScreen> {
                           SizedBox(
                             width: double.infinity,
                             child: TextButton.icon(
-                              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => PatientTimelineScreen(item: result))),
-                              icon: const Icon(Icons.timeline_outlined, size: 16),
-                              label: const Text('VIEW LIVE CARE TIMELINE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.1)),
+                              onPressed: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      PatientTimelineScreen(item: result),
+                                ),
+                              ),
+                              icon: const Icon(
+                                Icons.timeline_outlined,
+                                size: 16,
+                              ),
+                              label: const Text(
+                                'VIEW LIVE CARE TIMELINE',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1.1,
+                                ),
+                              ),
                               style: TextButton.styleFrom(
                                 foregroundColor: priorityColor,
-                                backgroundColor: priorityColor.withValues(alpha: 0.1),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                backgroundColor: priorityColor.withValues(
+                                  alpha: 0.1,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                               ),
                             ),
                           ),
@@ -404,6 +425,8 @@ class _StatusScreenState extends State<StatusScreen> {
         );
       },
     );
+  }
+
   Widget _buildAIForecast(WaitingAnalytics analytics) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -445,11 +468,19 @@ class _StatusScreenState extends State<StatusScreen> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.check_circle, color: Colors.greenAccent, size: 12),
+                    const Icon(
+                      Icons.check_circle,
+                      color: Colors.greenAccent,
+                      size: 12,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       '${(analytics.aiConfidence * 100).toInt()}% CONFIDENCE',
-                      style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 8,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
@@ -517,7 +548,11 @@ class _StatusScreenState extends State<StatusScreen> {
                 Expanded(
                   child: Text(
                     analytics.message,
-                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
               ],

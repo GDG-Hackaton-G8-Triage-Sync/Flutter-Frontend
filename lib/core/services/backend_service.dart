@@ -162,7 +162,8 @@ class BackendService {
         if (bloodType != null) 'blood_type': bloodType,
         if (healthHistory != null) 'health_history': healthHistory,
         if (allergies != null) 'allergies': allergies,
-        if (currentMedications != null) 'current_medications': currentMedications,
+        if (currentMedications != null)
+          'current_medications': currentMedications,
         if (badHabits != null) 'bad_habits': badHabits,
       },
     );
@@ -201,12 +202,12 @@ class BackendService {
           .whereType<Map<String, dynamic>>()
           .map(TriageItem.fromJson)
           .toList();
-      
+
       // Cache the full list for offline redundancy
       await CacheService.instance.cachePatients(items);
-      
+
       return items;
-    } on DioException catch (e) {
+    } on DioException catch (_) {
       // If offline or server down, fallback to cache
       final cached = CacheService.instance.getCachedPatients();
       if (cached.isNotEmpty) {

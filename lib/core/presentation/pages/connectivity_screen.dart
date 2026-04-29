@@ -10,9 +10,7 @@ class ConnectivityScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
-        child: OfflineVisual(onRetry: onRetry),
-      ),
+      body: SafeArea(child: OfflineVisual(onRetry: onRetry)),
     );
   }
 }

@@ -33,7 +33,9 @@ class _PatientHomeTabState extends State<PatientHomeTab> {
 
   Future<void> _loadLatest() async {
     try {
-      final items = await BackendService.instance.getPatientSubmissionsByEmail(widget.email);
+      final items = await BackendService.instance.getPatientSubmissionsByEmail(
+        widget.email,
+      );
       if (items.isNotEmpty) {
         // Sort by date to get the absolute latest if the backend doesn't
         items.sort((a, b) => b.createdAt.compareTo(a.createdAt));
@@ -84,7 +86,9 @@ class _PatientHomeTabState extends State<PatientHomeTab> {
             ),
             const SizedBox(height: 4),
             Text(
-              widget.name.isNotEmpty ? 'Welcome, ${widget.name.split(' ').first}' : 'Welcome Back',
+              widget.name.isNotEmpty
+                  ? 'Welcome, ${widget.name.split(' ').first}'
+                  : 'Welcome Back',
               style: const TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.w900,
@@ -117,7 +121,10 @@ class _PatientHomeTabState extends State<PatientHomeTab> {
         onPressed: () {},
         icon: const Badge(
           label: Text('2'),
-          child: Icon(Icons.notifications_active_outlined, color: Color(0xFF005EB8)),
+          child: Icon(
+            Icons.notifications_active_outlined,
+            color: Color(0xFF005EB8),
+          ),
         ),
       ),
     );
@@ -155,16 +162,27 @@ class _PatientHomeTabState extends State<PatientHomeTab> {
         ),
         child: Column(
           children: [
-            const Icon(Icons.medical_services_outlined, color: Colors.white, size: 32),
+            const Icon(
+              Icons.medical_services_outlined,
+              color: Colors.white,
+              size: 32,
+            ),
             const SizedBox(height: 12),
             const Text(
               'No Active Triage Session',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
             ),
             const SizedBox(height: 4),
             Text(
               'Start a session if you feel unwell',
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13),
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.8),
+                fontSize: 13,
+              ),
             ),
             const SizedBox(height: 24),
             PremiumButton(
@@ -226,7 +244,10 @@ class _PatientHomeTabState extends State<PatientHomeTab> {
                   children: [
                     Text(
                       _latestTriage!.condition,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
                     ),
                     Text(
                       'Priority ${_latestTriage!.priority} • Triage #${_latestTriage!.id}',
@@ -239,7 +260,9 @@ class _PatientHomeTabState extends State<PatientHomeTab> {
           ),
           const SizedBox(height: 16),
           LinearProgressIndicator(
-            value: status == 'waiting' ? 0.3 : (status == 'in_progress' ? 0.7 : 1.0),
+            value: status == 'waiting'
+                ? 0.3
+                : (status == 'in_progress' ? 0.7 : 1.0),
             backgroundColor: Colors.grey[100],
             color: color,
             borderRadius: BorderRadius.circular(10),
@@ -247,7 +270,11 @@ class _PatientHomeTabState extends State<PatientHomeTab> {
           const SizedBox(height: 12),
           Text(
             _getStatusMessage(status),
-            style: TextStyle(fontSize: 12, color: Colors.grey[700], fontStyle: FontStyle.italic),
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[700],
+              fontStyle: FontStyle.italic,
+            ),
           ),
         ],
       ),
@@ -301,12 +328,15 @@ class _PatientHomeTabState extends State<PatientHomeTab> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => PatientTimelineScreen(item: _latestTriage!),
+                      builder: (_) =>
+                          PatientTimelineScreen(item: _latestTriage!),
                     ),
                   );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('No active care journey found.')),
+                    const SnackBar(
+                      content: Text('No active care journey found.'),
+                    ),
                   );
                 }
               },
@@ -321,21 +351,42 @@ class _PatientHomeTabState extends State<PatientHomeTab> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('EMERGENCY HOTLINE', style: TextStyle(color: Color(0xFFBA1A1A), fontWeight: FontWeight.bold)),
-        content: const Text('Do you want to dial the Hospital Emergency Dispatch (911)?'),
+        title: const Text(
+          'EMERGENCY HOTLINE',
+          style: TextStyle(
+            color: Color(0xFFBA1A1A),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: const Text(
+          'Do you want to dial the Hospital Emergency Dispatch (911)?',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('CANCEL')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('CANCEL'),
+          ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx),
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFBA1A1A)),
-            child: const Text('DIAL NOW', style: TextStyle(color: Colors.white)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFBA1A1A),
+            ),
+            child: const Text(
+              'DIAL NOW',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _actionTile(String label, IconData icon, Color color, VoidCallback onTap) {
+  Widget _actionTile(
+    String label,
+    IconData icon,
+    Color color,
+    VoidCallback onTap,
+  ) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
@@ -352,7 +403,11 @@ class _PatientHomeTabState extends State<PatientHomeTab> {
             const SizedBox(height: 8),
             Text(
               label,
-              style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 13),
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
             ),
           ],
         ),
@@ -377,7 +432,11 @@ class _PatientHomeTabState extends State<PatientHomeTab> {
               children: [
                 const Text(
                   'Health Tip: Hydration',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF002D57)),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: Color(0xFF002D57),
+                  ),
                 ),
                 Text(
                   'Drinking 8 glasses of water daily keeps your immune system ready.',
@@ -393,19 +452,27 @@ class _PatientHomeTabState extends State<PatientHomeTab> {
 
   Color _getStatusColor(String status) {
     switch (status) {
-      case 'waiting': return const Color(0xFFF57C00);
-      case 'in_progress': return const Color(0xFF005EB8);
-      case 'completed': return const Color(0xFF146C2E);
-      default: return Colors.grey;
+      case 'waiting':
+        return const Color(0xFFF57C00);
+      case 'in_progress':
+        return const Color(0xFF005EB8);
+      case 'completed':
+        return const Color(0xFF146C2E);
+      default:
+        return Colors.grey;
     }
   }
 
   String _getStatusMessage(String status) {
     switch (status) {
-      case 'waiting': return 'Physician has received your data and is reviewing.';
-      case 'in_progress': return 'A nurse is currently preparing your clinical plan.';
-      case 'completed': return 'Session complete. Take-home notes available.';
-      default: return '';
+      case 'waiting':
+        return 'Physician has received your data and is reviewing.';
+      case 'in_progress':
+        return 'A nurse is currently preparing your clinical plan.';
+      case 'completed':
+        return 'Session complete. Take-home notes available.';
+      default:
+        return '';
     }
   }
 
@@ -419,7 +486,11 @@ class _PatientHomeTabState extends State<PatientHomeTab> {
       ),
       child: Text(
         status.toUpperCase(),
-        style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 10),
+        style: TextStyle(
+          color: color,
+          fontWeight: FontWeight.bold,
+          fontSize: 10,
+        ),
       ),
     );
   }

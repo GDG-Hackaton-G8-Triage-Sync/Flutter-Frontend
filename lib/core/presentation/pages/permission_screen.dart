@@ -50,7 +50,11 @@ class PermissionRationaleScreen extends StatelessWidget {
               Text(
                 rationale,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16, color: Colors.grey[600], height: 1.6),
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey[600],
+                  height: 1.6,
+                ),
               ),
               const SizedBox(height: 48),
               SizedBox(
@@ -64,7 +68,13 @@ class PermissionRationaleScreen extends StatelessWidget {
               const SizedBox(height: 16),
               TextButton(
                 onPressed: onCancel,
-                child: const Text('NOT NOW', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+                child: const Text(
+                  'NOT NOW',
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ],
           ),

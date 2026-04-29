@@ -8,7 +8,10 @@ class AboutTrustScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9FB),
       appBar: AppBar(
-        title: const Text('System Trust & Architecture', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'System Trust & Architecture',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: Colors.white,
         elevation: 0,
       ),
@@ -55,23 +58,43 @@ class AboutTrustScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(colors: [Color(0xFF00478D), Color(0xFF005EB8)]),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF00478D), Color(0xFF005EB8)],
+        ),
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [BoxShadow(color: const Color(0xFF005EB8).withValues(alpha: 0.3), blurRadius: 20, offset: const Offset(0, 8))],
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF005EB8).withValues(alpha: 0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         children: [
-          const Icon(Icons.verified_user_outlined, color: Colors.white, size: 48),
+          const Icon(
+            Icons.verified_user_outlined,
+            color: Colors.white,
+            size: 48,
+          ),
           const SizedBox(height: 16),
           const Text(
             'Clinical Masterpiece',
-            style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900, fontFamily: 'Manrope'),
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.w900,
+              fontFamily: 'Manrope',
+            ),
           ),
           const SizedBox(height: 4),
           Text(
             'Built to solve healthcare congestion with resilience and empathy.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 13),
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.9),
+              fontSize: 13,
+            ),
           ),
         ],
       ),
@@ -83,7 +106,12 @@ class AboutTrustScreen extends StatelessWidget {
       padding: const EdgeInsets.only(left: 4, bottom: 12),
       child: Text(
         title.toUpperCase(),
-        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF73777F), letterSpacing: 1.2),
+        style: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+          color: Color(0xFF73777F),
+          letterSpacing: 1.2,
+        ),
       ),
     );
   }
@@ -103,9 +131,22 @@ class AboutTrustScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
                   const SizedBox(height: 4),
-                  Text(desc, style: TextStyle(color: Colors.grey[700], fontSize: 13, height: 1.4)),
+                  Text(
+                    desc,
+                    style: TextStyle(
+                      color: Colors.grey[700],
+                      fontSize: 13,
+                      height: 1.4,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -122,7 +163,14 @@ class AboutTrustScreen extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 14)),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1A1C1E))),
+          Text(
+            value,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+              color: Color(0xFF1A1C1E),
+            ),
+          ),
         ],
       ),
     );
