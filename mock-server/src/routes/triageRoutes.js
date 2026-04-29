@@ -1,3 +1,4 @@
+const express = require('express');
 const {
     deriveTriageLogic,
 } = require("../services/triageService");

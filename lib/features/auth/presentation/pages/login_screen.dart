@@ -204,42 +204,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Force light theme for the login screen to match its white background
-    final lightTheme = Theme.of(context).copyWith(
-      brightness: Brightness.light,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xFF005EB8),
-        brightness: Brightness.light,
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: const Color(0xFFF7F9FB),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFDDE4F0)),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFDDE4F0)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF005EB8), width: 2),
-        ),
-        labelStyle: const TextStyle(color: Color(0xFF73777F)),
-        hintStyle: const TextStyle(color: Color(0xFF73777F)),
-      ),
-      textTheme: Theme.of(context).textTheme.apply(
-        bodyColor: const Color(0xFF1A1C1E),
-        displayColor: const Color(0xFF1A1C1E),
-      ),
-    );
-
-    return Theme(
-      data: lightTheme,
-      child: Scaffold(
-        backgroundColor: const Color(0xFFF7F9FB),
-        body: Stack(
+    return Scaffold(
+      backgroundColor: const Color(0xFFF7F9FB),
+      body: Stack(
         children: [
           Positioned(
             top: -100,
@@ -461,7 +428,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ],
       ),
-    ));
+    );
   }
 
   Widget _footerLink(String label) {

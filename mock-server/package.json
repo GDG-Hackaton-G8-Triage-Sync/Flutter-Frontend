@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "private": true,
     "scripts": {
-        "server": "node mock-server/server.js"
+        "server": "node server.js"
     },
     "dependencies": {
         "bcryptjs": "^3.0.3",
