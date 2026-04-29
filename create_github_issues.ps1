@@ -117,7 +117,7 @@ gh issue create --repo $repo --title "[Member 1] Patient status tracking screen"
 Write-Host "Creating Issue 11..."
 $body11 = @'
 **Dependencies:** #3
-**Description:** Simple WelcomeScreen (no permissions needed after speech removal). Just intro and login/continue button.
+**Description:** Simple WelcomeScreen (no permissions needed after permissions cleanup). Just intro and login/continue button.
 **Acceptance Criteria:**
 - [ ] Displays app name and tagline
 - [ ] Button navigates to login or symptom input

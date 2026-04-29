@@ -1,0 +1,126 @@
+{
+  "authUsers": [
+    {
+      "id": 1,
+      "name": "Patient Demo",
+      "email": "patient@triagesync.com",
+      "password": "$2b$08$vH.nf1aW2TKkq0kpF9UJ7OtT0zDLxkOAcYkzyVeTQbPUOaxgRgfKi",
+      "role": "patient"
+    },
+    {
+      "id": 2,
+      "name": "Staff Demo",
+      "email": "staff@triagesync.com",
+      "password": "$2b$08$5TzC6jR9p/NnIdNLmByWYugxKlQqH7YmjT1hF2DBbO9SJjPEzk9z6",
+      "role": "staff"
+    },
+    {
+      "id": 3,
+      "name": "Admin Demo",
+      "email": "admin@triagesync.com",
+      "password": "$2b$08$HV6aG5TPb65WM.p1gXnAUeU797Hkir4HpiX/F3BLyvLa17kI4YfYi",
+      "role": "admin"
+    },
+    {
+      "id": 4,
+      "name": "Abel Updated",
+      "email": "abel.updated@gmail.com",
+      "password": "$2b$08$jlDWq6dBZimiSEyAZBDYzO1nHbsqEbdfl9F7J0KS5RJPDDR1AfC2W",
+      "role": "patient"
+    }
+  ],
+  "triageSubmissions": [
+    {
+      "id": 101,
+      "email": "patient@triagesync.com",
+      "description": "Chest pain and sweating",
+      "priority": 2,
+      "urgency_score": 95,
+      "condition": "Cardiac Event",
+      "status": "completed",
+      "created_at": "2026-04-14T10:30:00Z",
+      "photo_name": "ecg.jpg"
+    },
+    {
+      "id": 102,
+      "email": "patient@triagesync.com",
+      "description": "Headache and nausea",
+      "priority": 3,
+      "urgency_score": 60,
+      "condition": "Migraine",
+      "status": "in_progress",
+      "created_at": "2026-04-14T11:10:00Z",
+      "photo_name": ""
+    },
+    {
+      "id": 103,
+      "email": "patient@triagesync.com",
+      "description": "Shortness of breath and chest pressure",
+      "priority": 5,
+      "urgency_score": 10,
+      "condition": "General Assessment",
+      "status": "waiting",
+      "created_at": "2026-04-18T12:03:41.238Z",
+      "photo_name": "sample.jpg"
+    },
+    {
+      "id": 104,
+      "email": "patient@triagesync.com",
+      "description": "Smoke test",
+      "priority": 5,
+      "urgency_score": 10,
+      "condition": "General Assessment",
+      "status": "waiting",
+      "created_at": "2026-04-18T14:06:34.578Z",
+      "photo_name": ""
+    },
+    {
+      "id": 105,
+      "email": "patient@triagesync.com",
+      "description": "Smoke test",
+      "priority": 5,
+      "urgency_score": 10,
+      "condition": "General Assessment",
+      "status": "waiting",
+      "created_at": "2026-04-18T14:07:02.996Z",
+      "photo_name": ""
+    },
+    {
+      "id": 106,
+      "email": "patient@triagesync.com",
+      "description": "WS new patient",
+      "priority": 5,
+      "urgency_score": 10,
+      "condition": "General Assessment",
+      "status": "waiting",
+      "created_at": "2026-04-18T14:13:44.850Z",
+      "photo_name": ""
+    }
+  ],
+  "adminUsers": [
+    {
+      "id": 1,
+      "name": "Patient Demo",
+      "email": "patient@triagesync.com",
+      "role": "patient"
+    },
+    {
+      "id": 2,
+      "name": "Staff Demo",
+      "email": "staff@triagesync.com",
+      "role": "staff"
+    },
+    {
+      "id": 3,
+      "name": "Admin Demo",
+      "email": "admin@triagesync.com",
+      "role": "admin"
+    },
+    {
+      "id": 4,
+      "name": "Abel Updated",
+      "email": "abel.updated@gmail.com",
+      "role": "patient"
+    }
+  ]
+}

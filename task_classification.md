@@ -1,4 +1,4 @@
-## Final Task Classification (No Speech, No Frontend Localization)
+## Final Task Classification (Final Task Classification)
 
 **Removed:** All UI localization (`l10n/`, ARB files, `AppLocalizations`, multi-language support).  
 **Added:** Clear **task dependencies** so members know who must finish first.
@@ -42,7 +42,7 @@ Deliver **stubs in first 24 hours** (return fake data). Then replace with real i
 | 2 | Symptom Input UI | `lib/features/patient/symptom_input/symptom_input_screen.dart` – Text field, submit button, loading/error/success states |
 | 3 | Success screen | `lib/features/patient/success/submission_success_screen.dart` – Confirmation with patient ID |
 | 4 | Status tracking UI | `lib/features/patient/status_tracking/patient_status_screen.dart` – Watches `patientStatusProvider`, shows queue position, urgency, timeline |
-| 5 | Onboarding (no mic) | `lib/features/patient/onboarding/welcome_screen.dart` – Simple welcome, no permissions |
+| 5 | Onboarding (text-only) | `lib/features/patient/onboarding/welcome_screen.dart` – Simple welcome, no permissions |
 | 6 | Unit & widget tests | `test/features/patient/` – Mock `triageRepositoryProvider` and `patientStatusProvider` |
 
 **🚫 Do not touch:** Staff, admin, auth, WebSocket internals, localization (removed).  
@@ -71,7 +71,7 @@ Deliver **stubs in first 24 hours** (return fake data). Then replace with real i
 
 ---
 
-## 👨‍🎨 Member 3 – Admin Panel (No localization, no speech)
+## 👨‍🎨 Member 3 – Admin Panel (No localization, without extra permissions)
 
 **⏱️ Can start AFTER Leader delivers admin API stubs (Day 2 morning).**  
 **⏱️ No dependency on Member 1 or Member 2.**

@@ -1,0 +1,16 @@
+{
+    "name": "triagesync-frontend-mock-backend",
+    "version": "1.0.0",
+    "private": true,
+    "scripts": {
+        "server": "node server.js"
+    },
+    "dependencies": {
+        "bcryptjs": "^3.0.3",
+        "express-ws": "^5.0.2",
+        "json-server": "^0.17.4",
+        "jsonwebtoken": "^9.0.3",
+        "morgan": "^1.10.1",
+        "ws": "^8.18.0"
+    }
+}

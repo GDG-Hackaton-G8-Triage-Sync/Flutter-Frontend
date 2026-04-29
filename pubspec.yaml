@@ -20,8 +20,9 @@ dependencies:
   flutter_riverpod: ^2.5.0
   riverpod_annotation: ^2.3.0
 
-  dio: ^5.4.0
+  dio: ^5.9.2
   web_socket_channel: ^2.4.0
+  image_picker: ^1.1.2
 
   flutter_secure_storage: ^9.2.0
   shared_preferences: ^2.2.0
@@ -29,6 +30,13 @@ dependencies:
   json_annotation: ^4.9.0
   freezed_annotation: ^2.4.0
   flutter_animate : ^4.5.0
+  flutter_dotenv: ^6.0.0
+  google_fonts: ^8.0.2
+  local_auth: ^3.0.1
+  speech_to_text: 7.3.0
+  fl_chart: ^0.71.0
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
 
 dev_dependencies:
   flutter_test:
@@ -40,6 +48,9 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
+  build_runner: ^2.4.14
+  freezed: ^2.5.8
+  json_serializable: ^6.9.5
 
 flutter:
   uses-material-design: true

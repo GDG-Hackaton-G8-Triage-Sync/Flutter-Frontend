@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'app.dart';
+import 'package:flutter_frontend/app.dart';
+import 'package:flutter_frontend/core/services/cache_service.dart';
 
 Future<void> mainCommon() async {
-  // Catch all Flutter errors
+  WidgetsFlutterBinding.ensureInitialized();
+  await CacheService.instance.init();
+  // Catch all Flutter errors securely without triggering Web inspector bugs
   FlutterError.onError = (FlutterErrorDetails details) {
-    FlutterError.dumpErrorToConsole(details);
-    // In production, send to Sentry or similar
+    debugPrint('FLUTTER_ERROR: ${details.exceptionAsString()}');
+    if (details.stack != null) {
+      debugPrint(details.stack.toString());
+    }
   };
 
   runApp(const ProviderScope(child: TriageSyncApp()));
