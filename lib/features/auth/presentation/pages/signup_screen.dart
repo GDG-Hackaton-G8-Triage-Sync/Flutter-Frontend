@@ -94,7 +94,9 @@ class _SignupScreenState extends State<SignupScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Registration successful. Please sign in.'),
+          content: Text(
+            'Registration successful. Please sign in with your full name.',
+          ),
         ),
       );
       Navigator.pushAndRemoveUntil(

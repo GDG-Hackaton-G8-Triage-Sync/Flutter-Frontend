@@ -69,7 +69,13 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
             : _statusFilterController.text.trim(),
       );
 
-      items.sort((a, b) => b.urgencyScore.compareTo(a.urgencyScore));
+      items.sort((a, b) {
+        final priorityCompare = a.priority.compareTo(b.priority);
+        if (priorityCompare != 0) return priorityCompare;
+        final urgencyCompare = b.urgencyScore.compareTo(a.urgencyScore);
+        if (urgencyCompare != 0) return urgencyCompare;
+        return a.createdAt.compareTo(b.createdAt);
+      });
 
       if (!mounted) return;
 
@@ -155,6 +161,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
     final waiting = _patients.where((p) => p.status == 'waiting').length;
     final inProgress = _patients.where((p) => p.status == 'in_progress').length;
     final total = _patients.length;
+    final critical = _patients.where((p) => p.priority == 1).length;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9FB),
@@ -200,7 +207,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
       ),
       body: Column(
         children: [
-          _buildQuickStatsStrip(waiting, inProgress, total),
+          _buildQuickStatsStrip(waiting, inProgress, critical),
           _buildAIPredictiveBanner(waiting),
           _buildFilterBar(),
           Expanded(
@@ -249,7 +256,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
   Widget _buildAIPredictiveBanner(int waitingCount) {
     if (waitingCount == 0) return const SizedBox.shrink();
 
-    // Pro-grade predictive logic: assumes 1 intake every 12 mins per active nurse (mocked)
+    // Local predictive estimate until the backend provides wait analytics.
     final estMinutes = waitingCount * 12;
     final saturation = (waitingCount / 10).clamp(0.0, 1.0);
 

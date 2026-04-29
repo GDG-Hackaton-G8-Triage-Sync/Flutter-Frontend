@@ -1,8 +1,6 @@
-import 'dart:io';
-
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 
+import 'package:flutter_frontend/core/config/api_config.dart';
 import 'package:flutter_frontend/core/models/api_models.dart';
 import 'package:flutter_frontend/core/services/session_service.dart';
 import 'package:flutter_frontend/core/services/cache_service.dart';
@@ -15,19 +13,7 @@ class BackendService {
 
   static final BackendService instance = BackendService._();
 
-  static String get _baseUrl {
-    const envUrl = String.fromEnvironment('API_URL', defaultValue: '');
-    if (envUrl.isNotEmpty) {
-      return envUrl;
-    }
-    if (kIsWeb) {
-      return 'http://localhost:3001';
-    }
-    if (Platform.isAndroid) {
-      return 'http://10.0.2.2:3001';
-    }
-    return 'http://localhost:3001';
-  }
+  static String get _baseUrl => ApiConfig.baseUrl;
 
   final SessionService _sessionService = SessionService();
 
@@ -104,10 +90,12 @@ class BackendService {
   Future<String> _refreshAccessToken(String refreshToken) async {
     final response = await _authDio.post<Map<String, dynamic>>(
       '/api/v1/auth/refresh/',
-      data: <String, dynamic>{'refresh_token': refreshToken},
+      data: <String, dynamic>{'refresh': refreshToken},
     );
 
-    final token = (response.data?['access_token'] ?? '') as String;
+    final token =
+        (response.data?['access_token'] ?? response.data?['access'] ?? '')
+            .toString();
     if (token.isEmpty) {
       throw Exception('Refresh token response missing access token');
     }
@@ -121,10 +109,14 @@ class BackendService {
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
       '/api/v1/auth/login/',
-      data: <String, dynamic>{'email': email, 'password': password},
+      data: <String, dynamic>{'username': email, 'password': password},
     );
 
     final auth = AuthResponse.fromJson(response.data ?? <String, dynamic>{});
+
+    if (auth.accessToken.isEmpty || auth.refreshToken.isEmpty) {
+      throw Exception('Login response missing JWT tokens');
+    }
 
     await _sessionService.saveSession(
       accessToken: auth.accessToken,
@@ -150,15 +142,17 @@ class BackendService {
     String? currentMedications,
     String? badHabits,
   }) async {
+    final backendRole = role == 'staff' ? 'nurse' : role;
+
     await _dio.post<void>(
       '/api/v1/auth/register/',
       data: <String, dynamic>{
         'name': name,
         'email': email,
         'password': password,
-        'role': role,
+        'role': backendRole,
+        if (age != null || backendRole != 'patient') 'age': age ?? 0,
         if (gender != null) 'gender': gender,
-        if (age != null) 'age': age,
         if (bloodType != null) 'blood_type': bloodType,
         if (healthHistory != null) 'health_history': healthHistory,
         if (allergies != null) 'allergies': allergies,
@@ -189,15 +183,15 @@ class BackendService {
     String? status,
   }) async {
     try {
-      final response = await _dio.get<List<dynamic>>(
-        '/api/v1/staff/patients/',
+      final response = await _dio.get<dynamic>(
+        '/api/v1/dashboard/staff/patients/',
         queryParameters: <String, dynamic>{
           if (priority != null) 'priority': priority,
           if (status != null && status.isNotEmpty) 'status': status,
         },
       );
 
-      final data = response.data ?? <dynamic>[];
+      final data = _extractList(response.data);
       final items = data
           .whereType<Map<String, dynamic>>()
           .map(TriageItem.fromJson)
@@ -221,36 +215,36 @@ class BackendService {
     required int id,
     required String status,
   }) async {
-    final response = await _dio.patch<Map<String, dynamic>>(
-      '/api/v1/staff/patient/$id/status/',
+    await _dio.patch<Map<String, dynamic>>(
+      '/api/v1/dashboard/staff/patient/$id/status/',
       data: <String, dynamic>{'status': status},
     );
 
-    return TriageItem.fromJson(response.data ?? <String, dynamic>{});
+    return _fetchStaffPatientById(id);
   }
 
   Future<TriageItem> updatePatientPriority({
     required int id,
     required int priority,
   }) async {
-    final response = await _dio.patch<Map<String, dynamic>>(
-      '/api/v1/staff/patient/$id/priority/',
+    await _dio.patch<Map<String, dynamic>>(
+      '/api/v1/dashboard/staff/patient/$id/priority/',
       data: <String, dynamic>{'priority': priority},
     );
 
-    return TriageItem.fromJson(response.data ?? <String, dynamic>{});
+    return _fetchStaffPatientById(id);
   }
 
   Future<TriageItem> verifyTriage({
     required int id,
     required String nurseName,
   }) async {
-    final response = await _dio.patch<Map<String, dynamic>>(
-      '/api/v1/staff/patient/$id/verify/',
-      data: <String, dynamic>{'verified_by': nurseName},
+    await _dio.patch<Map<String, dynamic>>(
+      '/api/v1/dashboard/staff/patient/$id/verify/',
+      data: <String, dynamic>{},
     );
 
-    return TriageItem.fromJson(response.data ?? <String, dynamic>{});
+    return _fetchStaffPatientById(id);
   }
 
   Future<TriageItem> logVitals({
@@ -259,35 +253,42 @@ class BackendService {
     required String heartRate,
     required String temperature,
   }) async {
-    final response = await _dio.post<Map<String, dynamic>>(
-      '/api/v1/staff/patient/$id/vitals/',
-      data: <String, dynamic>{
-        'bp': bp,
-        'heart_rate': heartRate,
-        'temperature': temperature,
-      },
+    throw UnsupportedError(
+      'The Django backend does not expose a vitals logging endpoint yet.',
     );
-
-    return TriageItem.fromJson(response.data ?? <String, dynamic>{});
   }
 
   Future<AdminOverview> getAdminOverview() async {
-    final response = await _dio.get<Map<String, dynamic>>(
-      '/api/v1/admin/overview/',
-    );
-    return AdminOverview.fromJson(response.data ?? <String, dynamic>{});
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/api/v1/dashboard/admin/overview/',
+      );
+      return AdminOverview.fromJson(response.data ?? <String, dynamic>{});
+    } on DioException catch (error) {
+      if (error.response?.statusCode == 403) {
+        return AdminOverview.fromJson(<String, dynamic>{});
+      }
+      rethrow;
+    }
   }
 
   Future<AdminAnalytics> getAdminAnalytics() async {
-    final response = await _dio.get<Map<String, dynamic>>(
-      '/api/v1/admin/analytics/',
-    );
-    return AdminAnalytics.fromJson(response.data ?? <String, dynamic>{});
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/api/v1/dashboard/admin/analytics/',
+      );
+      return AdminAnalytics.fromJson(response.data ?? <String, dynamic>{});
+    } on DioException catch (error) {
+      if (error.response?.statusCode == 403) {
+        return AdminAnalytics.fromJson(<String, dynamic>{});
+      }
+      rethrow;
+    }
   }
 
   Future<List<AppUser>> getUsers() async {
-    final response = await _dio.get<List<dynamic>>('/api/v1/admin/users/');
-    final data = response.data ?? <dynamic>[];
+    final response = await _dio.get<dynamic>('/api/v1/admin/users/');
+    final data = _extractList(response.data);
     return data
         .whereType<Map<String, dynamic>>()
         .map(AppUser.fromJson)
@@ -298,11 +299,17 @@ class BackendService {
     required int id,
     required String role,
   }) async {
-    final response = await _dio.patch<Map<String, dynamic>>(
+    final backendRole = role == 'staff' ? 'nurse' : role;
+    await _dio.patch<Map<String, dynamic>>(
       '/api/v1/admin/users/$id/role/',
-      data: <String, dynamic>{'role': role},
+      data: <String, dynamic>{'role': backendRole},
     );
-    return AppUser.fromJson(response.data ?? <String, dynamic>{});
+
+    final users = await getUsers();
+    return users.firstWhere(
+      (user) => user.id == id,
+      orElse: () => AppUser(id: id, name: '', email: '', role: backendRole),
+    );
   }
 
   Future<Map<String, String>> updateProfile({
@@ -333,16 +340,18 @@ class BackendService {
   }
 
   Future<void> deletePatient(int id) async {
-    await _dio.delete<void>('/api/v1/admin/patient/$id/');
+    throw UnsupportedError(
+      'The Django backend deletes submissions by submission id, not users.',
+    );
   }
 
   Future<List<TriageItem>> getPatientSubmissionsByEmail(String email) async {
-    final response = await _dio.get<List<dynamic>>(
-      '/api/v1/triage-submissions/',
+    final response = await _dio.get<dynamic>(
+      '/api/v1/patients/triage-submissions/',
       queryParameters: <String, dynamic>{'email': email},
     );
 
-    final data = response.data ?? <dynamic>[];
+    final data = _extractList(response.data);
     return data
         .whereType<Map<String, dynamic>>()
         .map(TriageItem.fromJson)
@@ -350,9 +359,28 @@ class BackendService {
   }
 
   Future<WaitingAnalytics> getWaitingAnalytics(int id) async {
-    final response = await _dio.get<Map<String, dynamic>>(
-      '/api/v1/triage/$id/waiting-analytics/',
+    throw UnsupportedError(
+      'The Django backend does not expose waiting analytics yet.',
     );
-    return WaitingAnalytics.fromJson(response.data ?? <String, dynamic>{});
+  }
+
+  List<dynamic> _extractList(dynamic data) {
+    if (data is List) return data;
+    if (data is Map<String, dynamic>) {
+      final results = data['results'];
+      if (results is List) return results;
+
+      final submissions = data['submissions'];
+      if (submissions is List) return submissions;
+    }
+    return <dynamic>[];
+  }
+
+  Future<TriageItem> _fetchStaffPatientById(int id) async {
+    final patients = await getStaffPatients();
+    return patients.firstWhere(
+      (patient) => patient.id == id,
+      orElse: () => TriageItem.fromJson(<String, dynamic>{'id': id}),
+    );
   }
 }

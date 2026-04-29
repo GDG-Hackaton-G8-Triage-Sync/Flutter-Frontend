@@ -25,53 +25,55 @@ Flutter application for patient triage with role-based flows: patient, staff, an
 - Dio for HTTP
 - SharedPreferences for session storage
 - image_picker for photo attachments
-- json-server backend simulator
+- Django REST backend
 
 ## Run Frontend
 
 ```bash
 flutter pub get
-flutter run -d chrome --dart-define=API_URL=http://localhost:3001
+flutter run -d chrome --dart-define=API_URL=http://localhost:8000
 ```
 
 For Android emulator, use:
 
 ```bash
-flutter run -d emulator --dart-define=API_URL=http://10.0.2.2:3001
+flutter run -d emulator --dart-define=API_URL=http://10.0.2.2:8000
 ```
 
-## Run Mock Backend (json-server)
+For production or hosted testing, point `API_URL` at the Django host root:
 
 ```bash
-npm install
-npm run mock:server
+flutter run --dart-define=API_URL=https://django-backend-4r5p.onrender.com
 ```
 
-Backend runs at:
-
-- `http://localhost:3001`
+WebSocket URLs are derived from `API_URL`. Override with `--dart-define=WS_URL=...` only if the backend WebSocket host is different.
 
 ## Demo Accounts
 
-- patient: `patient@triagesync.com` / `123456`
-- staff: `staff@triagesync.com` / `123456`
-- admin: `admin@triagesync.com` / `123456`
+- Sign in with the Django username, not email, unless the backend adds email login.
+- Patient usernames are currently created from the signup `Full Name` field.
+- Staff roles are `nurse` or `doctor`; `staff` is not currently a Django role.
 
-## Implemented API Contract (Mocked)
+## Implemented Django API Contract
 
-- `POST /api/auth/login/`
-- `POST /api/auth/register/`
-- `POST /api/triage/`
-- `GET /api/triage-submissions/?email=`
-- `GET /api/dashboard/staff/patients/`
-- `PATCH /api/dashboard/staff/patient/{id}/status/`
-- `GET /api/dashboard/admin/overview/`
-- `GET /api/dashboard/admin/analytics/`
-- `GET /api/admin/users/`
-- `PATCH /api/admin/users/{id}/role/`
-- `DELETE /api/admin/patient/{id}/`
+- `POST /api/v1/auth/login/`
+- `POST /api/v1/auth/register/`
+- `POST /api/v1/auth/refresh/`
+- `PATCH /api/v1/profile/`
+- `POST /api/v1/triage/`
+- `GET /api/v1/patients/triage-submissions/?email=`
+- `GET /api/v1/dashboard/staff/patients/`
+- `PATCH /api/v1/dashboard/staff/patient/{id}/status/`
+- `PATCH /api/v1/dashboard/staff/patient/{id}/priority/`
+- `PATCH /api/v1/dashboard/staff/patient/{id}/verify/`
+- `GET /api/v1/dashboard/admin/overview/`
+- `GET /api/v1/dashboard/admin/analytics/`
+- `GET /api/v1/admin/users/`
+- `PATCH /api/v1/admin/users/{id}/role/`
+- `ws://host/ws/triage/events/?token=<access_token>`
 
 ## Notes
 
 - No deprecated input modes are enabled in the current app flow.
 - If backend is offline, UI shows error snackbars/messages instead of silent failures.
+- Backend gaps that are still required for full parity are tracked in `missing requirements.md`.

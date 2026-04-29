@@ -220,6 +220,15 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Vitals logged successfully.')),
                 );
+              } on UnsupportedError {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Vitals logging is not available on this backend yet.',
+                    ),
+                  ),
+                );
               } catch (_) {
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(

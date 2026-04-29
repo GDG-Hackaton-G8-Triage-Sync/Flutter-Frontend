@@ -39,15 +39,15 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    final email = _emailController.text.trim();
+    final identifier = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
     setState(() => _isLoading = true);
 
     try {
-      final auth = await _backend.login(email: email, password: password);
+      final auth = await _backend.login(email: identifier, password: password);
       // Store locally for future biometric fast-lane bypass
-      await SessionService().saveBiometricCredentials(email, password);
+      await SessionService().saveBiometricCredentials(identifier, password);
 
       if (!mounted) return;
       _routeByRole(auth);
@@ -108,7 +108,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'No saved biometric credentials found. Sign in once with email and password first.',
+              'No saved biometric credentials found. Sign in once with username and password first.',
             ),
           ),
         );
@@ -181,7 +181,7 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    if (auth.role == 'staff') {
+    if (auth.role == 'staff' || auth.role == 'nurse' || auth.role == 'doctor') {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const StaffDashboardScreen()),
@@ -280,17 +280,16 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 24),
                         TextFormField(
                           controller: _emailController,
-                          keyboardType: TextInputType.emailAddress,
+                          keyboardType: TextInputType.text,
                           decoration: const InputDecoration(
-                            labelText: 'Email',
-                            hintText: 'user@example.com',
-                            prefixIcon: Icon(Icons.email_outlined),
+                            labelText: 'Username',
+                            hintText: 'Full name or staff username',
+                            prefixIcon: Icon(Icons.account_circle_outlined),
                           ),
                           validator: (v) {
                             if (v == null || v.isEmpty) {
-                              return 'Email is required';
+                              return 'Username is required';
                             }
-                            if (!v.contains('@')) return 'Enter a valid email';
                             return null;
                           },
                         ),

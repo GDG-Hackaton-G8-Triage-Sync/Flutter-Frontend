@@ -38,7 +38,7 @@ class ApiErrorMapper {
       return 'Some fields are invalid. Please review your details and try again.';
     }
     if (statusCode == 401) {
-      return 'Email or password is incorrect.';
+      return 'Username or password is incorrect.';
     }
     if (statusCode == 403) {
       return 'You do not have permission to perform this action.';

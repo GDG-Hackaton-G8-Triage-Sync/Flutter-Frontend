@@ -35,8 +35,6 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
   void initState() {
     super.initState();
     _loadProfile();
-    // Connect WebSocket (no-op if already connected)
-    WebSocketManager.instance.connect();
   }
 
   @override
@@ -72,7 +70,7 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
   }
 
   Future<void> _openRoleDashboard() async {
-    if (_role == 'staff') {
+    if (_isStaffRole(_role)) {
       await Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => const StaffDashboardScreen()),
@@ -118,6 +116,10 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
   }
 
   bool _hasConsented = false;
+
+  bool _isStaffRole(String role) {
+    return role == 'staff' || role == 'nurse' || role == 'doctor';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -186,7 +188,7 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
           ),
         ),
         actions: [
-          if (_role == 'staff' || _role == 'admin')
+          if (_isStaffRole(_role) || _role == 'admin')
             IconButton(
               onPressed: _openRoleDashboard,
               icon: const Icon(

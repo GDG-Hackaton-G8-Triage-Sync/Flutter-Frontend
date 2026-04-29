@@ -226,7 +226,11 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Deletion blocked.')));
+      ).showSnackBar(
+        const SnackBar(
+          content: Text('User deletion is not supported by this backend yet.'),
+        ),
+      );
     }
   }
 
@@ -254,7 +258,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
     final TextEditingController nameCtrl = TextEditingController();
     final TextEditingController emailCtrl = TextEditingController();
     final TextEditingController passCtrl = TextEditingController();
-    String selectedRole = 'staff';
+    String selectedRole = 'nurse';
 
     return showDialog(
       context: context,
@@ -294,8 +298,12 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                 decoration: const InputDecoration(labelText: 'System Role'),
                 items: const [
                   DropdownMenuItem(
-                    value: 'staff',
-                    child: Text('Medical Staff'),
+                    value: 'nurse',
+                    child: Text('Nurse'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'doctor',
+                    child: Text('Doctor'),
                   ),
                   DropdownMenuItem(
                     value: 'admin',
@@ -614,7 +622,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                     child: Icon(
                       user.role == 'admin'
                           ? Icons.security
-                          : user.role == 'staff'
+                          : user.role == 'nurse' || user.role == 'doctor'
                           ? Icons.medical_services
                           : Icons.person,
                       color: user.role == 'admin'
@@ -643,8 +651,12 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                             child: Text('Demote to Patient'),
                           ),
                           PopupMenuItem(
-                            value: 'staff',
-                            child: Text('Assign Staff ACL'),
+                            value: 'nurse',
+                            child: Text('Assign Nurse ACL'),
+                          ),
+                          PopupMenuItem(
+                            value: 'doctor',
+                            child: Text('Assign Doctor ACL'),
                           ),
                           PopupMenuItem(
                             value: 'admin',

@@ -8,7 +8,7 @@ class PatientApi {
 
   Future<TriageItem> submitSymptoms(String description) async {
     final response = await _dio.post<Map<String, dynamic>>(
-      '/api/triage/',
+      '/api/v1/triage/',
       data: <String, dynamic>{'description': description},
     );
 
