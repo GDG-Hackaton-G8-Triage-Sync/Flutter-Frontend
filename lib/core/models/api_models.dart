@@ -97,6 +97,8 @@ class TriageItem {
     this.reasoning,
     this.confidence,
     this.vitals,
+    this.startedAt,
+    this.completedAt,
   });
 
   final int id;
@@ -120,6 +122,8 @@ class TriageItem {
   final String? reasoning;
   final double? confidence;
   final Vitals? vitals;
+  final DateTime? startedAt;
+  final DateTime? completedAt;
 
   factory TriageItem.fromJson(Map<String, dynamic> json) {
     return TriageItem(
@@ -148,6 +152,12 @@ class TriageItem {
       reasoning: json['reasoning'] as String?,
       confidence: (json['confidence'] as num?)?.toDouble(),
       vitals: json['vitals'] != null ? Vitals.fromJson(json['vitals'] as Map<String, dynamic>) : null,
+      startedAt: json['started_at'] != null 
+          ? DateTime.tryParse(json['started_at'] as String) 
+          : null,
+      completedAt: json['completed_at'] != null 
+          ? DateTime.tryParse(json['completed_at'] as String) 
+          : null,
     );
   }
 }
@@ -266,6 +276,32 @@ class AppUser {
       allergies: json['allergies'] as String?,
       currentMedications: json['current_medications'] as String?,
       badHabits: json['bad_habits'] as String?,
+    );
+  }
+}
+
+class WaitingAnalytics {
+  final int position;
+  final int totalWaiting;
+  final int estimatedWaitMins;
+  final double aiConfidence;
+  final String message;
+
+  WaitingAnalytics({
+    required this.position,
+    required this.totalWaiting,
+    required this.estimatedWaitMins,
+    required this.aiConfidence,
+    required this.message,
+  });
+
+  factory WaitingAnalytics.fromJson(Map<String, dynamic> json) {
+    return WaitingAnalytics(
+      position: (json['position'] ?? 0) as int,
+      totalWaiting: (json['total_waiting'] ?? 0) as int,
+      estimatedWaitMins: (json['estimated_wait_mins'] ?? 0) as int,
+      aiConfidence: (json['ai_confidence'] as num? ?? 0.0).toDouble(),
+      message: (json['message'] ?? '') as String,
     );
   }
 }

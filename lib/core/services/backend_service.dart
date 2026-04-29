@@ -347,4 +347,11 @@ class BackendService {
         .map(TriageItem.fromJson)
         .toList();
   }
+
+  Future<WaitingAnalytics> getWaitingAnalytics(int id) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/api/v1/triage/$id/waiting-analytics/',
+    );
+    return WaitingAnalytics.fromJson(response.data ?? <String, dynamic>{});
+  }
 }

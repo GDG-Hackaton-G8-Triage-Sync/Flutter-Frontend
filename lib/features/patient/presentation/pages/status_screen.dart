@@ -17,12 +17,18 @@ class StatusScreen extends StatefulWidget {
   State<StatusScreen> createState() => _StatusScreenState();
 }
 
+class StatusData {
+  final TriageItem triage;
+  final WaitingAnalytics? analytics;
+  StatusData({required this.triage, this.analytics});
+}
+
 class _StatusScreenState extends State<StatusScreen> {
   final SessionService _sessionService = SessionService();
   final BackendService _backend = BackendService.instance;
 
   // Hold the future so we can re-create it when we need to refresh
-  late Future<TriageItem?> _future;
+  late Future<StatusData?> _future;
 
   @override
   void initState() {
@@ -39,7 +45,7 @@ class _StatusScreenState extends State<StatusScreen> {
     }
   }
 
-  Future<TriageItem?> _loadLatest() async {
+  Future<StatusData?> _loadLatest() async {
     final email = await _sessionService.getEmail();
     if (email == null || email.isEmpty) return null;
 
@@ -47,7 +53,16 @@ class _StatusScreenState extends State<StatusScreen> {
     if (submissions.isEmpty) return null;
 
     submissions.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    return submissions.first;
+    final latest = submissions.first;
+
+    WaitingAnalytics? analytics;
+    if (latest.status == 'waiting') {
+      try {
+        analytics = await _backend.getWaitingAnalytics(latest.id);
+      } catch (_) {}
+    }
+
+    return StatusData(triage: latest, analytics: analytics);
   }
 
   void _refresh() => setState(() => _future = _loadLatest());
@@ -87,7 +102,7 @@ class _StatusScreenState extends State<StatusScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<TriageItem?>(
+    return FutureBuilder<StatusData?>(
       future: _future,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -98,8 +113,8 @@ class _StatusScreenState extends State<StatusScreen> {
           return OfflineVisual(onRetry: _refresh);
         }
 
-        final result = snapshot.data;
-        if (result == null) {
+        final data = snapshot.data;
+        if (data == null) {
           return EmptyState(
             icon: Icons.assignment_outlined,
             title: 'No Pending Triage',
@@ -114,6 +129,8 @@ class _StatusScreenState extends State<StatusScreen> {
           );
         }
 
+        final result = data.triage;
+        final analytics = data.analytics;
         final priorityColor = _priorityColor(result.priority);
         final statusColor = _statusColor(result.status);
 
@@ -122,6 +139,12 @@ class _StatusScreenState extends State<StatusScreen> {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              // AI Live Forecast Card (The "Wow" Factor)
+              if (result.status == 'waiting' && analytics != null)
+                _buildAIForecast(analytics),
+              
+              const SizedBox(height: 12),
+
               // Priority Hero Card
               Container(
                 decoration: BoxDecoration(
@@ -276,7 +299,7 @@ class _StatusScreenState extends State<StatusScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 24),
 
               // Wait time
               Card(
@@ -380,6 +403,128 @@ class _StatusScreenState extends State<StatusScreen> {
           ),
         );
       },
+    );
+  Widget _buildAIForecast(WaitingAnalytics analytics) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF003366), Color(0xFF005EB8)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF003366).withValues(alpha: 0.2),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'LIVE AI FORECAST',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.check_circle, color: Colors.greenAccent, size: 12),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${(analytics.aiConfidence * 100).toInt()}% CONFIDENCE',
+                      style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Queue Position',
+                      style: TextStyle(color: Colors.white60, fontSize: 12),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '#${analytics.position}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 32,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(width: 1, height: 40, color: Colors.white24),
+              const SizedBox(width: 24),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Est. Wait Time',
+                      style: TextStyle(color: Colors.white60, fontSize: 12),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${analytics.estimatedWaitMins}m',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 32,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.info_outline, color: Colors.white70, size: 16),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    analytics.message,
+                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

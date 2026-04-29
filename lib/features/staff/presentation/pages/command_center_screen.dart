@@ -135,17 +135,24 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                   decoration: BoxDecoration(
                     color: Theme.of(context).cardTheme.color,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.red.withValues(alpha: 0.1), width: 1.5),
+                    border: Border.all(
+                      color: (backlogRisk == 'High' ? const Color(0xFFBA1A1A) : Colors.transparent).withValues(alpha: 0.2),
+                      width: 2,
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Row(
+                      Row(
                         children: [
-                          Icon(Icons.analytics_rounded, color: Color(0xFFBA1A1A), size: 20),
-                          SizedBox(width: 8),
-                          Text(
-                            'Strategic Assessment',
+                          Icon(
+                            Icons.analytics_rounded,
+                            color: backlogRisk == 'High' ? const Color(0xFFBA1A1A) : const Color(0xFF005EB8),
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'AI Operational Intelligence',
                             style: TextStyle(
                               fontWeight: FontWeight.w900,
                               color: Color(0xFF1A1C1E),
@@ -166,6 +173,30 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                           color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.8),
                         ),
                       ),
+                      if (backlogRisk == 'High') ...[
+                        const SizedBox(height: 20),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  backgroundColor: Color(0xFFBA1A1A),
+                                  content: Text('EMERGENCY BACKUP REQUESTED: Clinical Lead Notified.'),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.bolt, color: Colors.white),
+                            label: const Text('DEPLOY RAPID RESPONSE TEAM'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFBA1A1A),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),

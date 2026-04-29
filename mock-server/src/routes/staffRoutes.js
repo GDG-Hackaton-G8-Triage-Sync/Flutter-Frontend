@@ -57,8 +57,17 @@ function createStaffRoutes({ store, realtime }) {
                 return { notFound: true };
             }
 
-            db.triageSubmissions[index].status = status;
-            return { item: db.triageSubmissions[index] };
+            const item = db.triageSubmissions[index];
+            item.status = status;
+
+            const now = new Date().toISOString();
+            if (status === "in_progress" && !item.started_at) {
+                item.started_at = now;
+            } else if (status === "completed") {
+                item.completed_at = now;
+            }
+
+            return { item };
         });
 
         if (result.notFound) {
