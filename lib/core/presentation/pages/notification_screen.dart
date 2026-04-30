@@ -4,12 +4,15 @@ import 'package:flutter_frontend/core/models/api_models.dart';
 import 'package:flutter_frontend/core/services/backend_service.dart';
 
 class NotificationInboxScreen extends StatefulWidget {
-  const NotificationInboxScreen({super.key});
+  const NotificationInboxScreen({super.key, this.showAppBar = true});
+
+  final bool showAppBar;
 
   @override
   State<NotificationInboxScreen> createState() =>
       _NotificationInboxScreenState();
 }
+
 
 class _NotificationInboxScreenState extends State<NotificationInboxScreen> {
   final BackendService _backend = BackendService.instance;
@@ -34,6 +37,73 @@ class _NotificationInboxScreenState extends State<NotificationInboxScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final content = FutureBuilder<List<AppNotification>>(
+      future: _future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final notifications = snapshot.data ?? <AppNotification>[];
+        if (notifications.isEmpty) {
+          return const Center(
+            child: Text(
+              'No notifications yet.',
+              style: TextStyle(color: Color(0xFF44474E)),
+            ),
+          );
+        }
+
+        return RefreshIndicator(
+          onRefresh: _refresh,
+          child: Column(
+            children: [
+              if (!widget.showAppBar)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Updates & Alerts',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: _markAllAsRead,
+                        child: const Text('Mark all read'),
+                      ),
+                    ],
+                  ),
+                ),
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: notifications.length,
+                  itemBuilder: (context, index) {
+                    final item = notifications[index];
+                    final color = _notificationColor(item.type);
+                    return _buildNotification(
+                      item.title,
+                      item.message,
+                      _relativeTime(item.createdAt),
+                      _notificationIcon(item.type),
+                      color,
+                      isNew: !item.isRead,
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (!widget.showAppBar) return content;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9FB),
       appBar: AppBar(
@@ -50,46 +120,10 @@ class _NotificationInboxScreenState extends State<NotificationInboxScreen> {
           ),
         ],
       ),
-      body: FutureBuilder<List<AppNotification>>(
-        future: _future,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          final notifications = snapshot.data ?? <AppNotification>[];
-          if (notifications.isEmpty) {
-            return const Center(
-              child: Text(
-                'No notifications yet.',
-                style: TextStyle(color: Color(0xFF44474E)),
-              ),
-            );
-          }
-
-          return RefreshIndicator(
-            onRefresh: _refresh,
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: notifications.length,
-              itemBuilder: (context, index) {
-                final item = notifications[index];
-                final color = _notificationColor(item.type);
-                return _buildNotification(
-                  item.title,
-                  item.message,
-                  _relativeTime(item.createdAt),
-                  _notificationIcon(item.type),
-                  color,
-                  isNew: !item.isRead,
-                );
-              },
-            ),
-          );
-        },
-      ),
+      body: content,
     );
   }
+
 
   Color _notificationColor(String type) {
     switch (type) {

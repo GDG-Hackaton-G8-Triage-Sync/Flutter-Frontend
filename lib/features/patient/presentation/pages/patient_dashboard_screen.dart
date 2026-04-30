@@ -12,6 +12,7 @@ import 'package:flutter_frontend/features/patient/presentation/pages/symptom_inp
 import 'package:flutter_frontend/core/presentation/pages/consent_screen.dart';
 import 'package:flutter_frontend/features/patient/presentation/widgets/patient_home_tab.dart';
 import 'package:flutter_frontend/core/utils/navigation_transitions.dart';
+import 'package:flutter_frontend/core/presentation/pages/notification_screen.dart';
 
 class PatientDashboardScreen extends StatefulWidget {
   const PatientDashboardScreen({super.key});
@@ -153,6 +154,7 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
         refreshTrigger: _statusRefreshTrigger,
       ),
       SymptomInputScreen(onSubmitted: _onSymptomSubmitted),
+      const NotificationInboxScreen(showAppBar: false),
       SettingsScreen(onOpenProfile: _openProfile, onLogout: _logout),
     ];
 
@@ -251,6 +253,11 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
               icon: Icon(Icons.add_circle_outline, color: Colors.grey),
               selectedIcon: Icon(Icons.add_circle, color: Color(0xFF005EB8)),
               label: 'Triage',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.notifications_outlined, color: Colors.grey),
+              selectedIcon: Icon(Icons.notifications, color: Color(0xFF005EB8)),
+              label: 'Alerts',
             ),
             NavigationDestination(
               icon: Icon(Icons.settings_outlined, color: Colors.grey),
