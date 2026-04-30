@@ -376,7 +376,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   setState(() => _obscurePassword = !_obscurePassword),
             ),
           ),
-          validator: (v) => (v?.length ?? 0) < 6 ? 'Min 6 characters' : null,
+          validator: (v) => (v?.length ?? 0) < 8 ? 'Min 8 characters' : null,
         ),
         const SizedBox(height: 20),
         _buildRequiredLabel('Confirm Password'),

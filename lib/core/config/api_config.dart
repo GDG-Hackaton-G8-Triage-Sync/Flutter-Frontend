@@ -32,7 +32,7 @@ class ApiConfig {
 
     final uri = Uri.parse(baseUrl);
     final scheme = uri.scheme == 'https' ? 'wss' : 'ws';
-    return uri.replace(scheme: scheme, path: '/ws/triage/').toString();
+    return uri.replace(scheme: scheme, path: '/ws/triage/events/').toString();
   }
 
   static Uri websocketUri({required String token}) {
@@ -66,11 +66,11 @@ class ApiConfig {
       value = value.replaceFirst('https://', 'wss://');
     }
 
-    if (!value.contains('/ws/triage/')) {
+    if (!value.contains('/ws/triage/events/')) {
       while (value.endsWith('/')) {
         value = value.substring(0, value.length - 1);
       }
-      value = '$value/ws/triage/';
+      value = '$value/ws/triage/events/';
     }
 
     return value;

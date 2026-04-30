@@ -10,7 +10,7 @@ class SymptomInputScreen extends StatefulWidget {
   const SymptomInputScreen({super.key, this.onSubmitted});
 
   final VoidCallback? onSubmitted;
-
+  
   @override
   State<SymptomInputScreen> createState() => _SymptomInputScreenState();
 }
@@ -124,7 +124,7 @@ class _SymptomInputScreenState extends State<SymptomInputScreen> {
     try {
       await _backend.submitSymptoms(
         description: description,
-        photoPath: _attachedImage?.path,
+        photoName: _attachedImage?.name,
       );
 
       if (!mounted) return;

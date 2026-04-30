@@ -110,14 +110,14 @@ class BackendService {
   }
 
   Future<AuthResponse> login({
-    required String email,
+    required String username,
     required String password,
   }) async {
     try {
-      debugPrint('LOGGING_IN: $email to $_baseUrl/api/v1/auth/login/');
+      debugPrint('LOGGING_IN: $username to $_baseUrl/api/v1/auth/login/');
       final response = await _dio.post<Map<String, dynamic>>(
         '/api/v1/auth/login/',
-        data: <String, dynamic>{'username': email, 'password': password},
+        data: <String, dynamic>{'username': username, 'password': password},
       );
 
       final auth = AuthResponse.fromJson(response.data ?? <String, dynamic>{});
@@ -157,12 +157,12 @@ class BackendService {
     await _dio.post<void>(
       '/api/v1/auth/register/',
       data: <String, dynamic>{
-        'username': name,
+        'name': name,
         'email': email,
         'password': password,
         'password2': password,
         'role': role,
-        if (age != null || role != 'patient') 'age': age ?? 0,
+        if (age != null) 'age': age,
         if (gender != null) 'gender': gender,
         if (bloodType != null) 'blood_type': bloodType,
         if (healthHistory != null) 'health_history': healthHistory,
@@ -189,17 +189,35 @@ class BackendService {
     return TriageItem.fromJson(response.data ?? <String, dynamic>{});
   }
 
-  Future<Map<String, dynamic>> analyzeSymptomsAi(String description) async {
+  Future<TriageItem> analyzeSymptomsAi({
+    required String symptoms,
+    int? age,
+    String? gender,
+    String? bloodType,
+  }) async {
     final response = await _dio.post<Map<String, dynamic>>(
       '/api/v1/triage/ai/',
-      data: <String, dynamic>{'description': description},
+      data: <String, dynamic>{
+        'symptoms': symptoms,
+        if (age != null) 'age': age,
+        if (gender != null) 'gender': gender,
+        if (bloodType != null) 'blood_type': bloodType,
+      },
     );
-    return response.data ?? <String, dynamic>{};
+    return TriageItem.fromJson(response.data ?? <String, dynamic>{});
   }
 
-  Future<TriageItem> extractSymptomsFromPdf(String filePath) async {
+  Future<TriageItem> extractSymptomsFromPdf({
+    required String filePath,
+    int? age,
+    String? gender,
+    String? bloodType,
+  }) async {
     final formData = FormData.fromMap(<String, dynamic>{
       'file': await MultipartFile.fromFile(filePath),
+      if (age != null) 'age': age,
+      if (gender != null) 'gender': gender,
+      if (bloodType != null) 'blood_type': bloodType,
     });
 
     final response = await _dio.post<Map<String, dynamic>>(
@@ -399,10 +417,9 @@ class BackendService {
     await Future<void>.delayed(const Duration(milliseconds: 200));
   }
 
-  Future<List<TriageItem>> getPatientSubmissionsByEmail(String email) async {
+  Future<List<TriageItem>> getPatientSubmissions() async {
     final response = await _dio.get<dynamic>(
-      '/api/v1/triage-submissions/',
-      queryParameters: <String, dynamic>{'email': email},
+      '/api/v1/patients/triage-submissions/',
     );
 
     final data = _extractList(response.data);
@@ -443,7 +460,7 @@ class BackendService {
   }) async {
     try {
       final response = await _dio.get<dynamic>(
-        '/api/v1/notifications/notifications/',
+        '/api/v1/notifications/',
       );
 
       final data = response.data;
@@ -464,7 +481,7 @@ class BackendService {
   Future<int> getUnreadNotificationCount() async {
     try {
       final response = await _dio.get<dynamic>(
-        '/api/v1/notifications/notifications/unread-count/',
+        '/api/v1/notifications/unread-count/',
       );
       final data = response.data;
       if (data is Map<String, dynamic>) {
@@ -484,7 +501,7 @@ class BackendService {
   Future<void> markAllNotificationsRead() async {
     try {
       await _dio.patch<dynamic>(
-        '/api/v1/notifications/notifications/read-all/',
+        '/api/v1/notifications/read-all/',
       );
     } on DioException {
       // Local fallback notifications are read-only placeholders.

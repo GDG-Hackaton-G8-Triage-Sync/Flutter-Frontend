@@ -49,9 +49,7 @@ class _PatientHomeTabState extends State<PatientHomeTab> {
 
   Future<void> _loadLatest() async {
     try {
-      final items = await BackendService.instance.getPatientSubmissionsByEmail(
-        widget.email,
-      );
+      final items = await BackendService.instance.getPatientSubmissions();
       if (items.isNotEmpty) {
         // Sort by date to get the absolute latest if the backend doesn't
         items.sort((a, b) => b.createdAt.compareTo(a.createdAt));

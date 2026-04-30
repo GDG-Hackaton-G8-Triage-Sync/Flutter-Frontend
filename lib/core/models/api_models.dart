@@ -168,6 +168,12 @@ class TriageItem {
     this.vitals,
     this.startedAt,
     this.completedAt,
+    this.category,
+    this.isCritical,
+    this.explanation,
+    this.recommendedAction,
+    this.reason,
+    this.source,
   });
 
   final int id;
@@ -194,13 +200,24 @@ class TriageItem {
   final DateTime? startedAt;
   final DateTime? completedAt;
 
+  // v1.2.0 AI fields
+  final String? category;
+  final bool? isCritical;
+  final List<String>? explanation;
+  final String? recommendedAction;
+  final String? reason;
+  final String? source;
+
   factory TriageItem.fromJson(Map<String, dynamic> json) {
     final vitals = json['vitals'];
 
     return TriageItem(
       id: _readInt(json, <String>['id', 'submission_id', 'patient_id']),
-      description: _readString(json, <String>['description', 'symptoms']),
-      priority: _readInt(json, <String>['priority'], 5),
+      description: _readString(
+        json,
+        <String>['description', 'symptoms', 'patient_description'],
+      ),
+      priority: _readInt(json, <String>['priority', 'priority_level'], 5),
       urgencyScore: _readInt(json, <String>['urgency_score']),
       condition: _readString(json, <String>['condition'], 'Unknown'),
       status: _readString(json, <String>['status', 'new_status'], 'waiting'),
@@ -234,6 +251,14 @@ class TriageItem {
         json,
         <String>['completed_at', 'processed_at'],
       ),
+      category: _readNullableString(json, <String>['category']),
+      isCritical: json['is_critical'] == true,
+      explanation: json['explanation'] is List
+          ? (json['explanation'] as List).map((e) => e.toString()).toList()
+          : null,
+      recommendedAction: _readNullableString(json, <String>['recommended_action']),
+      reason: _readNullableString(json, <String>['reason']),
+      source: _readNullableString(json, <String>['source']),
     );
   }
 }

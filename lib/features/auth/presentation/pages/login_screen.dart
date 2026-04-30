@@ -45,7 +45,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final auth = await _backend.login(email: identifier, password: password);
+      final auth = await _backend.login(username: identifier, password: password);
       // Store locally for future biometric fast-lane bypass
       await SessionService().saveBiometricCredentials(identifier, password);
 
