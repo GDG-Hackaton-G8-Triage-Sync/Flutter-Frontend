@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter_frontend/core/config/app_config.dart';
 
 class ApiConfig {
   ApiConfig._();
@@ -10,12 +11,17 @@ class ApiConfig {
     if (envUrl.trim().isNotEmpty) {
       return _normalizeHttpBase(envUrl);
     }
-
-    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://10.0.2.2:8000';
+    
+    final appConfigUrl = AppConfig.apiUrl;
+    if (appConfigUrl.trim().isNotEmpty) {
+      return _normalizeHttpBase(appConfigUrl);
     }
 
-    return 'http://localhost:8000';
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      return 'http://10.0.2.2:9000';
+    }
+
+    return 'http://127.0.0.1:9000';
   }
 
   static String get websocketUrl {

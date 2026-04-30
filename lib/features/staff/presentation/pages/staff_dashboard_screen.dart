@@ -160,7 +160,6 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
   Widget build(BuildContext context) {
     final waiting = _patients.where((p) => p.status == 'waiting').length;
     final inProgress = _patients.where((p) => p.status == 'in_progress').length;
-    final total = _patients.length;
     final critical = _patients.where((p) => p.priority == 1).length;
 
     return Scaffold(
