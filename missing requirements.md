@@ -36,6 +36,19 @@ This file lists frontend expectations that are not fully supported by the curren
    - Current frontend mitigation: the frontend re-fetches the staff queue after each mutation and finds the changed item.
    - Required backend fix: return the updated serialized patient/submission object.
 
+6. Registration contract must stay aligned around `password2`.
+   - Frontend expectation: signup sends `password2` with the same value as `password`.
+   - Backend colleague update: `password2` is required and validated.
+   - Local backend code observed on 2026-04-30: `RegisterSerializer` still did not expose `password2` in `fields`.
+   - Current frontend mitigation: `password2` is sent so the updated backend works; older backend builds should ignore the extra field.
+   - Required backend fix: ensure the deployed serializer accepts and validates `password2`.
+
+7. Main authenticated triage should accept and use `blood_type`.
+   - Frontend/backend expectation: blood type improves severe bleeding/transfusion triage.
+   - Backend reality observed locally: `/api/v1/triage/ai/` and PDF extraction read `blood_type`, but `POST /api/v1/triage/` still only reads `description` and `photo_name`.
+   - Current frontend mitigation: the frontend can send `blood_type` when available, and registration/profile stores it.
+   - Required backend fix: read `blood_type` in `TriageSubmissionView` or guarantee `evaluate_triage()` uses the patient profile blood type.
+
 ## Feature gaps
 
 1. Vitals logging is not implemented.
@@ -58,20 +71,31 @@ This file lists frontend expectations that are not fully supported by the curren
    - Backend reality: `DashboardPatientSerializer` returns only queue fields such as `id`, `patient_name`, `description`, `priority`, `urgency_score`, `condition`, `status`, `photo_name`, verification fields, and `created_at`.
    - Current frontend mitigation: missing fields render as fallback text.
 
-5. Admin analytics response is much thinner than the frontend dashboard expects.
+5. AI transparency fields are not persisted on queue submissions.
+   - Frontend expectation: staff views can show `explanation`, `recommended_action`, and `reason` for clinical decision support and AI transparency.
+   - Backend reality: AI endpoints return these fields, but `PatientSubmission` and `DashboardPatientSerializer` do not expose them for staff queue/detail workflows.
+   - Current frontend mitigation: staff detail falls back to a generic AI reasoning sentence.
+   - Required backend fix: persist these fields, ideally on an AI audit/triage result model linked to `PatientSubmission`, then include them in staff detail/queue responses.
+
+6. Admin analytics response is much thinner than the frontend dashboard expects.
    - Frontend expectation: `peak_hour`, `wait_time_trend`, `sla_breach_trend`, and condition summaries.
    - Backend reality: current code returns `avg_urgency_score` and `common_conditions` only.
    - Current frontend mitigation: parsers accept missing fields and charts render empty.
 
-6. WebSocket events only include partial payloads.
+7. WebSocket events only include partial payloads.
    - Frontend expectation: a complete triage item can be consumed directly or used to update a row.
    - Backend reality: events include `submission_id`, priority/status metadata, and timestamps, but not the complete queue row.
    - Current frontend mitigation: WebSocket events trigger a queue refresh.
 
-7. Binary photo upload is not implemented.
+8. Binary photo upload is not implemented.
    - Frontend expectation: the user can attach a photo during symptom submission.
    - Backend reality: the triage endpoint accepts only `photo_name`; no upload/storage endpoint is documented for images.
    - Current frontend mitigation: the frontend sends the selected filename only.
+
+9. Notification preferences are modeled but not exposed in frontend-facing docs.
+   - Frontend expectation: notification inbox can read notifications from `/api/v1/notifications/notifications/`.
+   - Backend reality: inbox endpoints exist; preference update endpoints are not clearly mounted in the current `notifications/urls.py`.
+   - Current frontend mitigation: settings toggles remain local preferences.
 
 ## Documentation mismatches to clean up
 

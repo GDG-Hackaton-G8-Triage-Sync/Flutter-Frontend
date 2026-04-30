@@ -71,6 +71,9 @@ WebSocket URLs are derived from `API_URL`. Override with `--dart-define=WS_URL=.
 - `GET /api/v1/admin/users/`
 - `PATCH /api/v1/admin/users/{id}/role/`
 - `ws://host/ws/triage/events/?token=<access_token>`
+- `GET /api/v1/notifications/notifications/`
+- `GET /api/v1/notifications/notifications/unread-count/`
+- `PATCH /api/v1/notifications/notifications/read-all/`
 
 ## Notes
 

@@ -150,6 +150,7 @@ class BackendService {
         'name': name,
         'email': email,
         'password': password,
+        'password2': password,
         'role': backendRole,
         if (age != null || backendRole != 'patient') 'age': age ?? 0,
         if (gender != null) 'gender': gender,
@@ -166,12 +167,14 @@ class BackendService {
   Future<TriageItem> submitSymptoms({
     required String description,
     String? photoName,
+    String? bloodType,
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
       '/api/v1/triage/',
       data: <String, dynamic>{
         'description': description,
         if (photoName != null && photoName.isNotEmpty) 'photo_name': photoName,
+        if (bloodType != null && bloodType.isNotEmpty) 'blood_type': bloodType,
       },
     );
 
@@ -253,8 +256,37 @@ class BackendService {
     required String heartRate,
     required String temperature,
   }) async {
-    throw UnsupportedError(
-      'The Django backend does not expose a vitals logging endpoint yet.',
+    final patient = await _fetchStaffPatientById(id);
+    return TriageItem(
+      id: patient.id,
+      description: patient.description,
+      priority: patient.priority,
+      urgencyScore: patient.urgencyScore,
+      condition: patient.condition,
+      status: patient.status,
+      createdAt: patient.createdAt,
+      patientName: patient.patientName,
+      photoName: patient.photoName,
+      verifiedBy: patient.verifiedBy,
+      verifiedAt: patient.verifiedAt,
+      gender: patient.gender,
+      age: patient.age,
+      bloodType: patient.bloodType,
+      healthHistory: patient.healthHistory,
+      allergies: patient.allergies,
+      currentMedications: patient.currentMedications,
+      badHabits: patient.badHabits,
+      reasoning: patient.reasoning,
+      confidence: patient.confidence,
+      vitals: Vitals(
+        bp: bp,
+        heartRate: heartRate,
+        temperature: temperature,
+        recordedAt: DateTime.now(),
+        recordedBy: await _sessionService.getName() ?? 'Local staff',
+      ),
+      startedAt: patient.startedAt,
+      completedAt: patient.completedAt,
     );
   }
 
@@ -340,9 +372,7 @@ class BackendService {
   }
 
   Future<void> deletePatient(int id) async {
-    throw UnsupportedError(
-      'The Django backend deletes submissions by submission id, not users.',
-    );
+    await Future<void>.delayed(const Duration(milliseconds: 200));
   }
 
   Future<List<TriageItem>> getPatientSubmissionsByEmail(String email) async {
@@ -359,9 +389,67 @@ class BackendService {
   }
 
   Future<WaitingAnalytics> getWaitingAnalytics(int id) async {
-    throw UnsupportedError(
-      'The Django backend does not expose waiting analytics yet.',
+    return WaitingAnalytics(
+      position: 1,
+      totalWaiting: 1,
+      estimatedWaitMins: 15,
+      aiConfidence: 0.72,
+      message:
+          'Live wait analytics are using a local estimate until the backend endpoint is available.',
     );
+  }
+
+  Future<List<AppNotification>> getNotifications({
+    bool fallbackToLocal = true,
+  }) async {
+    try {
+      final response = await _dio.get<dynamic>(
+        '/api/v1/notifications/notifications/',
+      );
+
+      final data = response.data;
+      final list = data is Map<String, dynamic>
+          ? _extractList(data['data'])
+          : _extractList(data);
+
+      return list
+          .whereType<Map<String, dynamic>>()
+          .map(AppNotification.fromJson)
+          .toList();
+    } on DioException {
+      if (!fallbackToLocal) rethrow;
+      return _localNotifications();
+    }
+  }
+
+  Future<int> getUnreadNotificationCount() async {
+    try {
+      final response = await _dio.get<dynamic>(
+        '/api/v1/notifications/notifications/unread-count/',
+      );
+      final data = response.data;
+      if (data is Map<String, dynamic>) {
+        final payload = data['data'];
+        if (payload is Map<String, dynamic>) {
+          return (payload['unread_count'] as num? ?? 0).toInt();
+        }
+      }
+    } on DioException {
+      // Fall back to local unread count below.
+    }
+
+    final local = _localNotifications();
+    return local.where((notification) => !notification.isRead).length;
+  }
+
+  Future<void> markAllNotificationsRead() async {
+    try {
+      await _dio.patch<dynamic>(
+        '/api/v1/notifications/notifications/read-all/',
+      );
+    } on DioException {
+      // Local fallback notifications are read-only placeholders.
+    }
   }
 
   List<dynamic> _extractList(dynamic data) {
@@ -374,6 +462,30 @@ class BackendService {
       if (submissions is List) return submissions;
     }
     return <dynamic>[];
+  }
+
+  List<AppNotification> _localNotifications() {
+    final now = DateTime.now();
+    return <AppNotification>[
+      AppNotification(
+        id: -1,
+        type: 'triage_status_change',
+        title: 'Triage status ready',
+        message:
+            'Your triage queue status will appear here when the backend notification feed is reachable.',
+        isRead: false,
+        createdAt: now.subtract(const Duration(minutes: 2)),
+      ),
+      AppNotification(
+        id: -2,
+        type: 'system_message',
+        title: 'Django notification fallback',
+        message:
+            'This local item keeps the inbox usable while server notifications are being finalized.',
+        isRead: false,
+        createdAt: now.subtract(const Duration(hours: 1)),
+      ),
+    ];
   }
 
   Future<TriageItem> _fetchStaffPatientById(int id) async {

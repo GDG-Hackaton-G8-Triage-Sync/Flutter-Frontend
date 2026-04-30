@@ -397,6 +397,45 @@ class AppUser {
   }
 }
 
+class AppNotification {
+  AppNotification({
+    required this.id,
+    required this.type,
+    required this.title,
+    required this.message,
+    required this.isRead,
+    required this.createdAt,
+    this.metadata = const <String, dynamic>{},
+    this.readAt,
+  });
+
+  final int id;
+  final String type;
+  final String title;
+  final String message;
+  final bool isRead;
+  final DateTime createdAt;
+  final Map<String, dynamic> metadata;
+  final DateTime? readAt;
+
+  factory AppNotification.fromJson(Map<String, dynamic> json) {
+    final metadata = json['metadata'];
+    return AppNotification(
+      id: _readInt(json, <String>['id']),
+      type: _readString(json, <String>['notification_type', 'type']),
+      title: _readString(json, <String>['title'], 'Notification'),
+      message: _readString(json, <String>['message']),
+      isRead: json['is_read'] == true,
+      createdAt:
+          _readDateTime(json, <String>['created_at']) ?? DateTime.now(),
+      metadata: metadata is Map<String, dynamic>
+          ? metadata
+          : const <String, dynamic>{},
+      readAt: _readDateTime(json, <String>['read_at']),
+    );
+  }
+}
+
 class WaitingAnalytics {
   final int position;
   final int totalWaiting;
