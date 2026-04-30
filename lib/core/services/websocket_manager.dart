@@ -71,9 +71,9 @@ class WebSocketManager {
           type == 'CRITICAL_ALERT' ||
           type == 'SLA_BREACH') {
         final data = json['data'] is Map<String, dynamic>
-            ? json['data'] as Map<String, dynamic>
-            : json;
-        final item = TriageItem.fromJson(data);
+            ? (json['data']['triage_item'] ?? json['data']) as Map<String, dynamic>
+            : (json['triage_item'] ?? json);
+        final item = TriageItem.fromJson(data as Map<String, dynamic>);
         _controller?.add(item);
       }
     } catch (_) {

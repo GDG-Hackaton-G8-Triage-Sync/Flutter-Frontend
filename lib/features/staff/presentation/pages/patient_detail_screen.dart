@@ -1,4 +1,4 @@
-import 'dart:convert';
+// import 'dart:convert';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 
@@ -249,7 +249,8 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
     );
   }
 
-  void _exportFHIRRecord() {
+  // void _exportFHIRRecord() { // Hidden for now
+/*
     final fhirRecord = {
       "resourceType": "Bundle",
       "type": "collection",
@@ -335,6 +336,7 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
     );
   }
 
+*/
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -350,11 +352,13 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
           ),
         ),
         actions: [
+          /*
           IconButton(
             icon: const Icon(Icons.share_outlined, color: Color(0xFF005EB8)),
             onPressed: _exportFHIRRecord,
             tooltip: 'Export FHIR Record',
           ),
+          */
         ],
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF005EB8)),
@@ -382,7 +386,7 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
           children: [
             _buildPatientHeader(),
             const SizedBox(height: 24),
-            _buildAICopilotCard(),
+            // _buildAICopilotCard(), // Hidden for now as requested
             const SizedBox(height: 24),
             _buildMedicalProfileCard(),
             const SizedBox(height: 24),
@@ -697,6 +701,7 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
     );
   }
 
+/*
   Future<void> _confirmAIPriority() async {
     setState(() => _isUpdating = true);
     try {
@@ -720,8 +725,9 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
       if (mounted) setState(() => _isUpdating = false);
     }
   }
-
-  Widget _buildAICopilotCard() {
+*/
+/*
+  // Widget _buildAICopilotCard() { // Hidden for now
     final isVerified = _patient.verifiedBy != null;
     final double confidence = _patient.confidence ?? 0.0;
     final bool isHighConfidence = confidence > 0.85;
@@ -879,7 +885,7 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
       ),
     );
   }
-
+*/
   Widget _buildSymptomDescription() {
     return Container(
       width: double.infinity,

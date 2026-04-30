@@ -46,8 +46,33 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
     );
     // Real-time WebSocket updates
     WebSocketManager.instance.connect();
-    _wsSub = WebSocketManager.instance.updates.listen((_) {
-      _fetchPatients(silent: true);
+    _wsSub = WebSocketManager.instance.updates.listen((item) {
+      if (mounted) {
+        setState(() {
+          final index = _patients.indexWhere((p) => p.id == item.id);
+          if (index != -1) {
+            _patients[index] = item;
+          } else {
+            _patients.add(item);
+            _newPatientIds.add(item.id);
+            Timer(const Duration(seconds: 5), () {
+              if (mounted) {
+                setState(() {
+                  _newPatientIds.remove(item.id);
+                });
+              }
+            });
+          }
+
+          _patients.sort((a, b) {
+            final priorityCompare = a.priority.compareTo(b.priority);
+            if (priorityCompare != 0) return priorityCompare;
+            final urgencyCompare = b.urgencyScore.compareTo(a.urgencyScore);
+            if (urgencyCompare != 0) return urgencyCompare;
+            return a.createdAt.compareTo(b.createdAt);
+          });
+        });
+      }
     });
   }
 

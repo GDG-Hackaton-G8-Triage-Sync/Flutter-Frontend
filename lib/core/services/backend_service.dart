@@ -109,7 +109,7 @@ class BackendService {
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
       '/api/v1/auth/login/',
-      data: <String, dynamic>{'username': email, 'password': password},
+      data: <String, dynamic>{'identifier': email, 'password': password},
     );
 
     final auth = AuthResponse.fromJson(response.data ?? <String, dynamic>{});
@@ -142,8 +142,6 @@ class BackendService {
     String? currentMedications,
     String? badHabits,
   }) async {
-    final backendRole = role == 'staff' ? 'nurse' : role;
-
     await _dio.post<void>(
       '/api/v1/auth/register/',
       data: <String, dynamic>{
@@ -151,8 +149,8 @@ class BackendService {
         'email': email,
         'password': password,
         'password2': password,
-        'role': backendRole,
-        if (age != null || backendRole != 'patient') 'age': age ?? 0,
+        'role': role,
+        if (age != null || role != 'patient') 'age': age ?? 0,
         if (gender != null) 'gender': gender,
         if (bloodType != null) 'blood_type': bloodType,
         if (healthHistory != null) 'health_history': healthHistory,
@@ -218,36 +216,36 @@ class BackendService {
     required int id,
     required String status,
   }) async {
-    await _dio.patch<Map<String, dynamic>>(
+    final response = await _dio.patch<Map<String, dynamic>>(
       '/api/v1/dashboard/staff/patient/$id/status/',
       data: <String, dynamic>{'status': status},
     );
 
-    return _fetchStaffPatientById(id);
+    return TriageItem.fromJson(response.data ?? <String, dynamic>{});
   }
 
   Future<TriageItem> updatePatientPriority({
     required int id,
     required int priority,
   }) async {
-    await _dio.patch<Map<String, dynamic>>(
+    final response = await _dio.patch<Map<String, dynamic>>(
       '/api/v1/dashboard/staff/patient/$id/priority/',
       data: <String, dynamic>{'priority': priority},
     );
 
-    return _fetchStaffPatientById(id);
+    return TriageItem.fromJson(response.data ?? <String, dynamic>{});
   }
 
   Future<TriageItem> verifyTriage({
     required int id,
     required String nurseName,
   }) async {
-    await _dio.patch<Map<String, dynamic>>(
+    final response = await _dio.patch<Map<String, dynamic>>(
       '/api/v1/dashboard/staff/patient/$id/verify/',
       data: <String, dynamic>{},
     );
 
-    return _fetchStaffPatientById(id);
+    return TriageItem.fromJson(response.data ?? <String, dynamic>{});
   }
 
   Future<TriageItem> logVitals({
@@ -256,38 +254,16 @@ class BackendService {
     required String heartRate,
     required String temperature,
   }) async {
-    final patient = await _fetchStaffPatientById(id);
-    return TriageItem(
-      id: patient.id,
-      description: patient.description,
-      priority: patient.priority,
-      urgencyScore: patient.urgencyScore,
-      condition: patient.condition,
-      status: patient.status,
-      createdAt: patient.createdAt,
-      patientName: patient.patientName,
-      photoName: patient.photoName,
-      verifiedBy: patient.verifiedBy,
-      verifiedAt: patient.verifiedAt,
-      gender: patient.gender,
-      age: patient.age,
-      bloodType: patient.bloodType,
-      healthHistory: patient.healthHistory,
-      allergies: patient.allergies,
-      currentMedications: patient.currentMedications,
-      badHabits: patient.badHabits,
-      reasoning: patient.reasoning,
-      confidence: patient.confidence,
-      vitals: Vitals(
-        bp: bp,
-        heartRate: heartRate,
-        temperature: temperature,
-        recordedAt: DateTime.now(),
-        recordedBy: await _sessionService.getName() ?? 'Local staff',
-      ),
-      startedAt: patient.startedAt,
-      completedAt: patient.completedAt,
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/v1/dashboard/staff/patient/$id/vitals/',
+      data: <String, dynamic>{
+        'bp': bp,
+        'heart_rate': heartRate,
+        'temperature': temperature,
+      },
     );
+
+    return TriageItem.fromJson(response.data ?? <String, dynamic>{});
   }
 
   Future<AdminOverview> getAdminOverview() async {
@@ -486,13 +462,5 @@ class BackendService {
         createdAt: now.subtract(const Duration(hours: 1)),
       ),
     ];
-  }
-
-  Future<TriageItem> _fetchStaffPatientById(int id) async {
-    final patients = await getStaffPatients();
-    return patients.firstWhere(
-      (patient) => patient.id == id,
-      orElse: () => TriageItem.fromJson(<String, dynamic>{'id': id}),
-    );
   }
 }

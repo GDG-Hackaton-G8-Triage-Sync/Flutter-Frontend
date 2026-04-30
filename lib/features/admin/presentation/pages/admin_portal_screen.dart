@@ -36,7 +36,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
     _seedInitialAuditLog();
     _loadAll();
   }
@@ -224,9 +224,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
       );
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('User deletion is not supported by this backend yet.'),
         ),
@@ -297,14 +295,8 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                 initialValue: selectedRole,
                 decoration: const InputDecoration(labelText: 'System Role'),
                 items: const [
-                  DropdownMenuItem(
-                    value: 'nurse',
-                    child: Text('Nurse'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'doctor',
-                    child: Text('Doctor'),
-                  ),
+                  DropdownMenuItem(value: 'nurse', child: Text('Nurse')),
+                  DropdownMenuItem(value: 'doctor', child: Text('Doctor')),
                   DropdownMenuItem(
                     value: 'admin',
                     child: Text('Administrator'),
@@ -392,7 +384,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
           tabs: const [
             Tab(icon: Icon(Icons.dashboard), text: 'Dashboard'),
             Tab(icon: Icon(Icons.manage_accounts), text: 'Directory'),
-            Tab(icon: Icon(Icons.security), text: 'Audit Stream'),
+            // Tab(icon: Icon(Icons.security), text: 'Audit Stream'), // Disabled for now
           ],
         ),
         actions: [
@@ -433,7 +425,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
               children: [
                 _buildDashboardTab(),
                 _buildDirectoryTab(),
-                _buildAuditTab(),
+                // _buildAuditTab(), // Disabled for now
               ],
             ),
     );
@@ -683,7 +675,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
     );
   }
 
-  Widget _buildAuditTab() {
+  // Widget _buildAuditTab() { // Disabled for now
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: _auditLog.length,
