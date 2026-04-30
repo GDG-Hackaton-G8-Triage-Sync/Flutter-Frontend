@@ -40,7 +40,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     final identifier = _emailController.text.trim();
-    final password = _passwordController.text.trim();
+    final password = _passwordController.text; // Do NOT trim passwords as spaces can be part of them
 
     setState(() => _isLoading = true);
 
@@ -283,7 +283,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           keyboardType: TextInputType.text,
                           decoration: const InputDecoration(
                             labelText: 'Username',
-                            hintText: 'Full name or staff username',
+                            hintText: 'Enter your unique username',
                             prefixIcon: Icon(Icons.account_circle_outlined),
                           ),
                           validator: (v) {

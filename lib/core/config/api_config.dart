@@ -21,7 +21,7 @@ class ApiConfig {
       return 'http://10.0.2.2:9000';
     }
 
-    return 'http://127.0.0.1:9000';
+    return 'http://localhost:9000';
   }
 
   static String get websocketUrl {
@@ -32,7 +32,7 @@ class ApiConfig {
 
     final uri = Uri.parse(baseUrl);
     final scheme = uri.scheme == 'https' ? 'wss' : 'ws';
-    return uri.replace(scheme: scheme, path: '/ws/triage/events/').toString();
+    return uri.replace(scheme: scheme, path: '/ws/triage/').toString();
   }
 
   static Uri websocketUri({required String token}) {
@@ -66,11 +66,11 @@ class ApiConfig {
       value = value.replaceFirst('https://', 'wss://');
     }
 
-    if (!value.contains('/ws/triage/events')) {
+    if (!value.contains('/ws/triage/')) {
       while (value.endsWith('/')) {
         value = value.substring(0, value.length - 1);
       }
-      value = '$value/ws/triage/events/';
+      value = '$value/ws/triage/';
     }
 
     return value;

@@ -3,7 +3,7 @@ import 'package:dio/dio.dart';
 class ApiErrorMapper {
   static String toUserMessage(Object error, {required String fallbackMessage}) {
     if (error is! DioException) {
-      return fallbackMessage;
+      return '$fallbackMessage (${error.runtimeType}: $error)';
     }
 
     switch (error.type) {

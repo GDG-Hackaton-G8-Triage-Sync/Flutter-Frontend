@@ -124,7 +124,7 @@ class _SymptomInputScreenState extends State<SymptomInputScreen> {
     try {
       await _backend.submitSymptoms(
         description: description,
-        photoName: _attachedImage?.name,
+        photoPath: _attachedImage?.path,
       );
 
       if (!mounted) return;

@@ -18,7 +18,7 @@ class _SignupScreenState extends State<SignupScreen> {
   int _currentStep = 0;
 
   // Step 1: Account
-  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
@@ -42,7 +42,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _usernameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -78,9 +78,9 @@ class _SignupScreenState extends State<SignupScreen> {
 
     try {
       await _backend.register(
-        name: _nameController.text.trim(),
+        name: _usernameController.text.trim(),
         email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
+        password: _passwordController.text, // Do NOT trim passwords
         role: 'patient',
         gender: _gender,
         age: int.tryParse(_ageController.text),
@@ -95,7 +95,7 @@ class _SignupScreenState extends State<SignupScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Registration successful. Please sign in with your full name.',
+            'Registration successful. Please sign in with your username.',
           ),
         ),
       );
@@ -124,19 +124,11 @@ class _SignupScreenState extends State<SignupScreen> {
     }
   }
 
-  bool _isValidFullName(String name) {
-    // Robust name validation:
-    // 1. Minimum 2 parts (First + Last)
-    // 2. Minimum length (3 chars)
-    // 3. No weird special characters (allowing unicode letters ' and -)
-    final parts = name.trim().split(RegExp(r'\s+'));
-    if (parts.length < 2) return false;
-
-    // Check if each part is at least 1 character and contains valid name characters
-    // Using simple character matching to be script-agnostic
-    for (var part in parts) {
-      if (part.isEmpty) return false;
-    }
+  bool _isValidUsername(String name) {
+    // Basic username validation: 3-20 characters, no spaces
+    final username = name.trim();
+    if (username.length < 3 || username.length > 20) return false;
+    if (username.contains(' ')) return false;
     return true;
   }
 
@@ -335,18 +327,18 @@ class _SignupScreenState extends State<SignupScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildRequiredLabel('Full Name'),
+        _buildRequiredLabel('Username'),
         const SizedBox(height: 8),
         TextFormField(
-          controller: _nameController,
+          controller: _usernameController,
           decoration: const InputDecoration(
-            hintText: 'e.g. Jean-Luc Picard',
+            hintText: 'Enter a unique username',
             prefixIcon: Icon(Icons.person_outline),
           ),
           validator: (v) {
-            if (v == null || v.isEmpty) return 'Please enter your full name';
-            if (!_isValidFullName(v)) {
-              return 'Please enter both first and last name';
+            if (v == null || v.isEmpty) return 'Please enter a username';
+            if (!_isValidUsername(v)) {
+              return 'Username must be 3-20 chars and have no spaces';
             }
             return null;
           },

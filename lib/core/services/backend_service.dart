@@ -38,11 +38,17 @@ class BackendService {
         ..interceptors.add(
           InterceptorsWrapper(
             onRequest: (options, handler) async {
-              final token = await _sessionService.getAccessToken();
-              if (token != null && token.isNotEmpty) {
-                options.headers['Authorization'] = 'Bearer $token';
+              try {
+                debugPrint('NETWORK_REQ: ${options.method} ${options.baseUrl}${options.path}');
+                final token = await _sessionService.getAccessToken();
+                if (token != null && token.isNotEmpty) {
+                  options.headers['Authorization'] = 'Bearer $token';
+                }
+                handler.next(options);
+              } catch (e) {
+                debugPrint('INTERCEPTOR_ERROR: $e');
+                handler.next(options); // Continue even if token retrieval fails
               }
-              handler.next(options);
             },
             onError: (error, handler) async {
               final statusCode = error.response?.statusCode;
@@ -107,26 +113,32 @@ class BackendService {
     required String email,
     required String password,
   }) async {
-    final response = await _dio.post<Map<String, dynamic>>(
-      '/api/v1/auth/login/',
-      data: <String, dynamic>{'identifier': email, 'password': password},
-    );
+    try {
+      debugPrint('LOGGING_IN: $email to $_baseUrl/api/v1/auth/login/');
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/api/v1/auth/login/',
+        data: <String, dynamic>{'username': email, 'password': password},
+      );
 
-    final auth = AuthResponse.fromJson(response.data ?? <String, dynamic>{});
+      final auth = AuthResponse.fromJson(response.data ?? <String, dynamic>{});
 
-    if (auth.accessToken.isEmpty || auth.refreshToken.isEmpty) {
-      throw Exception('Login response missing JWT tokens');
+      if (auth.accessToken.isEmpty || auth.refreshToken.isEmpty) {
+        throw Exception('Login response missing JWT tokens: ${response.data}');
+      }
+
+      await _sessionService.saveSession(
+        accessToken: auth.accessToken,
+        refreshToken: auth.refreshToken,
+        role: auth.role,
+        email: auth.email,
+        name: auth.name,
+      );
+
+      return auth;
+    } on DioException catch (e) {
+      debugPrint('Login failed: ${e.message}, Response: ${e.response?.data}');
+      rethrow;
     }
-
-    await _sessionService.saveSession(
-      accessToken: auth.accessToken,
-      refreshToken: auth.refreshToken,
-      role: auth.role,
-      email: auth.email,
-      name: auth.name,
-    );
-
-    return auth;
   }
 
   Future<void> register({
@@ -145,7 +157,7 @@ class BackendService {
     await _dio.post<void>(
       '/api/v1/auth/register/',
       data: <String, dynamic>{
-        'name': name,
+        'username': name,
         'email': email,
         'password': password,
         'password2': password,
@@ -164,16 +176,35 @@ class BackendService {
 
   Future<TriageItem> submitSymptoms({
     required String description,
-    String? photoName,
-    String? bloodType,
+    String? photoName, // Match v1.6.0 doc field name
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
       '/api/v1/triage/',
       data: <String, dynamic>{
         'description': description,
-        if (photoName != null && photoName.isNotEmpty) 'photo_name': photoName,
-        if (bloodType != null && bloodType.isNotEmpty) 'blood_type': bloodType,
+        if (photoName != null) 'photo_name': photoName,
       },
+    );
+
+    return TriageItem.fromJson(response.data ?? <String, dynamic>{});
+  }
+
+  Future<Map<String, dynamic>> analyzeSymptomsAi(String description) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/v1/triage/ai/',
+      data: <String, dynamic>{'description': description},
+    );
+    return response.data ?? <String, dynamic>{};
+  }
+
+  Future<TriageItem> extractSymptomsFromPdf(String filePath) async {
+    final formData = FormData.fromMap(<String, dynamic>{
+      'file': await MultipartFile.fromFile(filePath),
+    });
+
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/v1/triage/pdf-extract/',
+      data: formData,
     );
 
     return TriageItem.fromJson(response.data ?? <String, dynamic>{});
@@ -254,13 +285,30 @@ class BackendService {
     required String heartRate,
     required String temperature,
   }) async {
+    int? systolicBp;
+    int? diastolicBp;
+    if (bp.contains('/')) {
+      final parts = bp.split('/');
+      systolicBp = int.tryParse(parts[0].trim());
+      diastolicBp = int.tryParse(parts[1].trim());
+    }
+
+    double? tempC;
+    final tempF = double.tryParse(temperature);
+    if (tempF != null) {
+      tempC = (tempF - 32) * 5 / 9;
+    }
+
+    final data = <String, dynamic>{
+      if (systolicBp != null) 'systolic_bp': systolicBp,
+      if (diastolicBp != null) 'diastolic_bp': diastolicBp,
+      if (int.tryParse(heartRate) != null) 'heart_rate': int.parse(heartRate),
+      if (tempC != null) 'temperature_c': double.parse(tempC.toStringAsFixed(1)),
+    };
+
     final response = await _dio.post<Map<String, dynamic>>(
       '/api/v1/dashboard/staff/patient/$id/vitals/',
-      data: <String, dynamic>{
-        'bp': bp,
-        'heart_rate': heartRate,
-        'temperature': temperature,
-      },
+      data: data,
     );
 
     return TriageItem.fromJson(response.data ?? <String, dynamic>{});
@@ -353,7 +401,7 @@ class BackendService {
 
   Future<List<TriageItem>> getPatientSubmissionsByEmail(String email) async {
     final response = await _dio.get<dynamic>(
-      '/api/v1/patients/triage-submissions/',
+      '/api/v1/triage-submissions/',
       queryParameters: <String, dynamic>{'email': email},
     );
 
@@ -365,14 +413,29 @@ class BackendService {
   }
 
   Future<WaitingAnalytics> getWaitingAnalytics(int id) async {
-    return WaitingAnalytics(
-      position: 1,
-      totalWaiting: 1,
-      estimatedWaitMins: 15,
-      aiConfidence: 0.72,
-      message:
-          'Live wait analytics are using a local estimate until the backend endpoint is available.',
-    );
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/api/v1/triage/$id/waiting-analytics/',
+      );
+
+      final data = response.data ?? <String, dynamic>{};
+      
+      return WaitingAnalytics(
+        position: (data['queue_position'] as num?)?.toInt() ?? 1,
+        totalWaiting: (data['patients_ahead'] as num?)?.toInt() ?? 1,
+        estimatedWaitMins: (data['estimated_wait_minutes'] as num?)?.toInt() ?? 15,
+        aiConfidence: 0.8,
+        message: 'Live analytics connected.',
+      );
+    } catch (_) {
+      return WaitingAnalytics(
+        position: 1,
+        totalWaiting: 1,
+        estimatedWaitMins: 15,
+        aiConfidence: 0.72,
+        message: 'Live wait analytics fallback.',
+      );
+    }
   }
 
   Future<List<AppNotification>> getNotifications({

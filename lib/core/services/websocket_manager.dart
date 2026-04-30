@@ -64,12 +64,14 @@ class WebSocketManager {
 
       final Map<String, dynamic> json = jsonDecode(raw) as Map<String, dynamic>;
 
-      final type = json['type'] ?? json['event_type'];
-      if (type == 'TRIAGE_CREATED' ||
-          type == 'TRIAGE_UPDATED' ||
-          type == 'PRIORITY_UPDATE' ||
-          type == 'CRITICAL_ALERT' ||
-          type == 'SLA_BREACH') {
+      final type = (json['type'] ?? json['event_type'] ?? '').toString().toLowerCase();
+      if (type == 'triage_created' ||
+          type == 'patient_created' ||
+          type == 'triage_updated' ||
+          type == 'status_changed' ||
+          type == 'priority_update' ||
+          type == 'critical_alert' ||
+          type == 'sla_breach') {
         final data = json['data'] is Map<String, dynamic>
             ? (json['data']['triage_item'] ?? json['data']) as Map<String, dynamic>
             : (json['triage_item'] ?? json);
