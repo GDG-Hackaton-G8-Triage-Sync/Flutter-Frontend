@@ -675,59 +675,6 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
     );
   }
 
-  // Widget _buildAuditTab() { // Disabled for now
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: _auditLog.length,
-      itemBuilder: (ctx, idx) {
-        final entry = _auditLog[idx];
-        return Card(
-          elevation: 0,
-          margin: const EdgeInsets.only(bottom: 8),
-          color: Colors.white,
-          shape: RoundedRectangleBorder(
-            side: const BorderSide(color: Colors.black12),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(Icons.verified_user, color: Colors.green, size: 20),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        entry.action,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(entry.target, style: const TextStyle(fontSize: 12)),
-                      const SizedBox(height: 6),
-                      Text(
-                        '${entry.actor} • ${entry.time}',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: Colors.black54,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   Widget _kpiTile(String label, int value, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.all(12),

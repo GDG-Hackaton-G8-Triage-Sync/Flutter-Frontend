@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'package:flutter_frontend/core/models/api_models.dart';
 import 'package:flutter_frontend/core/services/backend_service.dart';
-import 'package:flutter_frontend/core/services/session_service.dart';
+// import 'package:flutter_frontend/core/services/session_service.dart';
 
 class PatientDetailScreen extends StatefulWidget {
   const PatientDetailScreen({super.key, required this.patient});
@@ -250,7 +250,7 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
   }
 
   // void _exportFHIRRecord() { // Hidden for now
-/*
+  /*
     final fhirRecord = {
       "resourceType": "Bundle",
       "type": "collection",
@@ -701,7 +701,7 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
     );
   }
 
-/*
+  /*
   Future<void> _confirmAIPriority() async {
     setState(() => _isUpdating = true);
     try {
@@ -726,7 +726,7 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
     }
   }
 */
-/*
+  /*
   // Widget _buildAICopilotCard() { // Hidden for now
     final isVerified = _patient.verifiedBy != null;
     final double confidence = _patient.confidence ?? 0.0;
