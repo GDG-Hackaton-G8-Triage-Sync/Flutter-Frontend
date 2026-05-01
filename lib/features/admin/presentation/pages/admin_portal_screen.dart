@@ -256,99 +256,141 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
     final TextEditingController nameCtrl = TextEditingController();
     final TextEditingController emailCtrl = TextEditingController();
     final TextEditingController passCtrl = TextEditingController();
+    final TextEditingController ageCtrl = TextEditingController();
     String selectedRole = 'nurse';
+    String? gender;
+    String? bloodType;
 
     return showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Register Internal Member'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Name',
-                  prefixIcon: Icon(Icons.person),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Register Internal Member'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Name',
+                    prefixIcon: Icon(Icons.person),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: emailCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  prefixIcon: Icon(Icons.email),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: emailCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    prefixIcon: Icon(Icons.email),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: passCtrl,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'Password',
-                  prefixIcon: Icon(Icons.lock),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: passCtrl,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Password',
+                    prefixIcon: Icon(Icons.lock),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: selectedRole,
-                decoration: const InputDecoration(labelText: 'System Role'),
-                items: const [
-                  DropdownMenuItem(value: 'nurse', child: Text('Nurse')),
-                  DropdownMenuItem(value: 'doctor', child: Text('Doctor')),
-                  DropdownMenuItem(
-                    value: 'admin',
-                    child: Text('Administrator'),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: ageCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Age',
+                    prefixIcon: Icon(Icons.calendar_today),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: selectedRole,
+                  decoration: const InputDecoration(labelText: 'System Role'),
+                  items: const [
+                    DropdownMenuItem(value: 'nurse', child: Text('Nurse')),
+                    DropdownMenuItem(value: 'doctor', child: Text('Doctor')),
+                    DropdownMenuItem(value: 'admin', child: Text('Administrator')),
+                    DropdownMenuItem(value: 'patient', child: Text('Patient')),
+                  ],
+                  onChanged: (v) => setDialogState(() => selectedRole = v!),
+                ),
+                if (selectedRole == 'patient') ...[
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    initialValue: gender,
+                    decoration: const InputDecoration(
+                      labelText: 'Gender',
+                      prefixIcon: Icon(Icons.people),
+                    ),
+                    items: ['Male', 'Female', 'Other']
+                        .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                        .toList(),
+                    onChanged: (v) => setDialogState(() => gender = v),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    initialValue: bloodType,
+                    decoration: const InputDecoration(
+                      labelText: 'Blood Type',
+                      prefixIcon: Icon(Icons.bloodtype),
+                    ),
+                    items: ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-']
+                        .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                        .toList(),
+                    onChanged: (v) => setDialogState(() => bloodType = v),
                   ),
                 ],
-                onChanged: (v) => selectedRole = v!,
-              ),
-            ],
+              ],
+            ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (nameCtrl.text.isEmpty ||
+                    emailCtrl.text.isEmpty ||
+                    passCtrl.text.isEmpty ||
+                    ageCtrl.text.isEmpty) {
+                  return;
+                }
+                try {
+                  await _backend.register(
+                    name: nameCtrl.text.trim(),
+                    email: emailCtrl.text.trim(),
+                    password: passCtrl.text.trim(),
+                    role: selectedRole,
+                    age: int.tryParse(ageCtrl.text),
+                    gender: gender,
+                    bloodType: bloodType,
+                  );
+                  _logAudit(
+                    'MEMBER_REGISTERED',
+                    'New $selectedRole: ${emailCtrl.text}',
+                    'admin',
+                  );
+                  if (!ctx.mounted || !mounted) return;
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Registered $selectedRole: ${nameCtrl.text}'),
+                    ),
+                  );
+                  _loadAll(); // Refresh directory
+                } catch (e) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Registration failed.')),
+                  );
+                }
+              },
+              child: const Text('Register'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (nameCtrl.text.isEmpty ||
-                  emailCtrl.text.isEmpty ||
-                  passCtrl.text.isEmpty) {
-                return;
-              }
-              try {
-                await _backend.register(
-                  name: nameCtrl.text.trim(),
-                  email: emailCtrl.text.trim(),
-                  password: passCtrl.text.trim(),
-                  role: selectedRole,
-                );
-                _logAudit(
-                  'MEMBER_REGISTERED',
-                  'New $selectedRole: ${emailCtrl.text}',
-                  'admin',
-                );
-                if (!ctx.mounted || !mounted) return;
-                Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Registered $selectedRole: ${nameCtrl.text}'),
-                  ),
-                );
-                _loadAll(); // Refresh directory
-              } catch (e) {
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Registration failed.')),
-                );
-              }
-            },
-            child: const Text('Register'),
-          ),
-        ],
       ),
     );
   }
