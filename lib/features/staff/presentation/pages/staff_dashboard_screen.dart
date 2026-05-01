@@ -64,13 +64,17 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
             });
           }
 
-          _patients.sort((a, b) {
-            final priorityCompare = a.priority.compareTo(b.priority);
-            if (priorityCompare != 0) return priorityCompare;
-            final urgencyCompare = b.urgencyScore.compareTo(a.urgencyScore);
-            if (urgencyCompare != 0) return urgencyCompare;
-            return a.createdAt.compareTo(b.createdAt);
-          });
+          try {
+            _patients.sort((a, b) {
+              final priorityCompare = a.priority.compareTo(b.priority);
+              if (priorityCompare != 0) return priorityCompare;
+              final urgencyCompare = b.urgencyScore.compareTo(a.urgencyScore);
+              if (urgencyCompare != 0) return urgencyCompare;
+              return a.createdAt.compareTo(b.createdAt);
+            });
+          } catch (e) {
+            debugPrint('Error sorting patients in WebSocket: $e');
+          }
         });
       }
     });
@@ -94,38 +98,55 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
             : _statusFilterController.text.trim(),
       );
 
-      items.sort((a, b) {
-        final priorityCompare = a.priority.compareTo(b.priority);
-        if (priorityCompare != 0) return priorityCompare;
-        final urgencyCompare = b.urgencyScore.compareTo(a.urgencyScore);
-        if (urgencyCompare != 0) return urgencyCompare;
-        return a.createdAt.compareTo(b.createdAt);
-      });
+      try {
+        items.sort((a, b) {
+          final priorityCompare = a.priority.compareTo(b.priority);
+          if (priorityCompare != 0) return priorityCompare;
+          final urgencyCompare = b.urgencyScore.compareTo(a.urgencyScore);
+          if (urgencyCompare != 0) return urgencyCompare;
+          return a.createdAt.compareTo(b.createdAt);
+        });
+      } catch (e) {
+        debugPrint('Error sorting patients: $e');
+      }
 
       if (!mounted) return;
 
-      // Detect new patients for the glow effect
+      // Detect new patients for the glow effect without calling setState in a loop
       final existingIds = _patients.map((p) => p.id).toSet();
+      final newDetectedIds = <int>[];
       for (final item in items) {
         if (existingIds.isNotEmpty && !existingIds.contains(item.id)) {
-          setState(() => _newPatientIds.add(item.id));
-          // Remove glow after animation completes (3 seconds)
-          Timer(const Duration(seconds: 5), () {
-            if (mounted) setState(() => _newPatientIds.remove(item.id));
-          });
+          newDetectedIds.add(item.id);
         }
       }
 
       setState(() {
         _patients = items;
+        if (newDetectedIds.isNotEmpty) {
+          _newPatientIds.addAll(newDetectedIds);
+          // Remove glow after animation completes
+          for (final id in newDetectedIds) {
+            Timer(const Duration(seconds: 5), () {
+              if (mounted) {
+                setState(() => _newPatientIds.remove(id));
+              }
+            });
+          }
+        }
         _isLoading = false;
       });
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Error fetching patients: $e');
       if (!mounted) return;
       setState(() {
         _error = 'Failed to load queue from backend.';
         _isLoading = false;
       });
+    } finally {
+      if (mounted && _isLoading) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 

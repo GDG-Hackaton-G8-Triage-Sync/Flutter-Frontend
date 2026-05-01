@@ -27,8 +27,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
   List<AppUser> _filteredUsers = <AppUser>[];
   String _searchQuery = '';
 
-  // Dynamic audit log simulating enterprise immutability stream
-  final List<AuditLogEntry> _auditLog = <AuditLogEntry>[];
+  List<AuditLogEntry> _auditLogs = <AuditLogEntry>[];
 
   bool _isLoading = true;
   String? _error;
@@ -36,36 +35,8 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    _seedInitialAuditLog();
+    _tabController = TabController(length: 3, vsync: this);
     _loadAll();
-  }
-
-  void _seedInitialAuditLog() {
-    _logAudit('SYSTEM_BOOT', 'Admin dashboard initialized.', 'system');
-    _logAudit(
-      'LOGIN_SUCCESS',
-      'admin@triagesync.com logged in securely.',
-      'admin_portal',
-    );
-  }
-
-  void _logAudit(String action, String target, String actor) {
-    if (!mounted) return;
-    setState(() {
-      _auditLog.insert(
-        0,
-        AuditLogEntry(
-          time: DateTime.now()
-              .toIso8601String()
-              .replaceFirst('T', ' ')
-              .substring(0, 19),
-          actor: actor,
-          action: action,
-          target: target,
-        ),
-      );
-    });
   }
 
   Future<void> _loadAll() async {
@@ -79,6 +50,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
         _backend.getAdminOverview(),
         _backend.getAdminAnalytics(),
         _backend.getUsers(),
+        _backend.getAuditLogs(),
       ]);
 
       if (!mounted) return;
@@ -86,25 +58,16 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
         _overview = results[0] as AdminOverview;
         _analytics = results[1] as AdminAnalytics;
         _allUsers = results[2] as List<AppUser>;
+        _auditLogs = results[3] as List<AuditLogEntry>;
         _applySearch();
         _isLoading = false;
       });
-      _logAudit(
-        'DATA_SYNC',
-        'Synchronized live metrics & user tree.',
-        'system',
-      );
     } catch (_) {
       if (!mounted) return;
       setState(() {
         _error = 'Failed to load enterprise dashboard data (HIPAA Timeout).';
         _isLoading = false;
       });
-      _logAudit(
-        'SYNC_ERROR',
-        'Failed to pull live backend snapshot.',
-        'system',
-      );
     }
   }
 
@@ -182,12 +145,6 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
 
     try {
       await _backend.updateUserRole(id: user.id, role: role);
-      _logAudit(
-        'ROLE_MUTATION',
-        '${user.email} -> $role. Reason: $justification',
-        'admin',
-      );
-
       await _loadAll();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -207,13 +164,6 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
 
     try {
       await _backend.deleteUser(user.id);
-
-      _logAudit(
-        'USER_DELETION',
-        'Erased records for ${user.email}. Reason: $justification',
-        'admin',
-      );
-
       await _loadAll();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -240,11 +190,6 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
       ),
     );
     await Future.delayed(const Duration(seconds: 1));
-    _logAudit(
-      'FILE_EXPORT',
-      'Exported Daily Metrics PDF to local drive.',
-      'admin',
-    );
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -397,7 +342,6 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
   }
 
   Future<void> _logout() async {
-    _logAudit('LOGOUT', 'Administrator session terminated.', 'admin');
     await _session.clear();
     if (!mounted) return;
     Navigator.pushAndRemoveUntil(
@@ -427,7 +371,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
           tabs: const [
             Tab(icon: Icon(Icons.dashboard), text: 'Dashboard'),
             Tab(icon: Icon(Icons.manage_accounts), text: 'Directory'),
-            // Tab(icon: Icon(Icons.security), text: 'Audit Stream'), // Disabled for now
+            Tab(icon: Icon(Icons.security), text: 'Audit Stream'),
           ],
         ),
         actions: [
@@ -468,7 +412,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
               children: [
                 _buildDashboardTab(),
                 _buildDirectoryTab(),
-                // _buildAuditTab(), // Disabled for now
+                _buildAuditTab(),
               ],
             ),
     );
@@ -490,11 +434,6 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                   ),
                   onPressed: () {
                     if (_overview == null) return;
-                    _logAudit(
-                      'COMMAND_CENTER',
-                      'Opened Command Center view',
-                      'admin',
-                    );
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -780,16 +719,26 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
   }
 }
 
-class AuditLogEntry {
-  final String time;
-  final String actor;
-  final String action;
-  final String target;
-
-  AuditLogEntry({
-    required this.time,
-    required this.actor,
-    required this.action,
-    required this.target,
-  });
+  Widget _buildAuditTab() {
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: _auditLogs.length,
+      separatorBuilder: (_, __) => const Divider(),
+      itemBuilder: (context, index) {
+        final log = _auditLogs[index];
+        return ListTile(
+          leading: const Icon(Icons.security, color: Color(0xFFBA1A1A)),
+          title: Text(
+            log.action,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          subtitle: Text('${log.actorEmail} - ${log.details}'),
+          trailing: Text(
+            log.timestamp.toIso8601String().substring(0, 16).replaceFirst('T', ' '),
+            style: const TextStyle(fontSize: 12, color: Colors.black54),
+          ),
+        );
+      },
+    );
+  }
 }

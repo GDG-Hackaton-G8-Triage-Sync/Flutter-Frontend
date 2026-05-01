@@ -486,3 +486,87 @@ class WaitingAnalytics {
     );
   }
 }
+
+class AuditLogEntry {
+  AuditLogEntry({
+    required this.id,
+    required this.action,
+    required this.actorEmail,
+    required this.targetEmail,
+    required this.details,
+    required this.timestamp,
+  });
+
+  final int id;
+  final String action;
+  final String actorEmail;
+  final String? targetEmail;
+  final String details;
+  final DateTime timestamp;
+
+  factory AuditLogEntry.fromJson(Map<String, dynamic> json) {
+    return AuditLogEntry(
+      id: _readInt(json, <String>['id']),
+      action: _readString(json, <String>['action']),
+      actorEmail: _readString(json, <String>['actor_email']),
+      targetEmail: _readNullableString(json, <String>['target_email']),
+      details: _readString(json, <String>['details']),
+      timestamp: _readDateTime(json, <String>['timestamp']) ?? DateTime.now(),
+    );
+  }
+}
+
+class StaffNote {
+  StaffNote({
+    required this.id,
+    required this.content,
+    required this.isInternal,
+    required this.createdAt,
+    required this.authorName,
+  });
+
+  final int id;
+  final String content;
+  final bool isInternal;
+  final DateTime createdAt;
+  final String authorName;
+
+  factory StaffNote.fromJson(Map<String, dynamic> json) {
+    return StaffNote(
+      id: _readInt(json, <String>['id']),
+      content: _readString(json, <String>['content']),
+      isInternal: json['is_internal'] == true,
+      createdAt: _readDateTime(json, <String>['created_at']) ?? DateTime.now(),
+      authorName: _readString(json, <String>['author', 'author_name']),
+    );
+  }
+}
+
+class VitalsLog {
+  VitalsLog({
+    required this.id,
+    required this.bloodPressure,
+    required this.heartRate,
+    required this.temperature,
+    required this.recordedAt,
+    required this.recordedByName,
+  });
+
+  final int id;
+  final String? bloodPressure;
+  final int? heartRate;
+  final double? temperature;
+  final DateTime recordedAt;
+  final String recordedByName;
+
+  factory VitalsLog.fromJson(Map<String, dynamic> json) {
+    return VitalsLog(
+      id: _readInt(json, <String>['id']),
+      bloodPressure: _readNullableString(json, <String>['blood_pressure']),
+      heartRate: json['heart_rate'] != null ? _readInt(json, <String>['heart_rate']) : null,
+      temperature: json['temperature'] != null ? _readDouble(json, <String>['temperature']) : null,
+      recordedAt: _readDateTime(json, <String>['recorded_at']) ?? DateTime.now(),
+      recordedByName: _readString(json, <String>['recorded_by', 'recorded_by_name']),
+    );
+  }
+}

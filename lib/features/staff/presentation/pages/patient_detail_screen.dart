@@ -386,7 +386,7 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
           children: [
             _buildPatientHeader(),
             const SizedBox(height: 24),
-            // _buildAICopilotCard(), // Hidden for now as requested
+            _buildAICopilotCard(),
             const SizedBox(height: 24),
             _buildMedicalProfileCard(),
             const SizedBox(height: 24),
@@ -477,6 +477,47 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton.icon(
+                  onPressed: () async {
+                    setState(() => _isUpdating = true);
+                    try {
+                      await _backend.assignStaff(_patient.id);
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Assigned to you successfully.')),
+                      );
+                      Navigator.pop(context, _patient);
+                    } catch (_) {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Failed to assign staff.')),
+                      );
+                    } finally {
+                      if (mounted) setState(() => _isUpdating = false);
+                    }
+                  },
+                  icon: const Icon(Icons.assignment_ind, color: Colors.white),
+                  label: const Text(
+                    'Assign to Me',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFF57C00),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton.icon(
                   onPressed: _showOverridePriorityDialog,
                   icon: const Icon(Icons.edit_note, color: Color(0xFF00478D)),
                   label: const Text(
@@ -496,9 +537,114 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
                   ),
                 ),
               ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton.icon(
+                  onPressed: _showStaffNotesDialog,
+                  icon: const Icon(Icons.speaker_notes, color: Color(0xFF00478D)),
+                  label: const Text(
+                    'Staff Notes',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF00478D),
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFE0E0E0),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                ),
+              ),
             ],
           ],
         ),
+      ),
+    );
+  }
+
+  Future<void> _showStaffNotesDialog() async {
+    final notes = await _backend.getStaffNotes(_patient.id);
+    final noteController = TextEditingController();
+
+    if (!mounted) return;
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setStateLocal) {
+          return AlertDialog(
+            title: const Text('Staff Notes'),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (notes.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: Text('No notes yet.', style: TextStyle(color: Colors.grey)),
+                    )
+                  else
+                    Flexible(
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: notes.length,
+                        itemBuilder: (context, index) {
+                          final note = notes[index];
+                          return ListTile(
+                            title: Text(note.content),
+                            subtitle: Text('${note.authorName} - ${note.createdAt.toString().substring(0, 16)}'),
+                            leading: Icon(note.isInternal ? Icons.lock : Icons.note),
+                          );
+                        },
+                      ),
+                    ),
+                  const Divider(),
+                  TextField(
+                    controller: noteController,
+                    decoration: const InputDecoration(
+                      labelText: 'Add Internal Note',
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLines: 2,
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Close'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  if (noteController.text.trim().isEmpty) return;
+                  try {
+                    final newNote = await _backend.addStaffNote(
+                      _patient.id,
+                      noteController.text.trim(),
+                      true, // Internal note
+                    );
+                    setStateLocal(() {
+                      notes.add(newNote);
+                      noteController.clear();
+                    });
+                  } catch (_) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Failed to add note.')),
+                    );
+                  }
+                },
+                child: const Text('Add Note'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -701,21 +847,16 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
     );
   }
 
-  /*
   Future<void> _confirmAIPriority() async {
     setState(() => _isUpdating = true);
     try {
-      final nurseName =
-          await SessionService().getName() ?? 'Authenticated Staff';
-      final updated = await _backend.verifyTriage(
-        id: _patient.id,
-        nurseName: nurseName,
-      );
+      await _backend.verifyPatient(_patient.id);
       if (!mounted) return;
-      setState(() => _patient = updated);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('AI Triage confirmed and signed by $nurseName')),
+        const SnackBar(content: Text('AI Triage confirmed and signed.')),
       );
+      // Wait for WS to update, but optimistically pop or something. Let's just pop.
+      Navigator.pop(context, _patient);
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -725,9 +866,8 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
       if (mounted) setState(() => _isUpdating = false);
     }
   }
-*/
-  /*
-  // Widget _buildAICopilotCard() { // Hidden for now
+
+  Widget _buildAICopilotCard() {
     final isVerified = _patient.verifiedBy != null;
     final double confidence = _patient.confidence ?? 0.0;
     final bool isHighConfidence = confidence > 0.85;
@@ -885,7 +1025,6 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
       ),
     );
   }
-*/
   Widget _buildSymptomDescription() {
     return Container(
       width: double.infinity,
