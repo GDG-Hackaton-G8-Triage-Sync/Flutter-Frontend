@@ -5,6 +5,7 @@ import 'package:flutter_frontend/features/auth/presentation/pages/login_screen.d
 
 import 'package:flutter_frontend/features/auth/presentation/pages/terms_of_use_screen.dart';
 import 'package:flutter_frontend/features/auth/presentation/pages/privacy_security_screen.dart';
+import 'package:flutter_frontend/features/auth/presentation/pages/hipaa_compliance_screen.dart';
 
 class OnboardingScreen extends StatelessWidget {
   const OnboardingScreen({super.key});
@@ -13,8 +14,10 @@ class OnboardingScreen extends StatelessWidget {
     Widget destination;
     switch (label) {
       case 'Privacy Policy':
-      case 'HIPAA Compliance':
         destination = const PrivacySecurityScreen();
+        break;
+      case 'HIPAA Compliance':
+        destination = const HipaaComplianceScreen();
         break;
       case 'Terms of Use':
         destination = const TermsOfUseScreen();

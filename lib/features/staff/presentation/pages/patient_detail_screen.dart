@@ -1,10 +1,9 @@
-// import 'dart:convert';
+import 'dart:convert';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import 'package:flutter_frontend/core/models/api_models.dart';
 import 'package:flutter_frontend/core/services/backend_service.dart';
-// import 'package:flutter_frontend/core/services/session_service.dart';
 
 class PatientDetailScreen extends StatefulWidget {
   const PatientDetailScreen({super.key, required this.patient});
@@ -209,25 +208,15 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
               setState(() => _isUpdating = true);
 
               try {
-                final updated = await _backend.logVitals(
+                await _backend.logVitals(
                   id: _patient.id,
                   bp: bp,
                   heartRate: hr,
                   temperature: temp,
                 );
                 if (!mounted) return;
-                setState(() => _patient = updated);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Vitals logged successfully.')),
-                );
-              } on UnsupportedError {
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Vitals logging is not available on this backend yet.',
-                    ),
-                  ),
                 );
               } catch (_) {
                 if (!mounted) return;
@@ -249,70 +238,64 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
     );
   }
 
-  // void _exportFHIRRecord() { // Hidden for now
-  /*
+  void _exportFHIRRecord() {
     final fhirRecord = {
-      "resourceType": "Bundle",
-      "type": "collection",
-      "entry": [
+      'resourceType': 'Bundle',
+      'type': 'collection',
+      'entry': [
         {
-          "resource": {
-            "resourceType": "Patient",
-            "id": "pat-${_patient.id}",
-            "name": [
-              {"text": _patient.patientName ?? "Unknown"},
+          'resource': {
+            'resourceType': 'Patient',
+            'id': 'pat-${_patient.id}',
+            'name': [
+              {'text': _patient.patientName ?? 'Unknown'},
             ],
-            "gender": _patient.gender?.toLowerCase() ?? "unknown",
-            "birthDate": _patient.age != null
-                ? "${DateTime.now().year - _patient.age!}-01-01"
-                : null,
+            'gender': _patient.gender?.toLowerCase() ?? 'unknown',
+            if (_patient.age != null)
+              'birthDate': '${DateTime.now().year - _patient.age!}-01-01',
           },
         },
         {
-          "resource": {
-            "resourceType": "Encounter",
-            "status": _patient.status == "completed"
-                ? "finished"
-                : "in-progress",
-            "class": {"code": "EMR", "display": "emergency"},
-            "priority": {
-              "coding": [
+          'resource': {
+            'resourceType': 'Encounter',
+            'status': _patient.status == 'completed' ? 'finished' : 'in-progress',
+            'class': {'code': 'EMR', 'display': 'emergency'},
+            'priority': {
+              'coding': [
                 {
-                  "system":
-                      "http://terminology.hl7.org/CodeSystem/v3-ActPriority",
-                  "code": "EM",
-                  "display": _priorityLabel,
+                  'system': 'http://terminology.hl7.org/CodeSystem/v3-ActPriority',
+                  'code': 'EM',
+                  'display': _priorityLabel,
                 },
               ],
             },
-            "reasonCode": [
-              {"text": _patient.description},
+            'reasonCode': [
+              {'text': _patient.description},
             ],
           },
         },
         if (_patient.vitals != null)
           {
-            "resource": {
-              "resourceType": "Observation",
-              "status": "final",
-              "code": {"text": "Vital Signs Bundle"},
-              "valueString":
-                  "BP: ${_patient.vitals!.bp}, HR: ${_patient.vitals!.heartRate}, Temp: ${_patient.vitals!.temperature}",
-              "effectiveDateTime": _patient.vitals!.recordedAt
-                  .toIso8601String(),
+            'resource': {
+              'resourceType': 'Observation',
+              'status': 'final',
+              'code': {'text': 'Vital Signs Bundle'},
+              'valueString':
+                  'BP: ${_patient.vitals!.bp}, HR: ${_patient.vitals!.heartRate}, Temp: ${_patient.vitals!.temperature}',
+              'effectiveDateTime': _patient.vitals!.recordedAt.toIso8601String(),
             },
           },
       ],
     };
 
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('FHIR JSON Export'),
+        title: const Text('FHIR R4 JSON Export'),
         content: SingleChildScrollView(
           child: Text(
             const JsonEncoder.withIndent('  ').convert(fhirRecord),
-            style: const TextStyle(fontFamily: 'monospace', fontSize: 10),
+            style: const TextStyle(fontFamily: 'monospace', fontSize: 11),
           ),
         ),
         actions: [
@@ -325,18 +308,17 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
               Navigator.pop(ctx);
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('FHIR Record exported to interoperability hub'),
+                  content: Text('FHIR Record exported to interoperability hub.'),
                 ),
               );
             },
-            child: const Text('Propagate to EHR'),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF005EB8)),
+            child: const Text('Propagate to EHR', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
     );
   }
-
-*/
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -352,13 +334,11 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
           ),
         ),
         actions: [
-          /*
           IconButton(
             icon: const Icon(Icons.share_outlined, color: Color(0xFF005EB8)),
             onPressed: _exportFHIRRecord,
-            tooltip: 'Export FHIR Record',
+            tooltip: 'Export FHIR R4 Record',
           ),
-          */
         ],
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF005EB8)),
@@ -481,13 +461,13 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
                     setState(() => _isUpdating = true);
                     try {
                       await _backend.assignStaff(_patient.id);
-                      if (!mounted) return;
+                      if (!context.mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('Assigned to you successfully.')),
                       );
                       Navigator.pop(context, _patient);
                     } catch (_) {
-                      if (!mounted) return;
+                      if (!context.mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('Failed to assign staff.')),
                       );
@@ -635,6 +615,7 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
                       noteController.clear();
                     });
                   } catch (_) {
+                    if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Failed to add note.')),
                     );

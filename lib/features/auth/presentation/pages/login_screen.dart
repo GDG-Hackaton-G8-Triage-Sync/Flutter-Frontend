@@ -12,6 +12,7 @@ import 'package:flutter_frontend/core/services/session_service.dart';
 import 'package:flutter_frontend/features/auth/presentation/pages/terms_of_use_screen.dart';
 import 'package:flutter_frontend/features/patient/presentation/pages/patient_dashboard_screen.dart';
 import 'package:flutter_frontend/features/auth/presentation/pages/privacy_security_screen.dart';
+import 'package:flutter_frontend/features/auth/presentation/pages/hipaa_compliance_screen.dart';
 import 'package:flutter_frontend/features/auth/presentation/pages/signup_screen.dart';
 import 'package:flutter_frontend/features/admin/presentation/pages/admin_portal_screen.dart';
 import 'package:flutter_frontend/features/staff/presentation/pages/staff_dashboard_screen.dart';
@@ -159,8 +160,10 @@ class _LoginScreenState extends State<LoginScreen> {
     Widget destination;
     switch (label) {
       case 'Privacy Policy':
-      case 'HIPAA Compliance':
         destination = const PrivacySecurityScreen();
+        break;
+      case 'HIPAA Compliance':
+        destination = const HipaaComplianceScreen();
         break;
       case 'Terms of Use':
         destination = const TermsOfUseScreen();

@@ -461,7 +461,7 @@ class _SignupScreenState extends State<SignupScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildOptionalLabel('Blood Type'),
+        _buildRequiredLabel('Blood Type'),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
           initialValue: _bloodType,
@@ -479,6 +479,8 @@ class _SignupScreenState extends State<SignupScreen> {
             'AB-',
           ].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
           onChanged: (v) => setState(() => _bloodType = v),
+          validator: (v) =>
+              v == null ? 'Blood type is required for clinical accuracy' : null,
         ),
         const SizedBox(height: 20),
         _buildOptionalLabel('Medical History'),

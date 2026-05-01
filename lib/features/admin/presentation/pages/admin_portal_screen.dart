@@ -176,26 +176,50 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('User deletion is not supported by this backend yet.'),
-        ),
+        const SnackBar(content: Text('User deletion failed.')),
       );
     }
   }
 
-  Future<void> _simulateExport() async {
+  Future<void> _suspendUser(AppUser user) async {
+    final justification = await _askForJustification('Suspend User');
+    if (justification == null) return;
+    try {
+      await _backend.suspendUser(user.id);
+      await _loadAll();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${user.name} suspended.')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to suspend user.')),
+      );
+    }
+  }
+
+  Future<void> _exportReport() async {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Generating HIPAA Compliant CSV Payload...'),
-      ),
+      const SnackBar(content: Text('Generating HIPAA Compliant Report...')),
     );
-    await Future.delayed(const Duration(seconds: 1));
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Export Complete! Sent to Administrator Email.'),
-      ),
-    );
+    try {
+      final report = await _backend.getReportSummary();
+      if (!mounted) return;
+      final total = report['total_submissions'] ?? report['total'] ?? '—';
+      final critical = report['critical_cases'] ?? '—';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Report ready: $total submissions, $critical critical cases.'),
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to generate report.')),
+      );
+    }
   }
 
   Future<void> _showRegisterDialog() async {
@@ -313,11 +337,6 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                     gender: gender,
                     bloodType: bloodType,
                   );
-                  _logAudit(
-                    'MEMBER_REGISTERED',
-                    'New $selectedRole: ${emailCtrl.text}',
-                    'admin',
-                  );
                   if (!ctx.mounted || !mounted) return;
                   Navigator.pop(ctx);
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -381,7 +400,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
             tooltip: 'Register Member',
           ),
           IconButton(
-            onPressed: _simulateExport,
+            onPressed: _exportReport,
             icon: const Icon(Icons.download),
             tooltip: 'Export Report',
           ),
@@ -639,6 +658,11 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                         ],
                       ),
                       IconButton(
+                        onPressed: () => _suspendUser(user),
+                        icon: const Icon(Icons.block, color: Color(0xFFF57C00)),
+                        tooltip: 'Suspend User',
+                      ),
+                      IconButton(
                         onPressed: () => _deletePatient(user),
                         icon: const Icon(
                           Icons.delete_forever,
@@ -717,28 +741,29 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
       ],
     );
   }
-}
 
   Widget _buildAuditTab() {
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: _auditLogs.length,
-      separatorBuilder: (_, __) => const Divider(),
-      itemBuilder: (context, index) {
-        final log = _auditLogs[index];
-        return ListTile(
-          leading: const Icon(Icons.security, color: Color(0xFFBA1A1A)),
-          title: Text(
-            log.action,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-          subtitle: Text('${log.actorEmail} - ${log.details}'),
-          trailing: Text(
-            log.timestamp.toIso8601String().substring(0, 16).replaceFirst('T', ' '),
-            style: const TextStyle(fontSize: 12, color: Colors.black54),
-          ),
-        );
-      },
-    );
+    return _auditLogs.isEmpty
+        ? const Center(child: Text('No audit entries yet.', style: TextStyle(color: Colors.grey)))
+        : ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: _auditLogs.length,
+            separatorBuilder: (_, __) => const Divider(),
+            itemBuilder: (context, index) {
+              final log = _auditLogs[index];
+              return ListTile(
+                leading: const Icon(Icons.security, color: Color(0xFFBA1A1A)),
+                title: Text(
+                  log.action,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: Text('${log.actorEmail} - ${log.details}'),
+                trailing: Text(
+                  log.timestamp.toIso8601String().substring(0, 16).replaceFirst('T', ' '),
+                  style: const TextStyle(fontSize: 12, color: Colors.black54),
+                ),
+              );
+            },
+          );
   }
 }

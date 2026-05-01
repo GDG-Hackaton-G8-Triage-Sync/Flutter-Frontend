@@ -285,51 +285,23 @@ class BackendService {
     return TriageItem.fromJson(response.data ?? <String, dynamic>{});
   }
 
-  Future<TriageItem> verifyTriage({
-    required int id,
-    required String nurseName,
-  }) async {
-    final response = await _dio.patch<Map<String, dynamic>>(
-      '/api/v1/dashboard/staff/patient/$id/verify/',
-      data: <String, dynamic>{},
-    );
-
-    return TriageItem.fromJson(response.data ?? <String, dynamic>{});
-  }
-
-  Future<TriageItem> logVitals({
+  Future<void> logVitals({
     required int id,
     required String bp,
     required String heartRate,
     required String temperature,
   }) async {
-    int? systolicBp;
-    int? diastolicBp;
-    if (bp.contains('/')) {
-      final parts = bp.split('/');
-      systolicBp = int.tryParse(parts[0].trim());
-      diastolicBp = int.tryParse(parts[1].trim());
-    }
-
-    double? tempC;
-    final tempF = double.tryParse(temperature);
-    if (tempF != null) {
-      tempC = (tempF - 32) * 5 / 9;
-    }
-
+    // POST /api/v1/triage/{id}/vitals/ (VitalsHistoryView)
     final data = <String, dynamic>{
-      if (systolicBp != null) 'systolic_bp': systolicBp,
-      if (diastolicBp != null) 'diastolic_bp': diastolicBp,
+      'blood_pressure': bp,
       if (int.tryParse(heartRate) != null) 'heart_rate': int.parse(heartRate),
-      if (tempC != null) 'temperature_c': double.parse(tempC.toStringAsFixed(1)),
+      if (double.tryParse(temperature) != null) 'temperature': double.parse(temperature),
     };
 
-    final response = await _dio.post<Map<String, dynamic>>(
-      '/api/v1/dashboard/staff/patient/$id/vitals/',
+    await _dio.post<dynamic>(
+      '/api/v1/triage/$id/vitals/',
       data: data,
     );
-
-    return TriageItem.fromJson(response.data ?? <String, dynamic>{});
   }
 
   Future<AdminOverview> getAdminOverview() async {
@@ -433,6 +405,24 @@ class BackendService {
 
   Future<void> deleteUser(int id) async {
     await _dio.delete<void>('/api/v1/admin/users/$id/');
+  }
+
+  Future<void> suspendUser(int id) async {
+    await _dio.patch<dynamic>('/api/v1/admin/users/$id/suspend/');
+  }
+
+  Future<Map<String, dynamic>> getReportSummary({
+    String? startDate,
+    String? endDate,
+  }) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/api/v1/admin/reports/summary/',
+      queryParameters: <String, dynamic>{
+        if (startDate != null) 'start_date': startDate,
+        if (endDate != null) 'end_date': endDate,
+      },
+    );
+    return response.data ?? <String, dynamic>{};
   }
 
 
