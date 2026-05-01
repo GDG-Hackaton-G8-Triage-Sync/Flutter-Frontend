@@ -389,10 +389,27 @@ class BackendService {
   Future<Map<String, String>> updateProfile({
     required String name,
     required String email,
+    int? age,
+    String? gender,
+    String? bloodType,
+    String? healthHistory,
+    String? allergies,
+    String? currentMedications,
+    String? badHabits,
   }) async {
     final response = await _dio.patch<Map<String, dynamic>>(
       '/api/v1/profile/',
-      data: <String, dynamic>{'name': name, 'email': email},
+      data: <String, dynamic>{
+        'name': name,
+        'email': email,
+        if (age != null) 'age': age,
+        if (gender != null) 'gender': gender,
+        if (bloodType != null) 'blood_type': bloodType,
+        if (healthHistory != null) 'health_history': healthHistory,
+        if (allergies != null) 'allergies': allergies,
+        if (currentMedications != null) 'current_medications': currentMedications,
+        if (badHabits != null) 'bad_habits': badHabits,
+      },
     );
 
     final data = response.data ?? <String, dynamic>{};
@@ -413,9 +430,11 @@ class BackendService {
     };
   }
 
-  Future<void> deletePatient(int id) async {
-    await Future<void>.delayed(const Duration(milliseconds: 200));
+
+  Future<void> deleteUser(int id) async {
+    await _dio.delete<void>('/api/v1/admin/users/$id/');
   }
+
 
   Future<List<TriageItem>> getPatientSubmissions() async {
     final response = await _dio.get<dynamic>(

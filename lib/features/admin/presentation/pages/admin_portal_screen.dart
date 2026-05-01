@@ -206,7 +206,8 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
     if (justification == null) return;
 
     try {
-      await _backend.deletePatient(user.id);
+      await _backend.deleteUser(user.id);
+
       _logAudit(
         'USER_DELETION',
         'Erased records for ${user.email}. Reason: $justification',
