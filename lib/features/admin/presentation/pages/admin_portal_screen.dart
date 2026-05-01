@@ -395,6 +395,11 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
         ),
         actions: [
           IconButton(
+            onPressed: _loadAll,
+            icon: const Icon(Icons.refresh_rounded, color: Color(0xFF005EB8)),
+            tooltip: 'Refresh Data',
+          ),
+          IconButton(
             onPressed: _showRegisterDialog,
             icon: const Icon(Icons.person_add),
             tooltip: 'Register Member',

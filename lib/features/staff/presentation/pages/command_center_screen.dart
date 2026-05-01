@@ -70,6 +70,14 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
             color: Color(0xFF00478D),
           ),
         ),
+        actions: [
+          IconButton(
+            onPressed: _fetchAnalytics,
+            icon: const Icon(Icons.refresh_rounded, color: Color(0xFF005EB8)),
+            tooltip: 'Refresh Data',
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
