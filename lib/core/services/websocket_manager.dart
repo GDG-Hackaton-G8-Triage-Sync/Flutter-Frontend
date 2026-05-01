@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'package:flutter_frontend/core/config/api_config.dart';
@@ -42,7 +43,24 @@ class WebSocketManager {
         throw StateError('Missing access token for WebSocket connection');
       }
 
-      _channel = WebSocketChannel.connect(ApiConfig.websocketUri(token: token));
+      final uri = ApiConfig.websocketUri(token: token);
+      _channel = WebSocketChannel.connect(uri);
+
+      // Wait for the handshake to complete with a timeout.
+      // This prevents blocking the event loop if the server is unreachable.
+      try {
+        await _channel!.ready.timeout(
+          const Duration(seconds: 5),
+          onTimeout: () => throw TimeoutException('WebSocket handshake timed out'),
+        );
+      } on Exception catch (e) {
+        debugPrint('WebSocket handshake failed: $e — will retry');
+        _channel?.sink.close();
+        _channel = null;
+        _scheduleReconnect();
+        return;
+      }
+
       _startHeartbeat();
 
       _channel!.stream.listen(
@@ -52,6 +70,7 @@ class WebSocketManager {
         cancelOnError: false,
       );
     } catch (e) {
+      debugPrint('WebSocket connect error: $e');
       _scheduleReconnect();
     }
   }

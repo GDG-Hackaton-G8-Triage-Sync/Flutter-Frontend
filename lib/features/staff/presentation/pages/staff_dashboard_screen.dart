@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 
 import 'package:flutter_frontend/core/models/api_models.dart';
 import 'package:flutter_frontend/core/services/backend_service.dart';
+import 'package:flutter_frontend/core/services/cache_service.dart';
 import 'package:flutter_frontend/core/services/session_service.dart';
 import 'package:flutter_frontend/core/services/websocket_manager.dart';
 import 'package:flutter_frontend/core/presentation/widgets/state_visuals.dart';
@@ -96,6 +97,9 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
         status: _statusFilterController.text.trim().isEmpty
             ? null
             : _statusFilterController.text.trim(),
+      ).timeout(
+        const Duration(seconds: 12),
+        onTimeout: () => throw TimeoutException('Staff patient fetch timed out'),
       );
 
       try {
@@ -112,7 +116,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
 
       if (!mounted) return;
 
-      // Detect new patients for the glow effect without calling setState in a loop
+      // Detect new patients for the glow effect
       final existingIds = _patients.map((p) => p.id).toSet();
       final newDetectedIds = <int>[];
       for (final item in items) {
@@ -125,28 +129,24 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
         _patients = items;
         if (newDetectedIds.isNotEmpty) {
           _newPatientIds.addAll(newDetectedIds);
-          // Remove glow after animation completes
           for (final id in newDetectedIds) {
             Timer(const Duration(seconds: 5), () {
-              if (mounted) {
-                setState(() => _newPatientIds.remove(id));
-              }
+              if (mounted) setState(() => _newPatientIds.remove(id));
             });
           }
         }
         _isLoading = false;
       });
+
+      // Fire-and-forget: cache write must NOT block or propagate errors to UI
+      CacheService.instance.cachePatients(items).catchError((_) {});
     } catch (e) {
       debugPrint('Error fetching patients: $e');
       if (!mounted) return;
       setState(() {
-        _error = 'Failed to load queue from backend.';
+        _error = 'Failed to load queue. Pull down to retry.';
         _isLoading = false;
       });
-    } finally {
-      if (mounted && _isLoading) {
-        setState(() => _isLoading = false);
-      }
     }
   }
 
