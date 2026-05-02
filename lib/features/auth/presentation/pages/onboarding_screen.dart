@@ -88,7 +88,7 @@ class OnboardingScreen extends StatelessWidget {
                         ),
                         SizedBox(width: 4),
                         Text(
-                          'Secure Medical Portal',
+                          'Safe Health App',
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
@@ -119,7 +119,7 @@ class OnboardingScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Text(
-                        'SMART CARE PRIORITIZATION',
+                        'SMART HELP',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w800,
@@ -130,7 +130,7 @@ class OnboardingScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 24),
                     const Text(
-                      'Healthcare, synchronized around your needs.',
+                      'Health help that is ready for you.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontFamily: 'Manrope',
@@ -142,7 +142,7 @@ class OnboardingScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     const Text(
-                      'TriageSync uses advanced clinical AI to analyze your symptoms in real-time, ensuring our medical staff can prioritize your care effectively and reduce waiting times.',
+                      'TriageSync uses a smart helper to look at your notes right away. This helps our doctors and nurses see you faster.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 16,
@@ -231,25 +231,25 @@ class OnboardingScreen extends StatelessWidget {
                     // Feature 1
                     _buildFeatureCard(
                       icon: Icons.assignment,
-                      title: 'Narrative Entry',
+                      title: 'Type or Talk',
                       description:
-                          'Simply speak or type your symptoms. Our AI understands medical nuance better than standard forms.',
+                          'Just speak or type how you feel. Our smart helper understands your words.',
                     ),
                     const SizedBox(height: 16),
                     // Feature 2
                     _buildFeatureCard(
                       icon: Icons.analytics,
-                      title: 'Live Triage',
+                      title: 'Fast Check-in',
                       description:
-                          'The system evaluates urgency scores and routes your data directly to the supervising physician\'s dashboard.',
+                          'The app sees how sick you are and sends your notes right to the doctor.',
                     ),
                     const SizedBox(height: 16),
                     // Feature 3
                     _buildFeatureCard(
                       icon: Icons.medical_services,
-                      title: 'Direct Care',
+                      title: 'Ready for You',
                       description:
-                          'Skip the administrative backlog. Your care team is prepared for your specific needs before you even arrive.',
+                          'No more long forms. Your doctors and nurses are ready for you before you even walk in.',
                     ),
 
                     const SizedBox(height: 48),
@@ -343,7 +343,7 @@ class OnboardingScreen extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Medical AI Disclaimer',
+                                  'Important Note',
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.bold,
@@ -352,7 +352,7 @@ class OnboardingScreen extends StatelessWidget {
                                 ),
                                 SizedBox(height: 8),
                                 Text(
-                                  'TriageSync is an AI-assisted prioritization tool designed to support medical professionals. It does not provide medical diagnoses or replace professional clinical judgment. In case of a life-threatening emergency, please call 911 immediately.',
+                                  'TriageSync is a helper tool for doctors and nurses. It does not give medical advice. If you are in big danger, call emergency services right away.',
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontStyle: FontStyle.italic,
@@ -499,7 +499,6 @@ class _AnimatedHeartbeatState extends State<AnimatedHeartbeat>
   @override
   void initState() {
     super.initState();
-    // A 3-second cycle creates a calm but active EKG monitor feel
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 3),
@@ -533,8 +532,6 @@ class HeartbeatPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final y = size.height / 2;
-
-    // Define the base EKG pulse shape
     final path = Path();
     path.moveTo(0, y);
     path.lineTo(size.width * 0.2, y);
@@ -551,27 +548,22 @@ class HeartbeatPainter extends CustomPainter {
     path.lineTo(size.width * 0.85, y);
     path.lineTo(size.width, y);
 
-    // Calculate shifting offset for the seamless loop
     final shift = progress * size.width;
-
     canvas.save();
     canvas.translate(-shift, 0);
 
-    // Layer 1: Wide, subtle glow
     final glowPaint1 = Paint()
       ..color = const Color(0xFFFF2D55).withValues(alpha: 0.15)
       ..strokeWidth = 10
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
-    // Layer 2: Tighter, brighter glow
     final glowPaint2 = Paint()
       ..color = const Color(0xFFFF2D55).withValues(alpha: 0.3)
       ..strokeWidth = 5
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
-    // Layer 3: Solid core
     final corePaint = Paint()
       ..color = const Color(0xFFFF2D55).withValues(alpha: 0.8)
       ..strokeWidth = 2.5
@@ -584,13 +576,9 @@ class HeartbeatPainter extends CustomPainter {
       canvas.drawPath(path, corePaint);
     }
 
-    // Segment 1 (Off-screen left moving to screen view)
     drawAllLayers();
-
-    // Segment 2 (Seamless continuation)
     canvas.translate(size.width, 0);
     drawAllLayers();
-
     canvas.restore();
   }
 

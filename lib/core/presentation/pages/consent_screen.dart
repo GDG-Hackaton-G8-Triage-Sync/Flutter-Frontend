@@ -31,7 +31,7 @@ class _DataConsentScreenState extends State<DataConsentScreen> {
               ),
               const SizedBox(height: 24),
               const Text(
-                'Data Privacy &\nClinical Consent',
+                'Privacy and Health\nAgreement',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w900,
@@ -41,7 +41,7 @@ class _DataConsentScreenState extends State<DataConsentScreen> {
               ),
               const SizedBox(height: 12),
               const Text(
-                'TriageSync is a decision support tool. Please review how your data is handled before continuing.',
+                'TriageSync is a helper tool. Please read how we look after your information before you start.',
                 style: TextStyle(
                   fontSize: 15,
                   color: Color(0xFF44474E),
@@ -53,15 +53,15 @@ class _DataConsentScreenState extends State<DataConsentScreen> {
                 child: ListView(
                   children: [
                     _buildConsentTile(
-                      'AI Decision Support',
-                      'I understand that TriageSync uses AI to suggest urgency levels, and these must be confirmed by a medical professional.',
+                      'Smart Computer Helper',
+                      'I understand that TriageSync uses a smart computer to suggest how quickly I need help. A doctor or nurse will always check this first.',
                       _acceptedAI,
                       (val) => setState(() => _acceptedAI = val ?? false),
                     ),
                     const SizedBox(height: 16),
                     _buildConsentTile(
-                      'Data Processing (HIPAA)',
-                      'I agree to the secure processing of my medical symptoms and health data for the purpose of triage.',
+                      'Keeping your info safe',
+                      'I agree to let the app use my health notes to see how sick I am and to keep them private and safe.',
                       _acceptedTerms,
                       (val) => setState(() => _acceptedTerms = val ?? false),
                     ),
@@ -84,7 +84,7 @@ class _DataConsentScreenState extends State<DataConsentScreen> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              'Medical Disclaimer: This app does not provide medical advice. In case of a life-threatening emergency, call your local emergency services immediately.',
+                              'Important Note: This app is a helper and does not give medical advice. If you are in big danger, call emergency services right away.',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: Colors.grey[800],
@@ -115,7 +115,7 @@ class _DataConsentScreenState extends State<DataConsentScreen> {
                       elevation: 0,
                     ),
                     child: const Text(
-                      'I CONSENT AND AGREE',
+                      'I AGREE',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.1,

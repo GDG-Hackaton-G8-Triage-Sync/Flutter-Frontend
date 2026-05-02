@@ -232,10 +232,10 @@ class _SignupScreenState extends State<SignupScreen> {
             Expanded(
               child: Text(
                 _currentStep == 0
-                    ? 'Account Setup'
+                    ? 'Create Account'
                     : _currentStep == 1
-                    ? 'Identification'
-                    : 'Clinical History',
+                    ? 'About You'
+                    : 'Health History',
                 style: const TextStyle(
                   fontFamily: 'Manrope',
                   fontSize: 24,
@@ -554,7 +554,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       color: Colors.white,
                     ),
                   )
-                : Text(_currentStep == 2 ? 'Complete Signup' : 'Continue'),
+                : Text(_currentStep == 2 ? 'Finish' : 'Continue'),
           ),
         ),
       ],
@@ -582,5 +582,12 @@ class _SignupScreenState extends State<SignupScreen> {
         ),
       ],
     );
+  }
+}
+;
+  }
+}
+
+}
   }
 }

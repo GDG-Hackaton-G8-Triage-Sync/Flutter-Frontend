@@ -179,7 +179,7 @@ class TriageItem {
   final int id;
   final String description;
   final int priority;
-  final int urgencyScore;
+  final int urgencyScore; // Health Score (internal)
   final String condition;
   final String status;
   final DateTime createdAt;

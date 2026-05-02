@@ -496,7 +496,7 @@ class _StatusScreenState extends State<StatusScreen> {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      '${(analytics.aiConfidence * 100).toInt()}% CONFIDENCE',
+                      '${(analytics.aiConfidence * 100).toInt()}% SURE',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 8,
@@ -582,5 +582,9 @@ class _StatusScreenState extends State<StatusScreen> {
         ],
       ),
     );
+  }
+}
+ }
+}
   }
 }

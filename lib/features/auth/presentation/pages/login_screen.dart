@@ -291,7 +291,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           validator: (v) {
                             if (v == null || v.isEmpty) {
-                              return 'Username is required';
+                              return 'User name is required';
                             }
                             return null;
                           },
@@ -398,7 +398,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               );
                             },
-                            child: const Text('New here? Create your account'),
+                            child: const Text('New here? Join us'),
                           ),
                         ),
                         const SizedBox(height: 24),
@@ -453,6 +453,10 @@ class _LoginScreenState extends State<LoginScreen> {
     return const Padding(
       padding: EdgeInsets.symmetric(horizontal: 8),
       child: Text('•', style: TextStyle(color: Colors.grey, fontSize: 10)),
+    );
+  }
+}
+),
     );
   }
 }

@@ -173,6 +173,27 @@ class _SymptomInputScreenState extends State<SymptomInputScreen> {
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       children: [
+        // Help Banner
+        Container(
+          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.only(bottom: 24),
+          decoration: BoxDecoration(
+            color: const Color(0xFFE0F0FF),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Row(
+            children: [
+              Icon(Icons.help_outline, color: Color(0xFF005EB8)),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Tip: Be clear and tell us when your symptoms started.',
+                  style: TextStyle(color: Color(0xFF005EB8), fontSize: 13),
+                ),
+              ),
+            ],
+          ),
+        ),
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -201,7 +222,7 @@ class _SymptomInputScreenState extends State<SymptomInputScreen> {
         ),
         const SizedBox(height: 32),
         const Text(
-          'Clinical Assessment',
+          'Tell us how you feel',
           style: TextStyle(
             fontFamily: 'Manrope',
             fontSize: 32,
@@ -332,6 +353,10 @@ class _SymptomInputScreenState extends State<SymptomInputScreen> {
           icon: Icons.send_rounded,
         ),
       ],
+    );
+  }
+}
+  ],
     );
   }
 }

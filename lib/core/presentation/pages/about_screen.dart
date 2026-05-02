@@ -9,7 +9,7 @@ class AboutTrustScreen extends StatelessWidget {
       backgroundColor: const Color(0xFFF7F9FB),
       appBar: AppBar(
         title: const Text(
-          'System Trust & Architecture',
+          'How the System Works',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.white,
@@ -20,27 +20,27 @@ class AboutTrustScreen extends StatelessWidget {
         children: [
           _buildHeroCard(),
           const SizedBox(height: 24),
-          _buildSectionTitle('Platform Architecture'),
+          _buildSectionTitle('How We Keep You Safe'),
           _buildFeatureCard(
             Icons.security,
-            'HIPAA Compliant Data Handling',
-            'All medical data is encrypted at rest and in transit. No PII is exposed to untrusted environments.',
+            'Safe and Private Info',
+            'All your health notes are locked away so only doctors can see them. We do not show your private info to anyone else.',
           ),
           _buildFeatureCard(
             Icons.psychology,
-            'Responsible AI Strategy',
-            'Our Clinical Intelligence Engine acts as decision support. Final triage priority MUST be confirmed by a licensed clinician.',
+            'Smart and Safe Helper',
+            'Our Smart Computer Helper assists doctors. A doctor or nurse ALWAYS makes the final choice about who to see first.',
           ),
           _buildFeatureCard(
             Icons.cloud_sync,
-            'Real-time Synchronization',
-            'Powered by WebSockets for zero-latency queue updates between patients and staff.',
+            'Fast Updates',
+            'We use fast technology so your wait time is updated instantly for both you and the staff.',
           ),
           const SizedBox(height: 24),
-          _buildSectionTitle('Build Information'),
+          _buildSectionTitle('App Details'),
           _buildInfoRow('Version', '1.0.0-Hackathon.Final'),
-          _buildInfoRow('Engine', 'Triage-X Core v2.4'),
-          _buildInfoRow('Status', 'Production Ready'),
+          _buildInfoRow('Smart Helper', 'Triage-X Core v2.4'),
+          _buildInfoRow('Status', 'Ready to use'),
           const SizedBox(height: 40),
           const Center(
             child: Text(
@@ -79,7 +79,7 @@ class AboutTrustScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           const Text(
-            'Clinical Masterpiece',
+            'A Helping Hand',
             style: TextStyle(
               color: Colors.white,
               fontSize: 22,
@@ -89,7 +89,7 @@ class AboutTrustScreen extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Built to solve healthcare congestion with resilience and empathy.',
+            'Built to help hospitals manage busy times with care and strength.',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.9),
