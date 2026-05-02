@@ -584,7 +584,4 @@ class _StatusScreenState extends State<StatusScreen> {
     );
   }
 }
- }
-}
-  }
-}
+

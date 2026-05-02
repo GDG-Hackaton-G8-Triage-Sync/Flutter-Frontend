@@ -349,7 +349,4 @@ class _SymptomInputScreenState extends State<SymptomInputScreen> {
     );
   }
 }
-  ],
-    );
-  }
-}
+

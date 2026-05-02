@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_frontend/core/config/app_config.dart';
 
 class ApiConfig {
