@@ -472,7 +472,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                   },
                   icon: const Icon(Icons.sos),
                   label: const Text(
-                    'Live Command Center',
+                    'View Live Patient Queue',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),

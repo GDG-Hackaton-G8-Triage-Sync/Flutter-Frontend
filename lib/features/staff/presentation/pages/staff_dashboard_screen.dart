@@ -219,7 +219,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'INTAKE COMMAND',
+              'Patient Queue Management',
               style: TextStyle(
                 fontFamily: 'Manrope',
                 fontSize: 10,
@@ -229,7 +229,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
               ),
             ),
             const Text(
-              'Emergency Unit D-4',
+              'Unit D-4 Operations',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w900,
@@ -490,7 +490,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                         Row(
                           children: [
                             Text(
-                              patient.condition.toUpperCase(),
+                              patient.patientName ?? patient.condition.toUpperCase(),
                               style: const TextStyle(
                                 fontWeight: FontWeight.w900,
                                 fontSize: 13,
