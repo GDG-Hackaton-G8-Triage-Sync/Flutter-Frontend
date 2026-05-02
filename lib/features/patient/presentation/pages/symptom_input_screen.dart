@@ -67,17 +67,10 @@ class _SymptomInputScreenState extends State<SymptomInputScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'Microphone access is unavailable. Applying translated voice transcript sample.',
+              'Microphone access is unavailable.',
             ),
           ),
         );
-        Future.delayed(const Duration(seconds: 2), () {
-          if (!mounted) return;
-          setState(() {
-            _controller.text =
-                "Tengo un dolor muy fuerte en el pecho que comenzó hace una hora. Me cuesta respirar.";
-          });
-        });
       }
     } else {
       setState(() => _isListening = false);

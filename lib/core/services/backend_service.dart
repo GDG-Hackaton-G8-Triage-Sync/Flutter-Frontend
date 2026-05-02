@@ -439,72 +439,49 @@ class BackendService {
   }
 
   Future<WaitingAnalytics> getWaitingAnalytics(int id) async {
-    try {
-      final response = await _dio.get<Map<String, dynamic>>(
-        '/api/v1/triage/$id/waiting-analytics/',
-      );
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/api/v1/triage/$id/waiting-analytics/',
+    );
 
-      final data = response.data ?? <String, dynamic>{};
-      
-      return WaitingAnalytics(
-        position: (data['queue_position'] as num?)?.toInt() ?? 1,
-        totalWaiting: (data['patients_ahead'] as num?)?.toInt() ?? 1,
-        estimatedWaitMins: (data['estimated_wait_minutes'] as num?)?.toInt() ?? 15,
-        aiConfidence: 0.8,
-        message: 'Live analytics connected.',
-      );
-    } catch (_) {
-      return WaitingAnalytics(
-        position: 1,
-        totalWaiting: 1,
-        estimatedWaitMins: 15,
-        aiConfidence: 0.72,
-        message: 'Live wait analytics fallback.',
-      );
-    }
+    final data = response.data ?? <String, dynamic>{};
+    
+    return WaitingAnalytics(
+      position: (data['queue_position'] as num?)?.toInt() ?? 1,
+      totalWaiting: (data['patients_ahead'] as num?)?.toInt() ?? 1,
+      estimatedWaitMins: (data['estimated_wait_minutes'] as num?)?.toInt() ?? 15,
+      aiConfidence: (data['ai_confidence'] as num?)?.toDouble() ?? 0.0,
+      message: 'Live analytics connected.',
+    );
   }
 
-  Future<List<AppNotification>> getNotifications({
-    bool fallbackToLocal = true,
-  }) async {
-    try {
-      final response = await _dio.get<dynamic>(
-        '/api/v1/notifications/',
-      );
+  Future<List<AppNotification>> getNotifications() async {
+    final response = await _dio.get<dynamic>(
+      '/api/v1/notifications/',
+    );
 
-      final data = response.data;
-      final list = data is Map<String, dynamic>
-          ? _extractList(data['data'])
-          : _extractList(data);
+    final data = response.data;
+    final list = data is Map<String, dynamic>
+        ? _extractList(data['data'])
+        : _extractList(data);
 
-      return list
-          .whereType<Map<String, dynamic>>()
-          .map(AppNotification.fromJson)
-          .toList();
-    } on DioException {
-      if (!fallbackToLocal) rethrow;
-      return _localNotifications();
-    }
+    return list
+        .whereType<Map<String, dynamic>>()
+        .map(AppNotification.fromJson)
+        .toList();
   }
 
   Future<int> getUnreadNotificationCount() async {
-    try {
-      final response = await _dio.get<dynamic>(
-        '/api/v1/notifications/unread-count/',
-      );
-      final data = response.data;
-      if (data is Map<String, dynamic>) {
-        final payload = data['data'];
-        if (payload is Map<String, dynamic>) {
-          return (payload['unread_count'] as num? ?? 0).toInt();
-        }
+    final response = await _dio.get<dynamic>(
+      '/api/v1/notifications/unread-count/',
+    );
+    final data = response.data;
+    if (data is Map<String, dynamic>) {
+      final payload = data['data'];
+      if (payload is Map<String, dynamic>) {
+        return (payload['unread_count'] as num? ?? 0).toInt();
       }
-    } on DioException {
-      // Fall back to local unread count below.
     }
-
-    final local = _localNotifications();
-    return local.where((notification) => !notification.isRead).length;
+    return 0;
   }
 
   Future<void> markAllNotificationsRead() async {
@@ -524,8 +501,7 @@ class BackendService {
   }
 
   Future<void> verifyPatient(int id) async {
-    // Section 4B: POST /api/staff/patient/{id}/confirm-priority/
-    await _dio.post<dynamic>('/api/v1/staff/patient/$id/confirm-priority/');
+    await _dio.patch<dynamic>('/api/v1/staff/patient/$id/verify/');
   }
 
   Future<List<StaffNote>> getStaffNotes(int id) async {
@@ -573,29 +549,5 @@ class BackendService {
       if (submissions is List) return submissions;
     }
     return <dynamic>[];
-  }
-
-  List<AppNotification> _localNotifications() {
-    final now = DateTime.now();
-    return <AppNotification>[
-      AppNotification(
-        id: -1,
-        type: 'triage_status_change',
-        title: 'Triage status ready',
-        message:
-            'Your triage queue status will appear here when the backend notification feed is reachable.',
-        isRead: false,
-        createdAt: now.subtract(const Duration(minutes: 2)),
-      ),
-      AppNotification(
-        id: -2,
-        type: 'system_message',
-        title: 'Django notification fallback',
-        message:
-            'This local item keeps the inbox usable while server notifications are being finalized.',
-        isRead: false,
-        createdAt: now.subtract(const Duration(hours: 1)),
-      ),
-    ];
   }
 }

@@ -7,23 +7,12 @@ class ApiConfig {
   static const String apiPrefix = '/api/v1';
 
   static String get baseUrl {
-    const envUrl = String.fromEnvironment('API_URL', defaultValue: '');
-    if (envUrl.trim().isNotEmpty) {
-      return _normalizeHttpBase(envUrl);
-    }
-    
     final appConfigUrl = AppConfig.apiUrl;
-    if (appConfigUrl.trim().isNotEmpty) {
-      return _normalizeHttpBase(appConfigUrl);
+    if (appConfigUrl.trim().isEmpty) {
+      throw Exception('Base API URL is empty.');
     }
-
-    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://10.0.2.2:9000';
-    }
-
-    return 'http://localhost:9000';
+    return _normalizeHttpBase(appConfigUrl);
   }
-
   static String get websocketUrl {
     const envUrl = String.fromEnvironment('WS_URL', defaultValue: '');
     if (envUrl.trim().isNotEmpty) {

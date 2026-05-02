@@ -574,13 +574,28 @@ class VitalsLog {
   final String recordedByName;
 
   factory VitalsLog.fromJson(Map<String, dynamic> json) {
+    // Backend returns systolic_bp + diastolic_bp as separate integers.
+    // Reconstruct the "120/80" display string when both are present.
+    String? bp = _readNullableString(json, <String>['blood_pressure']);
+    if (bp == null) {
+      final systolic = json['systolic_bp'];
+      final diastolic = json['diastolic_bp'];
+      if (systolic != null && diastolic != null) {
+        bp = '$systolic/$diastolic';
+      }
+    }
+
     return VitalsLog(
       id: _readInt(json, <String>['id']),
-      bloodPressure: _readNullableString(json, <String>['blood_pressure']),
+      bloodPressure: bp,
       heartRate: json['heart_rate'] != null ? _readInt(json, <String>['heart_rate']) : null,
-      temperature: json['temperature'] != null ? _readDouble(json, <String>['temperature']) : null,
+      temperature: json['temperature_c'] != null
+          ? _readDouble(json, <String>['temperature_c'])
+          : json['temperature'] != null
+              ? _readDouble(json, <String>['temperature'])
+              : null,
       recordedAt: _readDateTime(json, <String>['recorded_at']) ?? DateTime.now(),
-      recordedByName: _readString(json, <String>['recorded_by', 'recorded_by_name']),
+      recordedByName: _readString(json, <String>['recorded_by_name', 'recorded_by']),
     );
   }
 }
