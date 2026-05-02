@@ -524,12 +524,13 @@ class BackendService {
   }
 
   Future<void> verifyPatient(int id) async {
-    await _dio.patch<dynamic>('/api/v1/triage/$id/verify/');
+    // Section 4B: POST /api/staff/patient/{id}/confirm-priority/
+    await _dio.post<dynamic>('/api/v1/staff/patient/$id/confirm-priority/');
   }
 
   Future<List<StaffNote>> getStaffNotes(int id) async {
     try {
-      final response = await _dio.get<dynamic>('/api/v1/triage/$id/notes/');
+      final response = await _dio.get<dynamic>('/api/v1/staff/patient/$id/notes/');
       final data = _extractList(response.data);
       return data.whereType<Map<String, dynamic>>().map(StaffNote.fromJson).toList();
     } catch (_) {
@@ -539,7 +540,7 @@ class BackendService {
 
   Future<StaffNote> addStaffNote(int id, String content, bool isInternal) async {
     final response = await _dio.post<Map<String, dynamic>>(
-      '/api/v1/triage/$id/notes/',
+      '/api/v1/staff/patient/$id/notes/',
       data: <String, dynamic>{
         'content': content,
         'is_internal': isInternal,
@@ -549,12 +550,12 @@ class BackendService {
   }
 
   Future<void> assignStaff(int id) async {
-    await _dio.patch<dynamic>('/api/v1/triage/$id/assign/');
+    await _dio.patch<dynamic>('/api/v1/staff/patient/$id/assign/');
   }
 
   Future<List<VitalsLog>> getVitalsHistory(int id) async {
     try {
-      final response = await _dio.get<dynamic>('/api/v1/triage/$id/vitals/history/');
+      final response = await _dio.get<dynamic>('/api/v1/staff/patient/$id/vitals/history/');
       final data = _extractList(response.data);
       return data.whereType<Map<String, dynamic>>().map(VitalsLog.fromJson).toList();
     } catch (_) {

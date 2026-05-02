@@ -212,7 +212,7 @@ class TriageItem {
     final vitals = json['vitals'];
 
     return TriageItem(
-      id: _readInt(json, <String>['id', 'submission_id', 'patient_id']),
+      id: _readInt(json, <String>['id', 'submission_id', 'patient_id', 'pk']),
       description: _readString(
         json,
         <String>['description', 'symptoms', 'patient_description'],
@@ -224,7 +224,7 @@ class TriageItem {
       createdAt:
           _readDateTime(json, <String>['created_at', 'timestamp']) ??
           DateTime.now(),
-      patientName: _readNullableString(json, <String>['patient_name', 'name']),
+      patientName: _readNullableString(json, <String>['patient_name', 'name', 'username', 'patient']),
       photoName: _readNullableString(json, <String>['photo_name']),
       verifiedBy: _readNullableString(
         json,
@@ -270,6 +270,8 @@ class AdminOverview {
     required this.inProgress,
     required this.completed,
     required this.criticalCases,
+    this.slaBreaches = 0,
+    this.backlogRisk = 'low',
   });
 
   final int totalPatients;
@@ -277,10 +279,12 @@ class AdminOverview {
   final int inProgress;
   final int completed;
   final int criticalCases;
+  final int slaBreaches;
+  final String backlogRisk;
 
   factory AdminOverview.fromJson(Map<String, dynamic> json) {
     return AdminOverview(
-      totalPatients: _readInt(json, <String>['total_patients']),
+      totalPatients: _readInt(json, <String>['total_patients', 'total']),
       waiting: _readInt(json, <String>['waiting', 'waiting_patients']),
       inProgress: _readInt(
         json,
@@ -288,6 +292,8 @@ class AdminOverview {
       ),
       completed: _readInt(json, <String>['completed', 'completed_today']),
       criticalCases: _readInt(json, <String>['critical_cases']),
+      slaBreaches: _readInt(json, <String>['sla_breaches', 'breaches']),
+      backlogRisk: _readString(json, <String>['backlog_risk', 'risk'], 'low'),
     );
   }
 }
@@ -336,9 +342,11 @@ class AdminAnalytics {
         json['condition_breakdown'],
       ),
       waitTimeTrend: _parseTrendList(
-        json['wait_time_trend'] ?? json['daily_submissions'],
+        json['wait_time_trend'] ?? json['daily_submissions'] ?? json['wait_trends'],
       ),
-      slaBreachTrend: _parseTrendList(json['sla_breach_trend']),
+      slaBreachTrend: _parseTrendList(
+        json['sla_breach_trend'] ?? json['sla_trend'] ?? json['breach_trend'],
+      ),
     );
   }
 
@@ -505,13 +513,19 @@ class AuditLogEntry {
   final DateTime timestamp;
 
   factory AuditLogEntry.fromJson(Map<String, dynamic> json) {
+    final metadata = json['metadata'];
+    String derivedDetails = _readString(json, <String>['details', 'description', 'message']);
+    if (derivedDetails.isEmpty && metadata is Map) {
+      derivedDetails = metadata.entries.map((e) => '${e.key}: ${e.value}').join(', ');
+    }
+
     return AuditLogEntry(
-      id: _readInt(json, <String>['id']),
-      action: _readString(json, <String>['action']),
-      actorEmail: _readString(json, <String>['actor_email']),
-      targetEmail: _readNullableString(json, <String>['target_email']),
-      details: _readString(json, <String>['details']),
-      timestamp: _readDateTime(json, <String>['timestamp']) ?? DateTime.now(),
+      id: _readInt(json, <String>['id', 'pk']),
+      action: _readString(json, <String>['action', 'event_type', 'type']),
+      actorEmail: _readString(json, <String>['actor_email', 'actor', 'user']),
+      targetEmail: _readNullableString(json, <String>['target_email', 'target']),
+      details: derivedDetails,
+      timestamp: _readDateTime(json, <String>['timestamp', 'time', 'created_at']) ?? DateTime.now(),
     );
   }
 }

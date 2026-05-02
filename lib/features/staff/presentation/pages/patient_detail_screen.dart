@@ -673,7 +673,7 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          _patient.condition,
+          _patient.patientName ?? _patient.condition,
           style: const TextStyle(
             fontFamily: 'Manrope',
             fontSize: 28,
@@ -682,6 +682,18 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
             letterSpacing: -0.5,
           ),
         ),
+        if (_patient.patientName != null) ...[
+          const SizedBox(height: 4),
+          Text(
+            'CONDITION: ${_patient.condition.toUpperCase()}',
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w900,
+              color: Color(0xFF73777F),
+              letterSpacing: 1.0,
+            ),
+          ),
+        ],
         const SizedBox(height: 4),
         Text(
           'Submitted: ${_patient.createdAt.toLocal().toString().substring(0, 16)}',
