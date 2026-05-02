@@ -6,26 +6,26 @@ Deliver only the highest-impact backend slices needed for a strong final demo wi
 ## Priority Order (Do In This Exact Order)
 
 1. API reliability and safety
-2. Staff clinical workflow support
+2. Staff health workflow support
 3. Admin command center and audit data
-4. AI copilot contract (guarded)
+4. Smart helper contract (guarded)
 5. Interoperability proof endpoint
 
 ---
 
 ## 1) API Reliability and Safety (P0)
 
-### A. Idempotency for symptom submit
-- Endpoint: `POST /api/triage/`
+### A. Idempotency for health check submit
+- Endpoint: `POST /api/health-check/`
 - Requirement:
   - Read header `Idempotency-Key`
-  - If same key + same patient within 5 minutes, return previous created triage item instead of creating a duplicate
+  - If same key + same patient within 5 minutes, return previous created health check item instead of creating a duplicate
 - Response behavior:
   - `201` for first creation
   - `200` with existing record for duplicate replay
 
 ### B. Rate limiting
-- Endpoint: `POST /api/triage/`
+- Endpoint: `POST /api/health-check/`
 - Requirement:
   - Max 5 submissions per patient per 10 minutes
 - Response behavior:
@@ -43,10 +43,10 @@ Deliver only the highest-impact backend slices needed for a strong final demo wi
 
 ---
 
-## 2) Staff Clinical Workflow Support (P0)
+## 2) Staff Health Workflow Support (P0)
 
 ### A. Vitals model + API
-Add persistent fields linked to triage case:
+Add persistent fields linked to health check case:
 - `bp_systolic`
 - `bp_diastolic`
 - `heart_rate`
@@ -59,7 +59,7 @@ Endpoints:
 - `GET /api/staff/patient/{id}/vitals/latest/`
 
 ### B. Reassessment SLA flag
-- Rule: if triage status is `waiting` and no vitals update for > 30 minutes, mark `sla_breach=true`
+- Rule: if health check status is `waiting` and no vitals update for > 30 minutes, mark `sla_breach=true`
 - Include `sla_breach` in:
   - `GET /api/dashboard/staff/patients/`
   - websocket updates for affected patient
@@ -114,14 +114,14 @@ Payload contract:
     "time": "2026-04-18T11:53:00Z",
     "actor": "staff@triagesync.com",
     "action": "STATUS_UPDATE",
-    "target": "TRIAGE#101",
+    "target": "HEALTH-CHECK#101",
     "metadata": {"from": "waiting", "to": "in_progress"}
   }
 ]
 ```
 
 ### C. Required audit events
-- triage created
+- health check created
 - status updated
 - priority overridden
 - role changed
@@ -130,10 +130,10 @@ Payload contract:
 
 ---
 
-## 4) AI Copilot Contract (P1)
+## 4) Smart Helper Contract (P1)
 
 ### A. Draft suggestion endpoint
-- `POST /api/triage/ai-draft/`
+- `POST /api/health-check/ai-draft/`
 - Input:
 ```json
 {
@@ -149,7 +149,7 @@ Payload contract:
   "department": "Cardiology",
   "confidence": 0.91,
   "reasoning": "Red-flag symptoms: chest pain + diaphoresis",
-  "source": "ai_copilot"
+  "source": "smart_helper"
 }
 ```
 
@@ -165,7 +165,7 @@ Payload contract:
 ```
 
 ### C. Fallback behavior
-- If AI unavailable/timeouts:
+- If smart helper unavailable/timeouts:
   - return deterministic rule-based score
   - set `source` to `fallback_rule_engine`
 
@@ -182,7 +182,7 @@ Payload contract:
   "id": "101",
   "identifier": [{"system": "triagesync", "value": "101"}],
   "name": [{"text": "Patient Demo"}],
-  "extension": [{"url": "triage-priority", "valueInteger": 2}]
+  "extension": [{"url": "health-check-priority", "valueInteger": 2}]
 }
 ```
 
@@ -199,11 +199,11 @@ Note: This is a prototype integration proof, not full FHIR implementation.
 ---
 
 ## Demo-Readiness Acceptance Checklist
-- [ ] Duplicate symptom submit does not create duplicate triage records
+- [ ] Duplicate symptom submit does not create duplicate health check records
 - [ ] Staff queue shows `sla_breach` correctly
 - [ ] Vitals can be saved and latest vitals can be fetched
 - [ ] Command center endpoint returns live summary
 - [ ] Audit log endpoint returns latest events
-- [ ] AI draft endpoint works with fallback mode
+- [ ] Smart helper draft endpoint works with fallback mode
 - [ ] FHIR endpoint returns valid JSON shape
 - [ ] All error responses follow one schema

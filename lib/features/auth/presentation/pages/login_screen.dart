@@ -12,6 +12,7 @@ import 'package:flutter_frontend/core/services/session_service.dart';
 import 'package:flutter_frontend/features/auth/presentation/pages/terms_of_use_screen.dart';
 import 'package:flutter_frontend/features/patient/presentation/pages/patient_dashboard_screen.dart';
 import 'package:flutter_frontend/features/auth/presentation/pages/privacy_security_screen.dart';
+import 'package:flutter_frontend/features/auth/presentation/pages/hipaa_compliance_screen.dart';
 import 'package:flutter_frontend/features/auth/presentation/pages/signup_screen.dart';
 import 'package:flutter_frontend/features/admin/presentation/pages/admin_portal_screen.dart';
 import 'package:flutter_frontend/features/staff/presentation/pages/staff_dashboard_screen.dart';
@@ -39,15 +40,15 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
+    final identifier = _emailController.text.trim();
+    final password = _passwordController.text; // Do NOT trim passwords as spaces can be part of them
 
     setState(() => _isLoading = true);
 
     try {
-      final auth = await _backend.login(email: email, password: password);
+      final auth = await _backend.login(username: identifier, password: password);
       // Store locally for future biometric fast-lane bypass
-      await SessionService().saveBiometricCredentials(email, password);
+      await SessionService().saveBiometricCredentials(identifier, password);
 
       if (!mounted) return;
       _routeByRole(auth);
@@ -108,7 +109,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'No saved biometric credentials found. Sign in once with email and password first.',
+              'No saved biometric credentials found. Sign in once with username and password first.',
             ),
           ),
         );
@@ -159,8 +160,10 @@ class _LoginScreenState extends State<LoginScreen> {
     Widget destination;
     switch (label) {
       case 'Privacy Policy':
-      case 'HIPAA Compliance':
         destination = const PrivacySecurityScreen();
+        break;
+      case 'HIPAA Compliance':
+        destination = const HipaaComplianceScreen();
         break;
       case 'Terms of Use':
         destination = const TermsOfUseScreen();
@@ -181,7 +184,7 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    if (auth.role == 'staff') {
+    if (auth.role == 'staff' || auth.role == 'nurse' || auth.role == 'doctor') {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const StaffDashboardScreen()),
@@ -280,17 +283,16 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 24),
                         TextFormField(
                           controller: _emailController,
-                          keyboardType: TextInputType.emailAddress,
+                          keyboardType: TextInputType.text,
                           decoration: const InputDecoration(
-                            labelText: 'Email',
-                            hintText: 'user@example.com',
-                            prefixIcon: Icon(Icons.email_outlined),
+                            labelText: 'Username',
+                            hintText: 'Enter your unique username',
+                            prefixIcon: Icon(Icons.account_circle_outlined),
                           ),
                           validator: (v) {
                             if (v == null || v.isEmpty) {
-                              return 'Email is required';
+                              return 'User name is required';
                             }
-                            if (!v.contains('@')) return 'Enter a valid email';
                             return null;
                           },
                         ),
@@ -396,7 +398,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               );
                             },
-                            child: const Text('New here? Create your account'),
+                            child: const Text('New here? Join us'),
                           ),
                         ),
                         const SizedBox(height: 24),
@@ -454,3 +456,4 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
+

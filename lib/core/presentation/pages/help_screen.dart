@@ -9,7 +9,7 @@ class HelpEscalationScreen extends StatelessWidget {
       backgroundColor: const Color(0xFFF7F9FB),
       appBar: AppBar(
         title: const Text(
-          'Help & Safety',
+          'Get Help',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.white,
@@ -21,37 +21,37 @@ class HelpEscalationScreen extends StatelessWidget {
           _buildEmergencyBanner(),
           const SizedBox(height: 24),
           const Text(
-            'Frequently Asked Questions',
+            'Common Questions',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           _buildFaqTile(
-            'How is my priority level determined?',
-            'Our system uses a Clinical Decision Support AI to analyze the severity of your symptoms compared to actual hospital capacity.',
+            'How soon will I see a doctor?',
+            'Our system uses a smart helper to see how sick you are and how busy the hospital is.',
           ),
           _buildFaqTile(
-            'Can I update my symptoms after submission?',
-            'Yes, go to settings and select "Submit New Triage" or tell your nurse when they call your name.',
+            'Can I update my health notes after sending?',
+            'Yes, go to settings and select "Check your health again" or tell a nurse when they call your name.',
           ),
           _buildFaqTile(
-            'Is my data shared with insurance companies?',
-            'No. Your data is strictly used for immediate clinical triage and is protected by hospital-grade security.',
+            'Is my info shared with others?',
+            'No. Your info is only used to see how sick you are right now and is kept very safe.',
           ),
           const SizedBox(height: 24),
           const Text(
-            'Support Channels',
+            'Ways to Get Help',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           _buildSupportOption(
             Icons.headset_mic_outlined,
-            'Talk to a Desk Nurse',
-            'Available 24/7 at the front intake.',
+            'Talk to a Nurse',
+            'Available 24/7 at the front desk.',
           ),
           _buildSupportOption(
             Icons.chat_bubble_outline,
-            'Technical Support',
-            'Help with the mobile application.',
+            'App Help',
+            'Help with using this app.',
           ),
         ],
       ),
@@ -73,7 +73,7 @@ class HelpEscalationScreen extends StatelessWidget {
               Icon(Icons.emergency_share, color: Color(0xFFBA1A1A)),
               SizedBox(width: 12),
               Text(
-                'IMMEDIATE DANGER?',
+                'IN BIG DANGER?',
                 style: TextStyle(
                   color: Color(0xFFBA1A1A),
                   fontWeight: FontWeight.w900,
@@ -84,7 +84,7 @@ class HelpEscalationScreen extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           const Text(
-            'If you feel your condition is rapidly worsening (e.g., passing out, severe bleeding, or airway block), do not wait for the app. Alert any staff member immediately.',
+            'If you feel much worse (like passing out, lots of bleeding, or trouble breathing), do not wait for the app. Tell a nurse or any staff right away.',
             style: TextStyle(
               color: Color(0xFF410002),
               fontSize: 13,
@@ -100,7 +100,7 @@ class HelpEscalationScreen extends StatelessWidget {
                 backgroundColor: const Color(0xFFBA1A1A),
                 foregroundColor: Colors.white,
               ),
-              child: const Text('EMERGENCY ESCALATION NOW'),
+              child: const Text('GET HELP RIGHT NOW'),
             ),
           ),
         ],

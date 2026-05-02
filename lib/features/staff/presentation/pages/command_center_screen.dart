@@ -23,21 +23,28 @@ class CommandCenterScreen extends StatefulWidget {
 
 class _CommandCenterScreenState extends State<CommandCenterScreen> {
   final BackendService _backend = BackendService.instance;
+  AdminOverview? _overview;
   AdminAnalytics? _analytics;
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _fetchAnalytics();
+    _loadAll();
   }
 
-  Future<void> _fetchAnalytics() async {
+  Future<void> _loadAll() async {
+    setState(() => _isLoading = true);
     try {
-      final data = await _backend.getAdminAnalytics();
+      final results = await Future.wait([
+        _backend.getAdminOverview(),
+        _backend.getAdminAnalytics(),
+      ]);
+
       if (mounted) {
         setState(() {
-          _analytics = data;
+          _overview = results[0] as AdminOverview;
+          _analytics = results[1] as AdminAnalytics;
           _isLoading = false;
         });
       }
@@ -48,14 +55,13 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final slaBreachesCount = widget.waiting > 0
-        ? (widget.waiting / 3).ceil()
-        : 0;
-    final backlogRisk = widget.waiting >= 10
-        ? 'High'
-        : widget.waiting >= 5
-        ? 'Medium'
-        : 'Low';
+    // Use latest overview if available, otherwise fall back to initial widget props
+    final totalPatients = _overview?.totalPatients ?? widget.totalPatients;
+    final waiting = _overview?.waiting ?? widget.waiting;
+    final inProgress = _overview?.inProgress ?? widget.inProgress;
+    final criticalCases = _overview?.criticalCases ?? widget.criticalCases;
+    final slaBreachesCount = _overview?.slaBreaches ?? 0;
+    final backlogRisk = _overview?.backlogRisk ?? (waiting >= 10 ? 'HIGH' : waiting >= 5 ? 'MEDIUM' : 'LOW');
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -70,6 +76,14 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
             color: Color(0xFF00478D),
           ),
         ),
+        actions: [
+          IconButton(
+            onPressed: _loadAll,
+            icon: const Icon(Icons.refresh_rounded, color: Color(0xFF005EB8)),
+            tooltip: 'Refresh Data',
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -82,17 +96,17 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                       child: _MetricTile(
                         icon: Icons.groups_2_outlined,
                         title: 'Active Queue',
-                        value: '${widget.totalPatients}',
+                        value: '$totalPatients',
                         color: const Color(0xFF005EB8),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: _MetricTile(
-                        icon: Icons.timer_outlined,
-                        title: 'Waiting',
-                        value: '${widget.waiting}',
-                        color: const Color(0xFFBA1A1A),
+                        icon: Icons.loop_outlined,
+                        title: 'In Progress',
+                        value: '$inProgress',
+                        color: const Color(0xFFF57C00),
                       ),
                     ),
                   ],
@@ -102,19 +116,32 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                   children: [
                     Expanded(
                       child: _MetricTile(
-                        icon: Icons.local_fire_department_outlined,
-                        title: 'Critical (P1)',
-                        value: '${widget.criticalCases}',
-                        color: const Color(0xFF8B1A1A),
+                        icon: Icons.timer_outlined,
+                        title: 'Waiting',
+                        value: '$waiting',
+                        color: const Color(0xFFBA1A1A),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: _MetricTile(
+                        icon: Icons.local_fire_department_outlined,
+                        title: 'Critical (P1)',
+                        value: '$criticalCases',
+                        color: const Color(0xFF8B1A1A),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _MetricTile(
                         icon: Icons.warning_amber_rounded,
                         title: 'SLA Breaches',
                         value: '$slaBreachesCount',
-                        color: const Color(0xFFF57C00),
+                        color: const Color(0xFFBA1A1A),
                       ),
                     ),
                   ],
@@ -139,7 +166,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
                       color:
-                          (backlogRisk == 'High'
+                          (backlogRisk.toUpperCase() == 'HIGH'
                                   ? const Color(0xFFBA1A1A)
                                   : Colors.transparent)
                               .withValues(alpha: 0.2),
@@ -153,7 +180,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                         children: [
                           Icon(
                             Icons.analytics_rounded,
-                            color: backlogRisk == 'High'
+                            color: backlogRisk.toUpperCase() == 'HIGH'
                                 ? const Color(0xFFBA1A1A)
                                 : const Color(0xFF005EB8),
                             size: 20,
@@ -171,8 +198,8 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'Operational Level: $backlogRisk RISK\n'
-                        'Unit saturation at ${(widget.totalPatients / 25 * 100).toStringAsFixed(0)}%. '
+                        'Operational Level: ${backlogRisk.toUpperCase()} RISK\n'
+                        'Unit saturation at ${(totalPatients / 25 * 100).toStringAsFixed(0)}%. '
                         'Recommended: deploy rapid-response clinical nurse to intake desk.',
                         style: TextStyle(
                           fontSize: 14,
@@ -183,7 +210,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                           ).textTheme.bodyMedium?.color?.withValues(alpha: 0.8),
                         ),
                       ),
-                      if (backlogRisk == 'High') ...[
+                      if (backlogRisk.toUpperCase() == 'HIGH') ...[
                         const SizedBox(height: 20),
                         SizedBox(
                           width: double.infinity,

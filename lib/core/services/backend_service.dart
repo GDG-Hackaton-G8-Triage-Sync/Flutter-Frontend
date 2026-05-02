@@ -1,8 +1,6 @@
-import 'dart:io';
-
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 
+import 'package:flutter_frontend/core/config/api_config.dart';
 import 'package:flutter_frontend/core/models/api_models.dart';
 import 'package:flutter_frontend/core/services/session_service.dart';
 import 'package:flutter_frontend/core/services/cache_service.dart';
@@ -15,19 +13,7 @@ class BackendService {
 
   static final BackendService instance = BackendService._();
 
-  static String get _baseUrl {
-    const envUrl = String.fromEnvironment('API_URL', defaultValue: '');
-    if (envUrl.isNotEmpty) {
-      return envUrl;
-    }
-    if (kIsWeb) {
-      return 'http://localhost:3001';
-    }
-    if (Platform.isAndroid) {
-      return 'http://10.0.2.2:3001';
-    }
-    return 'http://localhost:3001';
-  }
+  static String get _baseUrl => ApiConfig.baseUrl;
 
   final SessionService _sessionService = SessionService();
 
@@ -52,11 +38,17 @@ class BackendService {
         ..interceptors.add(
           InterceptorsWrapper(
             onRequest: (options, handler) async {
-              final token = await _sessionService.getAccessToken();
-              if (token != null && token.isNotEmpty) {
-                options.headers['Authorization'] = 'Bearer $token';
+              try {
+                debugPrint('NETWORK_REQ: ${options.method} ${options.baseUrl}${options.path}');
+                final token = await _sessionService.getAccessToken();
+                if (token != null && token.isNotEmpty) {
+                  options.headers['Authorization'] = 'Bearer $token';
+                }
+                handler.next(options);
+              } catch (e) {
+                debugPrint('INTERCEPTOR_ERROR: $e');
+                handler.next(options); // Continue even if token retrieval fails
               }
-              handler.next(options);
             },
             onError: (error, handler) async {
               final statusCode = error.response?.statusCode;
@@ -104,10 +96,12 @@ class BackendService {
   Future<String> _refreshAccessToken(String refreshToken) async {
     final response = await _authDio.post<Map<String, dynamic>>(
       '/api/v1/auth/refresh/',
-      data: <String, dynamic>{'refresh_token': refreshToken},
+      data: <String, dynamic>{'refresh': refreshToken},
     );
 
-    final token = (response.data?['access_token'] ?? '') as String;
+    final token =
+        (response.data?['access_token'] ?? response.data?['access'] ?? '')
+            .toString();
     if (token.isEmpty) {
       throw Exception('Refresh token response missing access token');
     }
@@ -116,25 +110,35 @@ class BackendService {
   }
 
   Future<AuthResponse> login({
-    required String email,
+    required String username,
     required String password,
   }) async {
-    final response = await _dio.post<Map<String, dynamic>>(
-      '/api/v1/auth/login/',
-      data: <String, dynamic>{'email': email, 'password': password},
-    );
+    try {
+      debugPrint('LOGGING_IN: $username to $_baseUrl/api/v1/auth/login/');
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/api/v1/auth/login/',
+        data: <String, dynamic>{'username': username, 'password': password},
+      );
 
-    final auth = AuthResponse.fromJson(response.data ?? <String, dynamic>{});
+      final auth = AuthResponse.fromJson(response.data ?? <String, dynamic>{});
 
-    await _sessionService.saveSession(
-      accessToken: auth.accessToken,
-      refreshToken: auth.refreshToken,
-      role: auth.role,
-      email: auth.email,
-      name: auth.name,
-    );
+      if (auth.accessToken.isEmpty || auth.refreshToken.isEmpty) {
+        throw Exception('Login response missing JWT tokens: ${response.data}');
+      }
 
-    return auth;
+      await _sessionService.saveSession(
+        accessToken: auth.accessToken,
+        refreshToken: auth.refreshToken,
+        role: auth.role,
+        email: auth.email,
+        name: auth.name,
+      );
+
+      return auth;
+    } on DioException catch (e) {
+      debugPrint('Login failed: ${e.message}, Response: ${e.response?.data}');
+      rethrow;
+    }
   }
 
   Future<void> register({
@@ -156,9 +160,10 @@ class BackendService {
         'name': name,
         'email': email,
         'password': password,
+        'password2': password,
         'role': role,
-        if (gender != null) 'gender': gender,
         if (age != null) 'age': age,
+        if (gender != null) 'gender': gender,
         if (bloodType != null) 'blood_type': bloodType,
         if (healthHistory != null) 'health_history': healthHistory,
         if (allergies != null) 'allergies': allergies,
@@ -171,14 +176,53 @@ class BackendService {
 
   Future<TriageItem> submitSymptoms({
     required String description,
-    String? photoName,
+    String? photoName, // Match v1.6.0 doc field name
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
       '/api/v1/triage/',
       data: <String, dynamic>{
         'description': description,
-        if (photoName != null && photoName.isNotEmpty) 'photo_name': photoName,
+        if (photoName != null) 'photo_name': photoName,
       },
+    );
+
+    return TriageItem.fromJson(response.data ?? <String, dynamic>{});
+  }
+
+  Future<TriageItem> analyzeSymptomsAi({
+    required String symptoms,
+    int? age,
+    String? gender,
+    String? bloodType,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/v1/triage/ai/',
+      data: <String, dynamic>{
+        'symptoms': symptoms,
+        if (age != null) 'age': age,
+        if (gender != null) 'gender': gender,
+        if (bloodType != null) 'blood_type': bloodType,
+      },
+    );
+    return TriageItem.fromJson(response.data ?? <String, dynamic>{});
+  }
+
+  Future<TriageItem> extractSymptomsFromPdf({
+    required String filePath,
+    int? age,
+    String? gender,
+    String? bloodType,
+  }) async {
+    final formData = FormData.fromMap(<String, dynamic>{
+      'file': await MultipartFile.fromFile(filePath),
+      if (age != null) 'age': age,
+      if (gender != null) 'gender': gender,
+      if (bloodType != null) 'blood_type': bloodType,
+    });
+
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/v1/triage/pdf-extract/',
+      data: formData,
     );
 
     return TriageItem.fromJson(response.data ?? <String, dynamic>{});
@@ -189,15 +233,15 @@ class BackendService {
     String? status,
   }) async {
     try {
-      final response = await _dio.get<List<dynamic>>(
-        '/api/v1/staff/patients/',
+      final response = await _dio.get<dynamic>(
+        '/api/v1/dashboard/staff/patients/',
         queryParameters: <String, dynamic>{
           if (priority != null) 'priority': priority,
           if (status != null && status.isNotEmpty) 'status': status,
         },
       );
 
-      final data = response.data ?? <dynamic>[];
+      final data = _extractList(response.data);
       final items = data
           .whereType<Map<String, dynamic>>()
           .map(TriageItem.fromJson)
@@ -222,7 +266,7 @@ class BackendService {
     required String status,
   }) async {
     final response = await _dio.patch<Map<String, dynamic>>(
-      '/api/v1/staff/patient/$id/status/',
+      '/api/v1/dashboard/staff/patient/$id/status/',
       data: <String, dynamic>{'status': status},
     );
 
@@ -234,60 +278,63 @@ class BackendService {
     required int priority,
   }) async {
     final response = await _dio.patch<Map<String, dynamic>>(
-      '/api/v1/staff/patient/$id/priority/',
+      '/api/v1/dashboard/staff/patient/$id/priority/',
       data: <String, dynamic>{'priority': priority},
     );
 
     return TriageItem.fromJson(response.data ?? <String, dynamic>{});
   }
 
-  Future<TriageItem> verifyTriage({
-    required int id,
-    required String nurseName,
-  }) async {
-    final response = await _dio.patch<Map<String, dynamic>>(
-      '/api/v1/staff/patient/$id/verify/',
-      data: <String, dynamic>{'verified_by': nurseName},
-    );
-
-    return TriageItem.fromJson(response.data ?? <String, dynamic>{});
-  }
-
-  Future<TriageItem> logVitals({
+  Future<void> logVitals({
     required int id,
     required String bp,
     required String heartRate,
     required String temperature,
   }) async {
-    final response = await _dio.post<Map<String, dynamic>>(
-      '/api/v1/staff/patient/$id/vitals/',
-      data: <String, dynamic>{
-        'bp': bp,
-        'heart_rate': heartRate,
-        'temperature': temperature,
-      },
-    );
+    // POST /api/v1/triage/{id}/vitals/ (VitalsHistoryView)
+    final data = <String, dynamic>{
+      'blood_pressure': bp,
+      if (int.tryParse(heartRate) != null) 'heart_rate': int.parse(heartRate),
+      if (double.tryParse(temperature) != null) 'temperature': double.parse(temperature),
+    };
 
-    return TriageItem.fromJson(response.data ?? <String, dynamic>{});
+    await _dio.post<dynamic>(
+      '/api/v1/triage/$id/vitals/',
+      data: data,
+    );
   }
 
   Future<AdminOverview> getAdminOverview() async {
-    final response = await _dio.get<Map<String, dynamic>>(
-      '/api/v1/admin/overview/',
-    );
-    return AdminOverview.fromJson(response.data ?? <String, dynamic>{});
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/api/v1/dashboard/admin/overview/',
+      );
+      return AdminOverview.fromJson(response.data ?? <String, dynamic>{});
+    } on DioException catch (error) {
+      if (error.response?.statusCode == 403) {
+        return AdminOverview.fromJson(<String, dynamic>{});
+      }
+      rethrow;
+    }
   }
 
   Future<AdminAnalytics> getAdminAnalytics() async {
-    final response = await _dio.get<Map<String, dynamic>>(
-      '/api/v1/admin/analytics/',
-    );
-    return AdminAnalytics.fromJson(response.data ?? <String, dynamic>{});
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/api/v1/dashboard/admin/analytics/',
+      );
+      return AdminAnalytics.fromJson(response.data ?? <String, dynamic>{});
+    } on DioException catch (error) {
+      if (error.response?.statusCode == 403) {
+        return AdminAnalytics.fromJson(<String, dynamic>{});
+      }
+      rethrow;
+    }
   }
 
   Future<List<AppUser>> getUsers() async {
-    final response = await _dio.get<List<dynamic>>('/api/v1/admin/users/');
-    final data = response.data ?? <dynamic>[];
+    final response = await _dio.get<dynamic>('/api/v1/admin/users/');
+    final data = _extractList(response.data);
     return data
         .whereType<Map<String, dynamic>>()
         .map(AppUser.fromJson)
@@ -298,20 +345,43 @@ class BackendService {
     required int id,
     required String role,
   }) async {
-    final response = await _dio.patch<Map<String, dynamic>>(
+    final backendRole = role == 'staff' ? 'nurse' : role;
+    await _dio.patch<Map<String, dynamic>>(
       '/api/v1/admin/users/$id/role/',
-      data: <String, dynamic>{'role': role},
+      data: <String, dynamic>{'role': backendRole},
     );
-    return AppUser.fromJson(response.data ?? <String, dynamic>{});
+
+    final users = await getUsers();
+    return users.firstWhere(
+      (user) => user.id == id,
+      orElse: () => AppUser(id: id, name: '', email: '', role: backendRole),
+    );
   }
 
   Future<Map<String, String>> updateProfile({
     required String name,
     required String email,
+    int? age,
+    String? gender,
+    String? bloodType,
+    String? healthHistory,
+    String? allergies,
+    String? currentMedications,
+    String? badHabits,
   }) async {
     final response = await _dio.patch<Map<String, dynamic>>(
       '/api/v1/profile/',
-      data: <String, dynamic>{'name': name, 'email': email},
+      data: <String, dynamic>{
+        'name': name,
+        'email': email,
+        if (age != null) 'age': age,
+        if (gender != null) 'gender': gender,
+        if (bloodType != null) 'blood_type': bloodType,
+        if (healthHistory != null) 'health_history': healthHistory,
+        if (allergies != null) 'allergies': allergies,
+        if (currentMedications != null) 'current_medications': currentMedications,
+        if (badHabits != null) 'bad_habits': badHabits,
+      },
     );
 
     final data = response.data ?? <String, dynamic>{};
@@ -332,17 +402,36 @@ class BackendService {
     };
   }
 
-  Future<void> deletePatient(int id) async {
-    await _dio.delete<void>('/api/v1/admin/patient/$id/');
+
+  Future<void> deleteUser(int id) async {
+    await _dio.delete<void>('/api/v1/admin/users/$id/');
   }
 
-  Future<List<TriageItem>> getPatientSubmissionsByEmail(String email) async {
-    final response = await _dio.get<List<dynamic>>(
-      '/api/v1/triage-submissions/',
-      queryParameters: <String, dynamic>{'email': email},
+  Future<void> suspendUser(int id) async {
+    await _dio.patch<dynamic>('/api/v1/admin/users/$id/suspend/');
+  }
+
+  Future<Map<String, dynamic>> getReportSummary({
+    String? startDate,
+    String? endDate,
+  }) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/api/v1/admin/reports/summary/',
+      queryParameters: <String, dynamic>{
+        if (startDate != null) 'start_date': startDate,
+        if (endDate != null) 'end_date': endDate,
+      },
+    );
+    return response.data ?? <String, dynamic>{};
+  }
+
+
+  Future<List<TriageItem>> getPatientSubmissions() async {
+    final response = await _dio.get<dynamic>(
+      '/api/v1/patients/triage-submissions/',
     );
 
-    final data = response.data ?? <dynamic>[];
+    final data = _extractList(response.data);
     return data
         .whereType<Map<String, dynamic>>()
         .map(TriageItem.fromJson)
@@ -353,6 +442,112 @@ class BackendService {
     final response = await _dio.get<Map<String, dynamic>>(
       '/api/v1/triage/$id/waiting-analytics/',
     );
-    return WaitingAnalytics.fromJson(response.data ?? <String, dynamic>{});
+
+    final data = response.data ?? <String, dynamic>{};
+    
+    return WaitingAnalytics(
+      position: (data['queue_position'] as num?)?.toInt() ?? 1,
+      totalWaiting: (data['patients_ahead'] as num?)?.toInt() ?? 1,
+      estimatedWaitMins: (data['estimated_wait_minutes'] as num?)?.toInt() ?? 15,
+      aiConfidence: (data['ai_confidence'] as num?)?.toDouble() ?? 0.0,
+      message: 'Live analytics connected.',
+    );
+  }
+
+  Future<List<AppNotification>> getNotifications() async {
+    final response = await _dio.get<dynamic>(
+      '/api/v1/notifications/',
+    );
+
+    final data = response.data;
+    final list = data is Map<String, dynamic>
+        ? _extractList(data['data'])
+        : _extractList(data);
+
+    return list
+        .whereType<Map<String, dynamic>>()
+        .map(AppNotification.fromJson)
+        .toList();
+  }
+
+  Future<int> getUnreadNotificationCount() async {
+    final response = await _dio.get<dynamic>(
+      '/api/v1/notifications/unread-count/',
+    );
+    final data = response.data;
+    if (data is Map<String, dynamic>) {
+      final payload = data['data'];
+      if (payload is Map<String, dynamic>) {
+        return (payload['unread_count'] as num? ?? 0).toInt();
+      }
+    }
+    return 0;
+  }
+
+  Future<void> markAllNotificationsRead() async {
+    try {
+      await _dio.patch<dynamic>(
+        '/api/v1/notifications/read-all/',
+      );
+    } on DioException {
+      // Local fallback notifications are read-only placeholders.
+    }
+  }
+
+  Future<List<AuditLogEntry>> getAuditLogs() async {
+    final response = await _dio.get<dynamic>('/api/v1/admin/audit-logs/');
+    final data = _extractList(response.data);
+    return data.whereType<Map<String, dynamic>>().map(AuditLogEntry.fromJson).toList();
+  }
+
+  Future<void> verifyPatient(int id) async {
+    await _dio.patch<dynamic>('/api/v1/staff/patient/$id/verify/');
+  }
+
+  Future<List<StaffNote>> getStaffNotes(int id) async {
+    try {
+      final response = await _dio.get<dynamic>('/api/v1/staff/patient/$id/notes/');
+      final data = _extractList(response.data);
+      return data.whereType<Map<String, dynamic>>().map(StaffNote.fromJson).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<StaffNote> addStaffNote(int id, String content, bool isInternal) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/v1/staff/patient/$id/notes/',
+      data: <String, dynamic>{
+        'content': content,
+        'is_internal': isInternal,
+      },
+    );
+    return StaffNote.fromJson(response.data ?? <String, dynamic>{});
+  }
+
+  Future<void> assignStaff(int id) async {
+    await _dio.patch<dynamic>('/api/v1/staff/patient/$id/assign/');
+  }
+
+  Future<List<VitalsLog>> getVitalsHistory(int id) async {
+    try {
+      final response = await _dio.get<dynamic>('/api/v1/staff/patient/$id/vitals/history/');
+      final data = _extractList(response.data);
+      return data.whereType<Map<String, dynamic>>().map(VitalsLog.fromJson).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  List<dynamic> _extractList(dynamic data) {
+    if (data is List) return data;
+    if (data is Map<String, dynamic>) {
+      final results = data['results'];
+      if (results is List) return results;
+
+      final submissions = data['submissions'];
+      if (submissions is List) return submissions;
+    }
+    return <dynamic>[];
   }
 }

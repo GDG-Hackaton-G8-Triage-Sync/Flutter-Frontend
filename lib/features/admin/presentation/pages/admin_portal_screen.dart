@@ -27,8 +27,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
   List<AppUser> _filteredUsers = <AppUser>[];
   String _searchQuery = '';
 
-  // Dynamic audit log simulating enterprise immutability stream
-  final List<AuditLogEntry> _auditLog = <AuditLogEntry>[];
+  List<AuditLogEntry> _auditLogs = <AuditLogEntry>[];
 
   bool _isLoading = true;
   String? _error;
@@ -37,35 +36,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    _seedInitialAuditLog();
     _loadAll();
-  }
-
-  void _seedInitialAuditLog() {
-    _logAudit('SYSTEM_BOOT', 'Admin dashboard initialized.', 'system');
-    _logAudit(
-      'LOGIN_SUCCESS',
-      'admin@triagesync.com logged in securely.',
-      'admin_portal',
-    );
-  }
-
-  void _logAudit(String action, String target, String actor) {
-    if (!mounted) return;
-    setState(() {
-      _auditLog.insert(
-        0,
-        AuditLogEntry(
-          time: DateTime.now()
-              .toIso8601String()
-              .replaceFirst('T', ' ')
-              .substring(0, 19),
-          actor: actor,
-          action: action,
-          target: target,
-        ),
-      );
-    });
   }
 
   Future<void> _loadAll() async {
@@ -79,6 +50,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
         _backend.getAdminOverview(),
         _backend.getAdminAnalytics(),
         _backend.getUsers(),
+        _backend.getAuditLogs(),
       ]);
 
       if (!mounted) return;
@@ -86,25 +58,16 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
         _overview = results[0] as AdminOverview;
         _analytics = results[1] as AdminAnalytics;
         _allUsers = results[2] as List<AppUser>;
+        _auditLogs = results[3] as List<AuditLogEntry>;
         _applySearch();
         _isLoading = false;
       });
-      _logAudit(
-        'DATA_SYNC',
-        'Synchronized live metrics & user tree.',
-        'system',
-      );
     } catch (_) {
       if (!mounted) return;
       setState(() {
         _error = 'Failed to load enterprise dashboard data (HIPAA Timeout).';
         _isLoading = false;
       });
-      _logAudit(
-        'SYNC_ERROR',
-        'Failed to pull live backend snapshot.',
-        'system',
-      );
     }
   }
 
@@ -182,12 +145,6 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
 
     try {
       await _backend.updateUserRole(id: user.id, role: role);
-      _logAudit(
-        'ROLE_MUTATION',
-        '${user.email} -> $role. Reason: $justification',
-        'admin',
-      );
-
       await _loadAll();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -206,13 +163,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
     if (justification == null) return;
 
     try {
-      await _backend.deletePatient(user.id);
-      _logAudit(
-        'USER_DELETION',
-        'Erased records for ${user.email}. Reason: $justification',
-        'admin',
-      );
-
+      await _backend.deleteUser(user.id);
       await _loadAll();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -224,137 +175,192 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
       );
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Deletion blocked.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('User deletion failed.')),
+      );
     }
   }
 
-  Future<void> _simulateExport() async {
+  Future<void> _suspendUser(AppUser user) async {
+    final justification = await _askForJustification('Suspend User');
+    if (justification == null) return;
+    try {
+      await _backend.suspendUser(user.id);
+      await _loadAll();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${user.name} suspended.')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to suspend user.')),
+      );
+    }
+  }
+
+  Future<void> _exportReport() async {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Generating HIPAA Compliant CSV Payload...'),
-      ),
+      const SnackBar(content: Text('Generating HIPAA Compliant Report...')),
     );
-    await Future.delayed(const Duration(seconds: 1));
-    _logAudit(
-      'FILE_EXPORT',
-      'Exported Daily Metrics PDF to local drive.',
-      'admin',
-    );
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Export Complete! Sent to Administrator Email.'),
-      ),
-    );
+    try {
+      final report = await _backend.getReportSummary();
+      if (!mounted) return;
+      final total = report['total_submissions'] ?? report['total'] ?? '—';
+      final critical = report['critical_cases'] ?? '—';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Report ready: $total submissions, $critical critical cases.'),
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to generate report.')),
+      );
+    }
   }
 
   Future<void> _showRegisterDialog() async {
     final TextEditingController nameCtrl = TextEditingController();
     final TextEditingController emailCtrl = TextEditingController();
     final TextEditingController passCtrl = TextEditingController();
-    String selectedRole = 'staff';
+    final TextEditingController ageCtrl = TextEditingController();
+    String selectedRole = 'nurse';
+    String? gender;
+    String? bloodType;
 
     return showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Register Internal Member'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Name',
-                  prefixIcon: Icon(Icons.person),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: emailCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  prefixIcon: Icon(Icons.email),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: passCtrl,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'Password',
-                  prefixIcon: Icon(Icons.lock),
-                ),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: selectedRole,
-                decoration: const InputDecoration(labelText: 'System Role'),
-                items: const [
-                  DropdownMenuItem(
-                    value: 'staff',
-                    child: Text('Medical Staff'),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Register Internal Member'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Name',
+                    prefixIcon: Icon(Icons.person),
                   ),
-                  DropdownMenuItem(
-                    value: 'admin',
-                    child: Text('Administrator'),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: emailCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    prefixIcon: Icon(Icons.email),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: passCtrl,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Password',
+                    prefixIcon: Icon(Icons.lock),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: ageCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Age',
+                    prefixIcon: Icon(Icons.calendar_today),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: selectedRole,
+                  decoration: const InputDecoration(labelText: 'System Role'),
+                  items: const [
+                    DropdownMenuItem(value: 'nurse', child: Text('Nurse')),
+                    DropdownMenuItem(value: 'doctor', child: Text('Doctor')),
+                    DropdownMenuItem(value: 'admin', child: Text('Administrator')),
+                    DropdownMenuItem(value: 'patient', child: Text('Patient')),
+                  ],
+                  onChanged: (v) => setDialogState(() => selectedRole = v!),
+                ),
+                if (selectedRole == 'patient') ...[
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    initialValue: gender,
+                    decoration: const InputDecoration(
+                      labelText: 'Gender',
+                      prefixIcon: Icon(Icons.people),
+                    ),
+                    items: ['Male', 'Female', 'Other']
+                        .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                        .toList(),
+                    onChanged: (v) => setDialogState(() => gender = v),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    initialValue: bloodType,
+                    decoration: const InputDecoration(
+                      labelText: 'Blood Type',
+                      prefixIcon: Icon(Icons.bloodtype),
+                    ),
+                    items: ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-']
+                        .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                        .toList(),
+                    onChanged: (v) => setDialogState(() => bloodType = v),
                   ),
                 ],
-                onChanged: (v) => selectedRole = v!,
-              ),
-            ],
+              ],
+            ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (nameCtrl.text.isEmpty ||
+                    emailCtrl.text.isEmpty ||
+                    passCtrl.text.isEmpty ||
+                    ageCtrl.text.isEmpty) {
+                  return;
+                }
+                try {
+                  await _backend.register(
+                    name: nameCtrl.text.trim(),
+                    email: emailCtrl.text.trim(),
+                    password: passCtrl.text.trim(),
+                    role: selectedRole,
+                    age: int.tryParse(ageCtrl.text),
+                    gender: gender,
+                    bloodType: bloodType,
+                  );
+                  if (!ctx.mounted || !mounted) return;
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Registered $selectedRole: ${nameCtrl.text}'),
+                    ),
+                  );
+                  _loadAll(); // Refresh directory
+                } catch (e) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Registration failed.')),
+                  );
+                }
+              },
+              child: const Text('Register'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (nameCtrl.text.isEmpty ||
-                  emailCtrl.text.isEmpty ||
-                  passCtrl.text.isEmpty) {
-                return;
-              }
-              try {
-                await _backend.register(
-                  name: nameCtrl.text.trim(),
-                  email: emailCtrl.text.trim(),
-                  password: passCtrl.text.trim(),
-                  role: selectedRole,
-                );
-                _logAudit(
-                  'MEMBER_REGISTERED',
-                  'New $selectedRole: ${emailCtrl.text}',
-                  'admin',
-                );
-                if (!ctx.mounted || !mounted) return;
-                Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Registered $selectedRole: ${nameCtrl.text}'),
-                  ),
-                );
-                _loadAll(); // Refresh directory
-              } catch (e) {
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Registration failed.')),
-                );
-              }
-            },
-            child: const Text('Register'),
-          ),
-        ],
       ),
     );
   }
 
   Future<void> _logout() async {
-    _logAudit('LOGOUT', 'Administrator session terminated.', 'admin');
     await _session.clear();
     if (!mounted) return;
     Navigator.pushAndRemoveUntil(
@@ -389,12 +395,17 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
         ),
         actions: [
           IconButton(
+            onPressed: _loadAll,
+            icon: const Icon(Icons.refresh_rounded, color: Color(0xFF005EB8)),
+            tooltip: 'Refresh Data',
+          ),
+          IconButton(
             onPressed: _showRegisterDialog,
             icon: const Icon(Icons.person_add),
             tooltip: 'Register Member',
           ),
           IconButton(
-            onPressed: _simulateExport,
+            onPressed: _exportReport,
             icon: const Icon(Icons.download),
             tooltip: 'Export Report',
           ),
@@ -447,11 +458,6 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                   ),
                   onPressed: () {
                     if (_overview == null) return;
-                    _logAudit(
-                      'COMMAND_CENTER',
-                      'Opened Command Center view',
-                      'admin',
-                    );
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -466,7 +472,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                   },
                   icon: const Icon(Icons.sos),
                   label: const Text(
-                    'Live Command Center',
+                    'View Live Patient Queue',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -614,7 +620,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                     child: Icon(
                       user.role == 'admin'
                           ? Icons.security
-                          : user.role == 'staff'
+                          : user.role == 'nurse' || user.role == 'doctor'
                           ? Icons.medical_services
                           : Icons.person,
                       color: user.role == 'admin'
@@ -643,14 +649,23 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                             child: Text('Demote to Patient'),
                           ),
                           PopupMenuItem(
-                            value: 'staff',
-                            child: Text('Assign Staff ACL'),
+                            value: 'nurse',
+                            child: Text('Assign Nurse ACL'),
+                          ),
+                          PopupMenuItem(
+                            value: 'doctor',
+                            child: Text('Assign Doctor ACL'),
                           ),
                           PopupMenuItem(
                             value: 'admin',
                             child: Text('Grant Global Admin'),
                           ),
                         ],
+                      ),
+                      IconButton(
+                        onPressed: () => _suspendUser(user),
+                        icon: const Icon(Icons.block, color: Color(0xFFF57C00)),
+                        tooltip: 'Suspend User',
                       ),
                       IconButton(
                         onPressed: () => _deletePatient(user),
@@ -668,59 +683,6 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildAuditTab() {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: _auditLog.length,
-      itemBuilder: (ctx, idx) {
-        final entry = _auditLog[idx];
-        return Card(
-          elevation: 0,
-          margin: const EdgeInsets.only(bottom: 8),
-          color: Colors.white,
-          shape: RoundedRectangleBorder(
-            side: const BorderSide(color: Colors.black12),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(Icons.verified_user, color: Colors.green, size: 20),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        entry.action,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(entry.target, style: const TextStyle(fontSize: 12)),
-                      const SizedBox(height: 6),
-                      Text(
-                        '${entry.actor} • ${entry.time}',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: Colors.black54,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 
@@ -784,18 +746,29 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
       ],
     );
   }
-}
 
-class AuditLogEntry {
-  final String time;
-  final String actor;
-  final String action;
-  final String target;
-
-  AuditLogEntry({
-    required this.time,
-    required this.actor,
-    required this.action,
-    required this.target,
-  });
+  Widget _buildAuditTab() {
+    return _auditLogs.isEmpty
+        ? const Center(child: Text('No audit entries yet.', style: TextStyle(color: Colors.grey)))
+        : ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: _auditLogs.length,
+            separatorBuilder: (_, __) => const Divider(),
+            itemBuilder: (context, index) {
+              final log = _auditLogs[index];
+              return ListTile(
+                leading: const Icon(Icons.security, color: Color(0xFFBA1A1A)),
+                title: Text(
+                  log.action,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: Text('${log.actorEmail} - ${log.details}'),
+                trailing: Text(
+                  log.timestamp.toIso8601String().substring(0, 16).replaceFirst('T', ' '),
+                  style: const TextStyle(fontSize: 12, color: Colors.black54),
+                ),
+              );
+            },
+          );
+  }
 }

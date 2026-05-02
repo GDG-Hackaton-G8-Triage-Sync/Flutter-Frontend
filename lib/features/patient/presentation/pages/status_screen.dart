@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_frontend/core/models/api_models.dart';
 import 'package:flutter_frontend/core/services/backend_service.dart';
 import 'package:flutter_frontend/core/services/session_service.dart';
+import 'package:flutter_frontend/core/error/api_error_mapper.dart';
 import 'package:flutter_frontend/core/presentation/widgets/state_visuals.dart';
 import 'package:flutter_frontend/features/patient/presentation/pages/triage_history_screen.dart';
 import 'package:flutter_frontend/features/patient/presentation/pages/timeline_screen.dart';
@@ -49,7 +50,7 @@ class _StatusScreenState extends State<StatusScreen> {
     final email = await _sessionService.getEmail();
     if (email == null || email.isEmpty) return null;
 
-    final submissions = await _backend.getPatientSubmissionsByEmail(email);
+    final submissions = await _backend.getPatientSubmissions();
     if (submissions.isEmpty) return null;
 
     submissions.sort((a, b) => b.createdAt.compareTo(a.createdAt));
@@ -110,7 +111,27 @@ class _StatusScreenState extends State<StatusScreen> {
         }
 
         if (snapshot.hasError) {
-          return OfflineVisual(onRetry: _refresh);
+          final message = ApiErrorMapper.toUserMessage(
+            snapshot.error!,
+            fallbackMessage: 'Cannot connect to clinical server.',
+          );
+          return StateVisual(
+            icon: Icons.wifi_off_rounded,
+            iconColor: const Color(0xFFBA1A1A),
+            title: 'Connection Issue',
+            message: message,
+            actions: [
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton.icon(
+                  onPressed: _refresh,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('RETRY CONNECTION'),
+                ),
+              ),
+            ],
+          );
         }
 
         final data = snapshot.data;
@@ -475,7 +496,7 @@ class _StatusScreenState extends State<StatusScreen> {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      '${(analytics.aiConfidence * 100).toInt()}% CONFIDENCE',
+                      '${(analytics.aiConfidence * 100).toInt()}% SURE',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 8,
@@ -563,3 +584,4 @@ class _StatusScreenState extends State<StatusScreen> {
     );
   }
 }
+

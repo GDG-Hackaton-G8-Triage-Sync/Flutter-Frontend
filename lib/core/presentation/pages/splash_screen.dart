@@ -66,6 +66,8 @@ class _SplashScreenState extends State<SplashScreen>
         _navigate(const AdminPortalScreen());
         break;
       case 'staff':
+      case 'nurse':
+      case 'doctor':
         _navigate(const StaffDashboardScreen());
         break;
       default:

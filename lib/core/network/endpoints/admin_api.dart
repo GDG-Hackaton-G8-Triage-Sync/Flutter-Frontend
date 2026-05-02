@@ -8,20 +8,20 @@ class AdminApi {
 
   Future<AdminOverview> getOverview() async {
     final response = await _dio.get<Map<String, dynamic>>(
-      '/api/dashboard/admin/overview/',
+      '/api/v1/dashboard/admin/overview/',
     );
     return AdminOverview.fromJson(response.data ?? <String, dynamic>{});
   }
 
   Future<AdminAnalytics> getAnalytics() async {
     final response = await _dio.get<Map<String, dynamic>>(
-      '/api/dashboard/admin/analytics/',
+      '/api/v1/dashboard/admin/analytics/',
     );
     return AdminAnalytics.fromJson(response.data ?? <String, dynamic>{});
   }
 
   Future<List<AppUser>> getUsers() async {
-    final response = await _dio.get<dynamic>('/api/admin/users/');
+    final response = await _dio.get<dynamic>('/api/v1/admin/users/');
 
     final data = response.data;
     final listData = data is List

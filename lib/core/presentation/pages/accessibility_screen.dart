@@ -1,22 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_frontend/core/providers/accessibility_provider.dart';
 
-class AccessibilitySettingsScreen extends StatefulWidget {
+class AccessibilitySettingsScreen extends ConsumerWidget {
   const AccessibilitySettingsScreen({super.key});
 
   @override
-  State<AccessibilitySettingsScreen> createState() =>
-      _AccessibilitySettingsScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final accessibility = ref.watch(accessibilityProvider);
+    final notifier = ref.read(accessibilityProvider.notifier);
 
-class _AccessibilitySettingsScreenState
-    extends State<AccessibilitySettingsScreen> {
-  bool _largeText = false;
-  bool _highContrast = false;
-  bool _reduceMotion = false;
-  String _language = 'English';
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9FB),
       appBar: AppBar(
@@ -44,22 +37,22 @@ class _AccessibilitySettingsScreenState
             Icons.format_size,
             'Large Text Mode',
             'Increased font sizes for better readability.',
-            _largeText,
-            (val) => setState(() => _largeText = val),
+            accessibility.largeText,
+            (val) => notifier.setLargeText(val),
           ),
           _buildSwitchTile(
             Icons.contrast,
             'High Contrast',
             'Maximizes the contrast between UI elements.',
-            _highContrast,
-            (val) => setState(() => _highContrast = val),
+            accessibility.highContrast,
+            (val) => notifier.setHighContrast(val),
           ),
           _buildSwitchTile(
             Icons.slow_motion_video,
             'Reduce Motion',
             'Minimizes animations and transitions.',
-            _reduceMotion,
-            (val) => setState(() => _reduceMotion = val),
+            accessibility.reduceMotion,
+            (val) => notifier.setReduceMotion(val),
           ),
           const SizedBox(height: 24),
           const Text(
@@ -78,9 +71,9 @@ class _AccessibilitySettingsScreenState
               'Primary Language',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
-            subtitle: Text(_language),
+            subtitle: Text(accessibility.language),
             trailing: const Icon(Icons.keyboard_arrow_down),
-            onTap: () => _showLanguagePicker(),
+            onTap: () => _showLanguagePicker(context, ref),
           ),
           const SizedBox(height: 40),
           Container(
@@ -126,7 +119,9 @@ class _AccessibilitySettingsScreenState
     );
   }
 
-  void _showLanguagePicker() {
+  void _showLanguagePicker(BuildContext context, WidgetRef ref) {
+    final notifier = ref.read(accessibilityProvider.notifier);
+
     showModalBottomSheet(
       context: context,
       builder: (ctx) => ListView(
@@ -136,7 +131,7 @@ class _AccessibilitySettingsScreenState
               (lang) => ListTile(
                 title: Text(lang),
                 onTap: () {
-                  setState(() => _language = lang);
+                  notifier.setLanguage(lang);
                   Navigator.pop(ctx);
                 },
               ),
@@ -146,3 +141,4 @@ class _AccessibilitySettingsScreenState
     );
   }
 }
+

@@ -1,3 +1,68 @@
+int _readInt(Map<String, dynamic> json, List<String> keys, [int fallback = 0]) {
+  for (final key in keys) {
+    final value = json[key];
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) {
+      final parsed = int.tryParse(value);
+      if (parsed != null) return parsed;
+    }
+  }
+  return fallback;
+}
+
+double _readDouble(
+  Map<String, dynamic> json,
+  List<String> keys, [
+  double fallback = 0.0,
+]) {
+  for (final key in keys) {
+    final value = json[key];
+    if (value is num) return value.toDouble();
+    if (value is String) {
+      final parsed = double.tryParse(value);
+      if (parsed != null) return parsed;
+    }
+  }
+  return fallback;
+}
+
+String _readString(
+  Map<String, dynamic> json,
+  List<String> keys, [
+  String fallback = '',
+]) {
+  for (final key in keys) {
+    final value = json[key];
+    if (value == null) continue;
+    final text = value.toString();
+    if (text.isNotEmpty) return text;
+  }
+  return fallback;
+}
+
+String? _readNullableString(Map<String, dynamic> json, List<String> keys) {
+  for (final key in keys) {
+    final value = json[key];
+    if (value == null) continue;
+    final text = value.toString();
+    if (text.isNotEmpty) return text;
+  }
+  return null;
+}
+
+DateTime? _readDateTime(Map<String, dynamic> json, List<String> keys) {
+  for (final key in keys) {
+    final value = json[key];
+    if (value is DateTime) return value;
+    if (value is String && value.isNotEmpty) {
+      final parsed = DateTime.tryParse(value);
+      if (parsed != null) return parsed;
+    }
+  }
+  return null;
+}
+
 class AuthResponse {
   AuthResponse({
     required this.accessToken,
@@ -31,19 +96,22 @@ class AuthResponse {
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) {
     return AuthResponse(
-      accessToken: (json['access_token'] ?? '') as String,
-      refreshToken: (json['refresh_token'] ?? '') as String,
-      role: (json['role'] ?? 'patient') as String,
-      userId: (json['user_id'] ?? 0) as int,
-      name: (json['name'] ?? '') as String,
-      email: (json['email'] ?? '') as String,
-      gender: json['gender'] as String?,
-      age: json['age'] as int?,
-      bloodType: json['blood_type'] as String?,
-      healthHistory: json['health_history'] as String?,
-      allergies: json['allergies'] as String?,
-      currentMedications: json['current_medications'] as String?,
-      badHabits: json['bad_habits'] as String?,
+      accessToken: _readString(json, <String>['access_token', 'access']),
+      refreshToken: _readString(json, <String>['refresh_token', 'refresh']),
+      role: _readString(json, <String>['role'], 'patient'),
+      userId: _readInt(json, <String>['user_id', 'id']),
+      name: _readString(json, <String>['name', 'username']),
+      email: _readString(json, <String>['email']),
+      gender: _readNullableString(json, <String>['gender']),
+      age: json.containsKey('age') ? _readInt(json, <String>['age']) : null,
+      bloodType: _readNullableString(json, <String>['blood_type']),
+      healthHistory: _readNullableString(json, <String>['health_history']),
+      allergies: _readNullableString(json, <String>['allergies']),
+      currentMedications: _readNullableString(
+        json,
+        <String>['current_medications'],
+      ),
+      badHabits: _readNullableString(json, <String>['bad_habits']),
     );
   }
 }
@@ -65,13 +133,12 @@ class Vitals {
 
   factory Vitals.fromJson(Map<String, dynamic> json) {
     return Vitals(
-      bp: (json['bp'] ?? '') as String,
-      heartRate: (json['heart_rate'] ?? '') as String,
-      temperature: (json['temperature'] ?? '') as String,
+      bp: _readString(json, <String>['bp']),
+      heartRate: _readString(json, <String>['heart_rate']),
+      temperature: _readString(json, <String>['temperature']),
       recordedAt:
-          DateTime.tryParse((json['recorded_at'] ?? '') as String) ??
-          DateTime.now(),
-      recordedBy: (json['recorded_by'] ?? '') as String,
+          _readDateTime(json, <String>['recorded_at']) ?? DateTime.now(),
+      recordedBy: _readString(json, <String>['recorded_by']),
     );
   }
 }
@@ -101,12 +168,18 @@ class TriageItem {
     this.vitals,
     this.startedAt,
     this.completedAt,
+    this.category,
+    this.isCritical,
+    this.explanation,
+    this.recommendedAction,
+    this.reason,
+    this.source,
   });
 
   final int id;
   final String description;
   final int priority;
-  final int urgencyScore;
+  final int urgencyScore; // Health Score (internal)
   final String condition;
   final String status;
   final DateTime createdAt;
@@ -127,41 +200,65 @@ class TriageItem {
   final DateTime? startedAt;
   final DateTime? completedAt;
 
+  // v1.2.0 AI fields
+  final String? category;
+  final bool? isCritical;
+  final List<String>? explanation;
+  final String? recommendedAction;
+  final String? reason;
+  final String? source;
+
   factory TriageItem.fromJson(Map<String, dynamic> json) {
+    final vitals = json['vitals'];
+
     return TriageItem(
-      id: (json['id'] ?? 0) as int,
-      description: (json['description'] ?? '') as String,
-      priority: (json['priority'] ?? 5) as int,
-      urgencyScore: (json['urgency_score'] ?? 0) as int,
-      condition: (json['condition'] ?? 'Unknown') as String,
-      status: (json['status'] ?? 'waiting') as String,
+      id: _readInt(json, <String>['id', 'submission_id', 'patient_id', 'pk']),
+      description: _readString(
+        json,
+        <String>['description', 'symptoms', 'patient_description'],
+      ),
+      priority: _readInt(json, <String>['priority', 'priority_level'], 5),
+      urgencyScore: _readInt(json, <String>['urgency_score']),
+      condition: _readString(json, <String>['condition'], 'Unknown'),
+      status: _readString(json, <String>['status', 'new_status'], 'waiting'),
       createdAt:
-          DateTime.tryParse((json['created_at'] ?? '') as String) ??
+          _readDateTime(json, <String>['created_at', 'timestamp']) ??
           DateTime.now(),
-      patientName: json['patient_name'] as String?,
-      photoName: json['photo_name'] as String?,
-      verifiedBy: json['verified_by'] as String?,
-      verifiedAt: json['verified_at'] != null
-          ? DateTime.tryParse(json['verified_at'] as String)
+      patientName: _readNullableString(json, <String>['patient_name', 'name', 'username', 'patient']),
+      photoName: _readNullableString(json, <String>['photo_name']),
+      verifiedBy: _readNullableString(
+        json,
+        <String>['verified_by', 'verified_by_user'],
+      ),
+      verifiedAt: _readDateTime(json, <String>['verified_at']),
+      gender: _readNullableString(json, <String>['gender']),
+      age: json.containsKey('age') ? _readInt(json, <String>['age']) : null,
+      bloodType: _readNullableString(json, <String>['blood_type']),
+      healthHistory: _readNullableString(json, <String>['health_history']),
+      allergies: _readNullableString(json, <String>['allergies']),
+      currentMedications: _readNullableString(
+        json,
+        <String>['current_medications'],
+      ),
+      badHabits: _readNullableString(json, <String>['bad_habits']),
+      reasoning: _readNullableString(json, <String>['reasoning', 'reason']),
+      confidence: json.containsKey('confidence')
+          ? _readDouble(json, <String>['confidence'])
           : null,
-      gender: json['gender'] as String?,
-      age: json['age'] as int?,
-      bloodType: json['blood_type'] as String?,
-      healthHistory: json['health_history'] as String?,
-      allergies: json['allergies'] as String?,
-      currentMedications: json['current_medications'] as String?,
-      badHabits: json['bad_habits'] as String?,
-      reasoning: json['reasoning'] as String?,
-      confidence: (json['confidence'] as num?)?.toDouble(),
-      vitals: json['vitals'] != null
-          ? Vitals.fromJson(json['vitals'] as Map<String, dynamic>)
+      vitals: vitals is Map<String, dynamic> ? Vitals.fromJson(vitals) : null,
+      startedAt: _readDateTime(json, <String>['started_at']),
+      completedAt: _readDateTime(
+        json,
+        <String>['completed_at', 'processed_at'],
+      ),
+      category: _readNullableString(json, <String>['category']),
+      isCritical: json['is_critical'] == true,
+      explanation: json['explanation'] is List
+          ? (json['explanation'] as List).map((e) => e.toString()).toList()
           : null,
-      startedAt: json['started_at'] != null
-          ? DateTime.tryParse(json['started_at'] as String)
-          : null,
-      completedAt: json['completed_at'] != null
-          ? DateTime.tryParse(json['completed_at'] as String)
-          : null,
+      recommendedAction: _readNullableString(json, <String>['recommended_action']),
+      reason: _readNullableString(json, <String>['reason']),
+      source: _readNullableString(json, <String>['source']),
     );
   }
 }
@@ -173,6 +270,8 @@ class AdminOverview {
     required this.inProgress,
     required this.completed,
     required this.criticalCases,
+    this.slaBreaches = 0,
+    this.backlogRisk = 'low',
   });
 
   final int totalPatients;
@@ -180,14 +279,21 @@ class AdminOverview {
   final int inProgress;
   final int completed;
   final int criticalCases;
+  final int slaBreaches;
+  final String backlogRisk;
 
   factory AdminOverview.fromJson(Map<String, dynamic> json) {
     return AdminOverview(
-      totalPatients: (json['total_patients'] ?? 0) as int,
-      waiting: (json['waiting'] ?? 0) as int,
-      inProgress: (json['in_progress'] ?? 0) as int,
-      completed: (json['completed'] ?? 0) as int,
-      criticalCases: (json['critical_cases'] ?? 0) as int,
+      totalPatients: _readInt(json, <String>['total_patients', 'total']),
+      waiting: _readInt(json, <String>['waiting', 'waiting_patients']),
+      inProgress: _readInt(
+        json,
+        <String>['in_progress', 'in_progress_patients'],
+      ),
+      completed: _readInt(json, <String>['completed', 'completed_today']),
+      criticalCases: _readInt(json, <String>['critical_cases']),
+      slaBreaches: _readInt(json, <String>['sla_breaches', 'breaches']),
+      backlogRisk: _readString(json, <String>['backlog_risk', 'risk'], 'low'),
     );
   }
 }
@@ -199,8 +305,8 @@ class TrendPoint {
 
   factory TrendPoint.fromJson(Map<String, dynamic> json) {
     return TrendPoint(
-      time: (json['time'] ?? '') as String,
-      value: (json['value'] ?? 0.0).toDouble(),
+      time: _readString(json, <String>['time', 'date']),
+      value: _readDouble(json, <String>['value', 'count']),
     );
   }
 }
@@ -221,24 +327,59 @@ class AdminAnalytics {
   final List<TrendPoint> slaBreachTrend;
 
   factory AdminAnalytics.fromJson(Map<String, dynamic> json) {
-    final conditionsRaw =
-        (json['common_conditions'] ?? <dynamic>[]) as List<dynamic>;
-    final waitTrendRaw =
-        (json['wait_time_trend'] ?? <dynamic>[]) as List<dynamic>;
-    final slaTrendRaw =
-        (json['sla_breach_trend'] ?? <dynamic>[]) as List<dynamic>;
-
     return AdminAnalytics(
-      avgUrgencyScore: (json['avg_urgency_score'] ?? 0) as int,
-      peakHour: (json['peak_hour'] ?? '-') as String,
-      commonConditions: conditionsRaw.map((e) => e.toString()).toList(),
-      waitTimeTrend: waitTrendRaw
-          .map((e) => TrendPoint.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      slaBreachTrend: slaTrendRaw
-          .map((e) => TrendPoint.fromJson(e as Map<String, dynamic>))
-          .toList(),
+      avgUrgencyScore: _readInt(
+        json,
+        <String>[
+          'avg_urgency_score',
+          'average_urgency_score',
+          'average_processing_time_minutes',
+        ],
+      ),
+      peakHour: _readString(json, <String>['peak_hour'], '-'),
+      commonConditions: _parseConditionList(
+        json['common_conditions'],
+        json['condition_breakdown'],
+      ),
+      waitTimeTrend: _parseTrendList(
+        json['wait_time_trend'] ?? json['daily_submissions'] ?? json['wait_trends'],
+      ),
+      slaBreachTrend: _parseTrendList(
+        json['sla_breach_trend'] ?? json['sla_trend'] ?? json['breach_trend'],
+      ),
     );
+  }
+
+  static List<String> _parseConditionList(
+    dynamic conditionsRaw,
+    dynamic conditionBreakdown,
+  ) {
+    if (conditionsRaw is List) {
+      return conditionsRaw.map((entry) {
+        if (entry is Map<String, dynamic>) {
+          final condition = _readString(entry, <String>['condition'], 'Unknown');
+          final count = _readInt(entry, <String>['count']);
+          return count > 0 ? '$condition ($count)' : condition;
+        }
+        return entry.toString();
+      }).toList();
+    }
+
+    if (conditionBreakdown is Map) {
+      return conditionBreakdown.entries
+          .map((entry) => '${entry.key} (${entry.value})')
+          .toList();
+    }
+
+    return <String>[];
+  }
+
+  static List<TrendPoint> _parseTrendList(dynamic raw) {
+    if (raw is! List) return <TrendPoint>[];
+    return raw
+        .whereType<Map<String, dynamic>>()
+        .map(TrendPoint.fromJson)
+        .toList();
   }
 }
 
@@ -271,17 +412,59 @@ class AppUser {
 
   factory AppUser.fromJson(Map<String, dynamic> json) {
     return AppUser(
-      id: (json['id'] ?? 0) as int,
-      name: (json['name'] ?? '') as String,
-      email: (json['email'] ?? '') as String,
-      role: (json['role'] ?? 'patient') as String,
-      gender: json['gender'] as String?,
-      age: json['age'] as int?,
-      bloodType: json['blood_type'] as String?,
-      healthHistory: json['health_history'] as String?,
-      allergies: json['allergies'] as String?,
-      currentMedications: json['current_medications'] as String?,
-      badHabits: json['bad_habits'] as String?,
+      id: _readInt(json, <String>['id']),
+      name: _readString(json, <String>['name', 'username']),
+      email: _readString(json, <String>['email']),
+      role: _readString(json, <String>['role'], 'patient'),
+      gender: _readNullableString(json, <String>['gender']),
+      age: json.containsKey('age') ? _readInt(json, <String>['age']) : null,
+      bloodType: _readNullableString(json, <String>['blood_type']),
+      healthHistory: _readNullableString(json, <String>['health_history']),
+      allergies: _readNullableString(json, <String>['allergies']),
+      currentMedications: _readNullableString(
+        json,
+        <String>['current_medications'],
+      ),
+      badHabits: _readNullableString(json, <String>['bad_habits']),
+    );
+  }
+}
+
+class AppNotification {
+  AppNotification({
+    required this.id,
+    required this.type,
+    required this.title,
+    required this.message,
+    required this.isRead,
+    required this.createdAt,
+    this.metadata = const <String, dynamic>{},
+    this.readAt,
+  });
+
+  final int id;
+  final String type;
+  final String title;
+  final String message;
+  final bool isRead;
+  final DateTime createdAt;
+  final Map<String, dynamic> metadata;
+  final DateTime? readAt;
+
+  factory AppNotification.fromJson(Map<String, dynamic> json) {
+    final metadata = json['metadata'];
+    return AppNotification(
+      id: _readInt(json, <String>['id']),
+      type: _readString(json, <String>['notification_type', 'type']),
+      title: _readString(json, <String>['title'], 'Notification'),
+      message: _readString(json, <String>['message']),
+      isRead: json['is_read'] == true,
+      createdAt:
+          _readDateTime(json, <String>['created_at']) ?? DateTime.now(),
+      metadata: metadata is Map<String, dynamic>
+          ? metadata
+          : const <String, dynamic>{},
+      readAt: _readDateTime(json, <String>['read_at']),
     );
   }
 }
@@ -303,11 +486,116 @@ class WaitingAnalytics {
 
   factory WaitingAnalytics.fromJson(Map<String, dynamic> json) {
     return WaitingAnalytics(
-      position: (json['position'] ?? 0) as int,
-      totalWaiting: (json['total_waiting'] ?? 0) as int,
-      estimatedWaitMins: (json['estimated_wait_mins'] ?? 0) as int,
-      aiConfidence: (json['ai_confidence'] as num? ?? 0.0).toDouble(),
-      message: (json['message'] ?? '') as String,
+      position: _readInt(json, <String>['position']),
+      totalWaiting: _readInt(json, <String>['total_waiting']),
+      estimatedWaitMins: _readInt(json, <String>['estimated_wait_mins']),
+      aiConfidence: _readDouble(json, <String>['ai_confidence']),
+      message: _readString(json, <String>['message']),
+    );
+  }
+}
+
+class AuditLogEntry {
+  AuditLogEntry({
+    required this.id,
+    required this.action,
+    required this.actorEmail,
+    required this.targetEmail,
+    required this.details,
+    required this.timestamp,
+  });
+
+  final int id;
+  final String action;
+  final String actorEmail;
+  final String? targetEmail;
+  final String details;
+  final DateTime timestamp;
+
+  factory AuditLogEntry.fromJson(Map<String, dynamic> json) {
+    final metadata = json['metadata'];
+    String derivedDetails = _readString(json, <String>['details', 'description', 'message']);
+    if (derivedDetails.isEmpty && metadata is Map) {
+      derivedDetails = metadata.entries.map((e) => '${e.key}: ${e.value}').join(', ');
+    }
+
+    return AuditLogEntry(
+      id: _readInt(json, <String>['id', 'pk']),
+      action: _readString(json, <String>['action', 'event_type', 'type']),
+      actorEmail: _readString(json, <String>['actor_email', 'actor', 'user']),
+      targetEmail: _readNullableString(json, <String>['target_email', 'target']),
+      details: derivedDetails,
+      timestamp: _readDateTime(json, <String>['timestamp', 'time', 'created_at']) ?? DateTime.now(),
+    );
+  }
+}
+
+class StaffNote {
+  StaffNote({
+    required this.id,
+    required this.content,
+    required this.isInternal,
+    required this.createdAt,
+    required this.authorName,
+  });
+
+  final int id;
+  final String content;
+  final bool isInternal;
+  final DateTime createdAt;
+  final String authorName;
+
+  factory StaffNote.fromJson(Map<String, dynamic> json) {
+    return StaffNote(
+      id: _readInt(json, <String>['id']),
+      content: _readString(json, <String>['content']),
+      isInternal: json['is_internal'] == true,
+      createdAt: _readDateTime(json, <String>['created_at']) ?? DateTime.now(),
+      authorName: _readString(json, <String>['author', 'author_name']),
+    );
+  }
+}
+
+class VitalsLog {
+  VitalsLog({
+    required this.id,
+    required this.bloodPressure,
+    required this.heartRate,
+    required this.temperature,
+    required this.recordedAt,
+    required this.recordedByName,
+  });
+
+  final int id;
+  final String? bloodPressure;
+  final int? heartRate;
+  final double? temperature;
+  final DateTime recordedAt;
+  final String recordedByName;
+
+  factory VitalsLog.fromJson(Map<String, dynamic> json) {
+    // Backend returns systolic_bp + diastolic_bp as separate integers.
+    // Reconstruct the "120/80" display string when both are present.
+    String? bp = _readNullableString(json, <String>['blood_pressure']);
+    if (bp == null) {
+      final systolic = json['systolic_bp'];
+      final diastolic = json['diastolic_bp'];
+      if (systolic != null && diastolic != null) {
+        bp = '$systolic/$diastolic';
+      }
+    }
+
+    return VitalsLog(
+      id: _readInt(json, <String>['id']),
+      bloodPressure: bp,
+      heartRate: json['heart_rate'] != null ? _readInt(json, <String>['heart_rate']) : null,
+      temperature: json['temperature_c'] != null
+          ? _readDouble(json, <String>['temperature_c'])
+          : json['temperature'] != null
+              ? _readDouble(json, <String>['temperature'])
+              : null,
+      recordedAt: _readDateTime(json, <String>['recorded_at']) ?? DateTime.now(),
+      recordedByName: _readString(json, <String>['recorded_by_name', 'recorded_by']),
     );
   }
 }

@@ -12,6 +12,7 @@ import 'package:flutter_frontend/features/patient/presentation/pages/symptom_inp
 import 'package:flutter_frontend/core/presentation/pages/consent_screen.dart';
 import 'package:flutter_frontend/features/patient/presentation/widgets/patient_home_tab.dart';
 import 'package:flutter_frontend/core/utils/navigation_transitions.dart';
+import 'package:flutter_frontend/core/presentation/pages/notification_screen.dart';
 
 class PatientDashboardScreen extends StatefulWidget {
   const PatientDashboardScreen({super.key});
@@ -35,8 +36,6 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
   void initState() {
     super.initState();
     _loadProfile();
-    // Connect WebSocket (no-op if already connected)
-    WebSocketManager.instance.connect();
   }
 
   @override
@@ -72,7 +71,7 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
   }
 
   Future<void> _openRoleDashboard() async {
-    if (_role == 'staff') {
+    if (_isStaffRole(_role)) {
       await Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => const StaffDashboardScreen()),
@@ -119,6 +118,10 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
 
   bool _hasConsented = false;
 
+  bool _isStaffRole(String role) {
+    return role == 'staff' || role == 'nurse' || role == 'doctor';
+  }
+
   @override
   Widget build(BuildContext context) {
     if (!_consentLoaded) {
@@ -151,6 +154,7 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
         refreshTrigger: _statusRefreshTrigger,
       ),
       SymptomInputScreen(onSubmitted: _onSymptomSubmitted),
+      const NotificationInboxScreen(showAppBar: false),
       SettingsScreen(onOpenProfile: _openProfile, onLogout: _logout),
     ];
 
@@ -186,7 +190,7 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
           ),
         ),
         actions: [
-          if (_role == 'staff' || _role == 'admin')
+          if (_isStaffRole(_role) || _role == 'admin')
             IconButton(
               onPressed: _openRoleDashboard,
               icon: const Icon(
@@ -216,7 +220,34 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
           ),
         ],
       ),
-      body: IndexedStack(index: _currentIndex, children: screens),
+      body: Column(
+        children: [
+          // Quick Help Banner
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            color: const Color(0xFFE0F0FF),
+            child: Row(
+              children: [
+                const Icon(Icons.info_outline, color: Color(0xFF005EB8), size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    _currentIndex == 2
+                        ? 'Need help? Check-in by writing or speaking your symptoms.'
+                        : 'Need help? Check your "Check-in" tab to send your symptoms.',
+                    style: const TextStyle(
+                      color: Color(0xFF005EB8),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(child: IndexedStack(index: _currentIndex, children: screens)),
+        ],
+      ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           boxShadow: [
@@ -243,12 +274,17 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
             NavigationDestination(
               icon: Icon(Icons.history_outlined, color: Colors.grey),
               selectedIcon: Icon(Icons.history, color: Color(0xFF005EB8)),
-              label: 'Queue',
+              label: 'Wait List',
             ),
             NavigationDestination(
               icon: Icon(Icons.add_circle_outline, color: Colors.grey),
               selectedIcon: Icon(Icons.add_circle, color: Color(0xFF005EB8)),
-              label: 'Triage',
+              label: 'Check-in',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.notifications_outlined, color: Colors.grey),
+              selectedIcon: Icon(Icons.notifications, color: Color(0xFF005EB8)),
+              label: 'Messages',
             ),
             NavigationDestination(
               icon: Icon(Icons.settings_outlined, color: Colors.grey),

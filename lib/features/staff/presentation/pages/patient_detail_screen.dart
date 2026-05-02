@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 
 import 'package:flutter_frontend/core/models/api_models.dart';
 import 'package:flutter_frontend/core/services/backend_service.dart';
-import 'package:flutter_frontend/core/services/session_service.dart';
 
 class PatientDetailScreen extends StatefulWidget {
   const PatientDetailScreen({super.key, required this.patient});
@@ -209,14 +208,13 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
               setState(() => _isUpdating = true);
 
               try {
-                final updated = await _backend.logVitals(
+                await _backend.logVitals(
                   id: _patient.id,
                   bp: bp,
                   heartRate: hr,
                   temperature: temp,
                 );
                 if (!mounted) return;
-                setState(() => _patient = updated);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Vitals logged successfully.')),
                 );
@@ -242,67 +240,62 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
 
   void _exportFHIRRecord() {
     final fhirRecord = {
-      "resourceType": "Bundle",
-      "type": "collection",
-      "entry": [
+      'resourceType': 'Bundle',
+      'type': 'collection',
+      'entry': [
         {
-          "resource": {
-            "resourceType": "Patient",
-            "id": "pat-${_patient.id}",
-            "name": [
-              {"text": _patient.patientName ?? "Unknown"},
+          'resource': {
+            'resourceType': 'Patient',
+            'id': 'pat-${_patient.id}',
+            'name': [
+              {'text': _patient.patientName ?? 'Unknown'},
             ],
-            "gender": _patient.gender?.toLowerCase() ?? "unknown",
-            "birthDate": _patient.age != null
-                ? "${DateTime.now().year - _patient.age!}-01-01"
-                : null,
+            'gender': _patient.gender?.toLowerCase() ?? 'unknown',
+            if (_patient.age != null)
+              'birthDate': '${DateTime.now().year - _patient.age!}-01-01',
           },
         },
         {
-          "resource": {
-            "resourceType": "Encounter",
-            "status": _patient.status == "completed"
-                ? "finished"
-                : "in-progress",
-            "class": {"code": "EMR", "display": "emergency"},
-            "priority": {
-              "coding": [
+          'resource': {
+            'resourceType': 'Encounter',
+            'status': _patient.status == 'completed' ? 'finished' : 'in-progress',
+            'class': {'code': 'EMR', 'display': 'emergency'},
+            'priority': {
+              'coding': [
                 {
-                  "system":
-                      "http://terminology.hl7.org/CodeSystem/v3-ActPriority",
-                  "code": "EM",
-                  "display": _priorityLabel,
+                  'system': 'http://terminology.hl7.org/CodeSystem/v3-ActPriority',
+                  'code': 'EM',
+                  'display': _priorityLabel,
                 },
               ],
             },
-            "reasonCode": [
-              {"text": _patient.description},
+            'reasonCode': [
+              {'text': _patient.description},
             ],
           },
         },
         if (_patient.vitals != null)
           {
-            "resource": {
-              "resourceType": "Observation",
-              "status": "final",
-              "code": {"text": "Vital Signs Bundle"},
-              "valueString":
-                  "BP: ${_patient.vitals!.bp}, HR: ${_patient.vitals!.heartRate}, Temp: ${_patient.vitals!.temperature}",
-              "effectiveDateTime": _patient.vitals!.recordedAt
-                  .toIso8601String(),
+            'resource': {
+              'resourceType': 'Observation',
+              'status': 'final',
+              'code': {'text': 'Vital Signs Bundle'},
+              'valueString':
+                  'BP: ${_patient.vitals!.bp}, HR: ${_patient.vitals!.heartRate}, Temp: ${_patient.vitals!.temperature}',
+              'effectiveDateTime': _patient.vitals!.recordedAt.toIso8601String(),
             },
           },
       ],
     };
 
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('FHIR JSON Export'),
+        title: const Text('FHIR R4 JSON Export'),
         content: SingleChildScrollView(
           child: Text(
             const JsonEncoder.withIndent('  ').convert(fhirRecord),
-            style: const TextStyle(fontFamily: 'monospace', fontSize: 10),
+            style: const TextStyle(fontFamily: 'monospace', fontSize: 11),
           ),
         ),
         actions: [
@@ -315,17 +308,17 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
               Navigator.pop(ctx);
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('FHIR Record exported to interoperability hub'),
+                  content: Text('FHIR Record exported to interoperability hub.'),
                 ),
               );
             },
-            child: const Text('Propagate to EHR'),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF005EB8)),
+            child: const Text('Propagate to EHR', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
     );
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -344,7 +337,7 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
           IconButton(
             icon: const Icon(Icons.share_outlined, color: Color(0xFF005EB8)),
             onPressed: _exportFHIRRecord,
-            tooltip: 'Export FHIR Record',
+            tooltip: 'Export FHIR R4 Record',
           ),
         ],
         leading: IconButton(
@@ -464,6 +457,47 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton.icon(
+                  onPressed: () async {
+                    setState(() => _isUpdating = true);
+                    try {
+                      await _backend.assignStaff(_patient.id);
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Assigned to you successfully.')),
+                      );
+                      Navigator.pop(context, _patient);
+                    } catch (_) {
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Failed to assign staff.')),
+                      );
+                    } finally {
+                      if (mounted) setState(() => _isUpdating = false);
+                    }
+                  },
+                  icon: const Icon(Icons.assignment_ind, color: Colors.white),
+                  label: const Text(
+                    'Assign to Me',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFF57C00),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton.icon(
                   onPressed: _showOverridePriorityDialog,
                   icon: const Icon(Icons.edit_note, color: Color(0xFF00478D)),
                   label: const Text(
@@ -483,9 +517,115 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
                   ),
                 ),
               ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton.icon(
+                  onPressed: _showStaffNotesDialog,
+                  icon: const Icon(Icons.speaker_notes, color: Color(0xFF00478D)),
+                  label: const Text(
+                    'Staff Notes',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF00478D),
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFE0E0E0),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                ),
+              ),
             ],
           ],
         ),
+      ),
+    );
+  }
+
+  Future<void> _showStaffNotesDialog() async {
+    final notes = await _backend.getStaffNotes(_patient.id);
+    final noteController = TextEditingController();
+
+    if (!mounted) return;
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setStateLocal) {
+          return AlertDialog(
+            title: const Text('Staff Notes'),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (notes.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: Text('No notes yet.', style: TextStyle(color: Colors.grey)),
+                    )
+                  else
+                    Flexible(
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: notes.length,
+                        itemBuilder: (context, index) {
+                          final note = notes[index];
+                          return ListTile(
+                            title: Text(note.content),
+                            subtitle: Text('${note.authorName} - ${note.createdAt.toString().substring(0, 16)}'),
+                            leading: Icon(note.isInternal ? Icons.lock : Icons.note),
+                          );
+                        },
+                      ),
+                    ),
+                  const Divider(),
+                  TextField(
+                    controller: noteController,
+                    decoration: const InputDecoration(
+                      labelText: 'Add Internal Note',
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLines: 2,
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Close'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  if (noteController.text.trim().isEmpty) return;
+                  try {
+                    final newNote = await _backend.addStaffNote(
+                      _patient.id,
+                      noteController.text.trim(),
+                      true, // Internal note
+                    );
+                    setStateLocal(() {
+                      notes.add(newNote);
+                      noteController.clear();
+                    });
+                  } catch (_) {
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Failed to add note.')),
+                    );
+                  }
+                },
+                child: const Text('Add Note'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -533,7 +673,7 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          _patient.condition,
+          _patient.patientName ?? _patient.condition,
           style: const TextStyle(
             fontFamily: 'Manrope',
             fontSize: 28,
@@ -542,6 +682,18 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
             letterSpacing: -0.5,
           ),
         ),
+        if (_patient.patientName != null) ...[
+          const SizedBox(height: 4),
+          Text(
+            'CONDITION: ${_patient.condition.toUpperCase()}',
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w900,
+              color: Color(0xFF73777F),
+              letterSpacing: 1.0,
+            ),
+          ),
+        ],
         const SizedBox(height: 4),
         Text(
           'Submitted: ${_patient.createdAt.toLocal().toString().substring(0, 16)}',
@@ -691,17 +843,13 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
   Future<void> _confirmAIPriority() async {
     setState(() => _isUpdating = true);
     try {
-      final nurseName =
-          await SessionService().getName() ?? 'Authenticated Staff';
-      final updated = await _backend.verifyTriage(
-        id: _patient.id,
-        nurseName: nurseName,
-      );
+      await _backend.verifyPatient(_patient.id);
       if (!mounted) return;
-      setState(() => _patient = updated);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('AI Triage confirmed and signed by $nurseName')),
+        const SnackBar(content: Text('AI Triage confirmed and signed.')),
       );
+      // Wait for WS to update, but optimistically pop or something. Let's just pop.
+      Navigator.pop(context, _patient);
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -870,7 +1018,6 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
       ),
     );
   }
-
   Widget _buildSymptomDescription() {
     return Container(
       width: double.infinity,

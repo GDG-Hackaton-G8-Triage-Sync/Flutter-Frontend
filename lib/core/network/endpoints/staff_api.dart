@@ -7,7 +7,9 @@ class StaffApi {
   final Dio _dio = DioClient.instance;
 
   Future<List<TriageItem>> getQueue() async {
-    final response = await _dio.get<dynamic>('/api/dashboard/staff/patients/');
+    final response = await _dio.get<dynamic>(
+      '/api/v1/dashboard/staff/patients/',
+    );
 
     final data = response.data;
     final listData = data is List
@@ -24,7 +26,7 @@ class StaffApi {
 
   Future<TriageItem> updatePatientStatus(int patientId, String status) async {
     final response = await _dio.patch<Map<String, dynamic>>(
-      '/api/dashboard/staff/patient/$patientId/status/',
+      '/api/v1/dashboard/staff/patient/$patientId/status/',
       data: <String, dynamic>{'status': status},
     );
 

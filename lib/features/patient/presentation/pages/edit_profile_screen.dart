@@ -94,7 +94,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(
-                  labelText: 'Full Name',
+                  labelText: 'Name',
                   prefixIcon: Icon(Icons.person_outline),
                 ),
                 validator: (value) {

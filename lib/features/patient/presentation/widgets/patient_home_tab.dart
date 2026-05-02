@@ -4,6 +4,7 @@ import 'package:flutter_frontend/core/services/backend_service.dart';
 import 'package:flutter_frontend/features/patient/presentation/pages/hospital_info_screen.dart';
 import 'package:flutter_frontend/features/patient/presentation/pages/timeline_screen.dart';
 import 'package:flutter_frontend/core/presentation/widgets/premium_interactive.dart';
+import 'package:flutter_frontend/core/presentation/pages/notification_screen.dart';
 
 class PatientHomeTab extends StatefulWidget {
   final String name;
@@ -24,18 +25,31 @@ class PatientHomeTab extends StatefulWidget {
 class _PatientHomeTabState extends State<PatientHomeTab> {
   TriageItem? _latestTriage;
   bool _isLoading = true;
+  int _unreadNotifications = 0;
 
   @override
   void initState() {
     super.initState();
     _loadLatest();
+    _loadUnreadNotifications();
+  }
+
+  Future<void> _loadUnreadNotifications() async {
+    try {
+      final count = await BackendService.instance.getUnreadNotificationCount();
+      if (mounted) {
+        setState(() => _unreadNotifications = count);
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _unreadNotifications = 0);
+      }
+    }
   }
 
   Future<void> _loadLatest() async {
     try {
-      final items = await BackendService.instance.getPatientSubmissionsByEmail(
-        widget.email,
-      );
+      final items = await BackendService.instance.getPatientSubmissions();
       if (items.isNotEmpty) {
         // Sort by date to get the absolute latest if the backend doesn't
         items.sort((a, b) => b.createdAt.compareTo(a.createdAt));
@@ -118,10 +132,16 @@ class _PatientHomeTabState extends State<PatientHomeTab> {
         ],
       ),
       child: IconButton(
-        onPressed: () {},
-        icon: const Badge(
-          label: Text('2'),
-          child: Icon(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const NotificationInboxScreen()),
+          ).then((_) => _loadUnreadNotifications());
+        },
+        icon: Badge(
+          isLabelVisible: _unreadNotifications > 0,
+          label: Text(_unreadNotifications.toString()),
+          child: const Icon(
             Icons.notifications_active_outlined,
             color: Color(0xFF005EB8),
           ),

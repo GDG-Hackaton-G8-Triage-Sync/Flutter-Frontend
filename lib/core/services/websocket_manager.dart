@@ -1,33 +1,18 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-
 import 'package:web_socket_channel/web_socket_channel.dart';
 
+import 'package:flutter_frontend/core/config/api_config.dart';
 import 'package:flutter_frontend/core/models/api_models.dart';
 import 'package:flutter_frontend/core/services/session_service.dart';
 
 /// Manages a persistent WebSocket connection to the updates gateway.
-/// Emits [TriageItem] events whenever the server broadcasts a queue_update.
+/// Emits [TriageItem] events whenever the server broadcasts a triage event.
 class WebSocketManager {
   WebSocketManager._();
   static final WebSocketManager instance = WebSocketManager._();
-
-  static String get _wsUrl {
-    const envUrl = String.fromEnvironment('WS_URL', defaultValue: '');
-    if (envUrl.isNotEmpty) {
-      return envUrl;
-    }
-    if (kIsWeb) {
-      return 'ws://localhost:3002/ws/v1/updates/';
-    }
-    if (Platform.isAndroid) {
-      return 'ws://10.0.2.2:3002/ws/v1/updates/';
-    }
-    return 'ws://localhost:3002/ws/v1/updates/';
-  }
 
   static const _reconnectDelay = Duration(seconds: 3);
   static const _heartbeatInterval = Duration(seconds: 20);
@@ -51,10 +36,31 @@ class WebSocketManager {
     _doConnect();
   }
 
-  void _doConnect() {
+  Future<void> _doConnect() async {
     try {
-      _channel = WebSocketChannel.connect(Uri.parse(_wsUrl));
-      _sendAuthFrame();
+      final token = await SessionService().getAccessToken();
+      if (token == null || token.isEmpty) {
+        throw StateError('Missing access token for WebSocket connection');
+      }
+
+      final uri = ApiConfig.websocketUri(token: token);
+      _channel = WebSocketChannel.connect(uri);
+
+      // Wait for the handshake to complete with a timeout.
+      // This prevents blocking the event loop if the server is unreachable.
+      try {
+        await _channel!.ready.timeout(
+          const Duration(seconds: 5),
+          onTimeout: () => throw TimeoutException('WebSocket handshake timed out'),
+        );
+      } on Exception catch (e) {
+        debugPrint('WebSocket handshake failed: $e — will retry');
+        _channel?.sink.close();
+        _channel = null;
+        _scheduleReconnect();
+        return;
+      }
+
       _startHeartbeat();
 
       _channel!.stream.listen(
@@ -64,6 +70,7 @@ class WebSocketManager {
         cancelOnError: false,
       );
     } catch (e) {
+      debugPrint('WebSocket connect error: $e');
       _scheduleReconnect();
     }
   }
@@ -76,12 +83,18 @@ class WebSocketManager {
 
       final Map<String, dynamic> json = jsonDecode(raw) as Map<String, dynamic>;
 
-      final type = json['type'];
-      if (type == 'TRIAGE_CREATED' ||
-          type == 'TRIAGE_UPDATED' ||
-          type == 'SLA_BREACH') {
-        final data = json['data'] as Map<String, dynamic>;
-        final item = TriageItem.fromJson(data);
+      final type = (json['type'] ?? json['event_type'] ?? '').toString().toLowerCase();
+      if (type == 'triage_created' ||
+          type == 'patient_created' ||
+          type == 'triage_updated' ||
+          type == 'status_changed' ||
+          type == 'priority_update' ||
+          type == 'critical_alert' ||
+          type == 'sla_breach') {
+        final data = json['data'] is Map<String, dynamic>
+            ? (json['data']['triage_item'] ?? json['data']) as Map<String, dynamic>
+            : (json['triage_item'] ?? json);
+        final item = TriageItem.fromJson(data as Map<String, dynamic>);
         _controller?.add(item);
       }
     } catch (_) {
@@ -122,13 +135,6 @@ class WebSocketManager {
     _stopHeartbeat();
     _channel?.sink.close();
     _channel = null;
-  }
-
-  Future<void> _sendAuthFrame() async {
-    final token = await SessionService().getAccessToken();
-    if (token != null) {
-      _channel?.sink.add(jsonEncode({'type': 'AUTH', 'token': token}));
-    }
   }
 
   void _startHeartbeat() {

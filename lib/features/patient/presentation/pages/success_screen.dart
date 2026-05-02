@@ -116,7 +116,7 @@ class SuccessScreen extends StatelessWidget {
                       const SizedBox(height: 32),
 
                       const Text(
-                        'Request Submitted',
+                        'All Sent!',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontFamily: 'Manrope',
@@ -128,7 +128,7 @@ class SuccessScreen extends StatelessWidget {
                       const SizedBox(height: 16),
 
                       const Text(
-                        'Your assessment is now being processed by our clinical intelligence engine to determine the optimal care pathway.',
+                        'Our smart helper is looking at your notes to see how we can help you best.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 15,
@@ -168,7 +168,7 @@ class SuccessScreen extends StatelessWidget {
                                         CrossAxisAlignment.start,
                                     children: const [
                                       Text(
-                                        'AI Processing Priority',
+                                        'Checking your place in line',
                                         style: TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.bold,
@@ -182,7 +182,7 @@ class SuccessScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: 16),
                             const Text(
-                              'We are analyzing your symptoms against hospital capacity and urgency metrics. A clinician will be notified shortly.',
+                              'We are looking at how you feel and how busy the hospital is. A doctor or nurse will see this soon.',
                               style: TextStyle(
                                 fontSize: 13,
                                 color: Color(0xFF44474E),
@@ -205,7 +205,7 @@ class SuccessScreen extends StatelessWidget {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: const [
                                 Text(
-                                  'ANALYSIS',
+                                  'THINKING',
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
@@ -213,7 +213,7 @@ class SuccessScreen extends StatelessWidget {
                                   ),
                                 ),
                                 Text(
-                                  'ASSIGNING CARE TEAM',
+                                  'FINDING A DOCTOR',
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
@@ -246,7 +246,7 @@ class SuccessScreen extends StatelessWidget {
                             elevation: 0,
                           ),
                           child: const Text(
-                            'View My Status',
+                            'See my wait time',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -257,7 +257,7 @@ class SuccessScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 16),
                       const Text(
-                        'Please remain in the waiting area. You will receive a mobile notification once your triage priority is finalized.',
+                        'Please stay in the waiting room. We will send a message to your phone when we are ready for you.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 12,
@@ -273,14 +273,14 @@ class SuccessScreen extends StatelessWidget {
                 // Footer security badges
                 Column(
                   children: [
-                    _buildSecurityBadge(Icons.lock, 'ENCRYPTED DATA'),
+                    _buildSecurityBadge(Icons.lock, 'INFO KEPT SAFE'),
                     const SizedBox(height: 12),
                     _buildSecurityBadge(
                       Icons.health_and_safety,
-                      'CLINICAL OVERSIGHT',
+                      'DOCTOR CHECKED',
                     ),
                     const SizedBox(height: 12),
-                    _buildSecurityBadge(Icons.sync, 'PRIORITY SYNCED'),
+                    _buildSecurityBadge(Icons.sync, 'WAIT LIST UPDATED'),
                   ],
                 ),
                 const SizedBox(height: 40),

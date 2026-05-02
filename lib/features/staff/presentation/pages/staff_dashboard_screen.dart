@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 
 import 'package:flutter_frontend/core/models/api_models.dart';
 import 'package:flutter_frontend/core/services/backend_service.dart';
+import 'package:flutter_frontend/core/services/cache_service.dart';
 import 'package:flutter_frontend/core/services/session_service.dart';
 import 'package:flutter_frontend/core/services/websocket_manager.dart';
 import 'package:flutter_frontend/core/presentation/widgets/state_visuals.dart';
@@ -46,8 +47,37 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
     );
     // Real-time WebSocket updates
     WebSocketManager.instance.connect();
-    _wsSub = WebSocketManager.instance.updates.listen((_) {
-      _fetchPatients(silent: true);
+    _wsSub = WebSocketManager.instance.updates.listen((item) {
+      if (mounted) {
+        setState(() {
+          final index = _patients.indexWhere((p) => p.id == item.id);
+          if (index != -1) {
+            _patients[index] = item;
+          } else {
+            _patients.add(item);
+            _newPatientIds.add(item.id);
+            Timer(const Duration(seconds: 5), () {
+              if (mounted) {
+                setState(() {
+                  _newPatientIds.remove(item.id);
+                });
+              }
+            });
+          }
+
+          try {
+            _patients.sort((a, b) {
+              final priorityCompare = a.priority.compareTo(b.priority);
+              if (priorityCompare != 0) return priorityCompare;
+              final urgencyCompare = b.urgencyScore.compareTo(a.urgencyScore);
+              if (urgencyCompare != 0) return urgencyCompare;
+              return a.createdAt.compareTo(b.createdAt);
+            });
+          } catch (e) {
+            debugPrint('Error sorting patients in WebSocket: $e');
+          }
+        });
+      }
     });
   }
 
@@ -67,32 +97,54 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
         status: _statusFilterController.text.trim().isEmpty
             ? null
             : _statusFilterController.text.trim(),
+      ).timeout(
+        const Duration(seconds: 12),
+        onTimeout: () => throw TimeoutException('Staff patient fetch timed out'),
       );
 
-      items.sort((a, b) => b.urgencyScore.compareTo(a.urgencyScore));
+      try {
+        items.sort((a, b) {
+          final priorityCompare = a.priority.compareTo(b.priority);
+          if (priorityCompare != 0) return priorityCompare;
+          final urgencyCompare = b.urgencyScore.compareTo(a.urgencyScore);
+          if (urgencyCompare != 0) return urgencyCompare;
+          return a.createdAt.compareTo(b.createdAt);
+        });
+      } catch (e) {
+        debugPrint('Error sorting patients: $e');
+      }
 
       if (!mounted) return;
 
       // Detect new patients for the glow effect
       final existingIds = _patients.map((p) => p.id).toSet();
+      final newDetectedIds = <int>[];
       for (final item in items) {
         if (existingIds.isNotEmpty && !existingIds.contains(item.id)) {
-          setState(() => _newPatientIds.add(item.id));
-          // Remove glow after animation completes (3 seconds)
-          Timer(const Duration(seconds: 5), () {
-            if (mounted) setState(() => _newPatientIds.remove(item.id));
-          });
+          newDetectedIds.add(item.id);
         }
       }
 
       setState(() {
         _patients = items;
+        if (newDetectedIds.isNotEmpty) {
+          _newPatientIds.addAll(newDetectedIds);
+          for (final id in newDetectedIds) {
+            Timer(const Duration(seconds: 5), () {
+              if (mounted) setState(() => _newPatientIds.remove(id));
+            });
+          }
+        }
         _isLoading = false;
       });
-    } catch (_) {
+
+      // Fire-and-forget: cache write must NOT block or propagate errors to UI
+      CacheService.instance.cachePatients(items).catchError((_) {});
+    } catch (e) {
+      debugPrint('Error fetching patients: $e');
       if (!mounted) return;
       setState(() {
-        _error = 'Failed to load queue from backend.';
+        _error = 'Failed to load queue. Pull down to retry.';
         _isLoading = false;
       });
     }
@@ -154,7 +206,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
   Widget build(BuildContext context) {
     final waiting = _patients.where((p) => p.status == 'waiting').length;
     final inProgress = _patients.where((p) => p.status == 'in_progress').length;
-    final total = _patients.length;
+    final critical = _patients.where((p) => p.priority == 1).length;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9FB),
@@ -167,7 +219,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'INTAKE COMMAND',
+              'Patient Queue Management',
               style: TextStyle(
                 fontFamily: 'Manrope',
                 fontSize: 10,
@@ -177,7 +229,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
               ),
             ),
             const Text(
-              'Emergency Unit D-4',
+              'Unit D-4 Operations',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w900,
@@ -200,7 +252,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
       ),
       body: Column(
         children: [
-          _buildQuickStatsStrip(waiting, inProgress, total),
+          _buildQuickStatsStrip(waiting, inProgress, critical),
           _buildAIPredictiveBanner(waiting),
           _buildFilterBar(),
           Expanded(
@@ -249,7 +301,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
   Widget _buildAIPredictiveBanner(int waitingCount) {
     if (waitingCount == 0) return const SizedBox.shrink();
 
-    // Pro-grade predictive logic: assumes 1 intake every 12 mins per active nurse (mocked)
+    // Local predictive estimate until the backend provides wait analytics.
     final estMinutes = waitingCount * 12;
     final saturation = (waitingCount / 10).clamp(0.0, 1.0);
 
@@ -438,7 +490,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                         Row(
                           children: [
                             Text(
-                              patient.condition.toUpperCase(),
+                              patient.patientName ?? patient.condition.toUpperCase(),
                               style: const TextStyle(
                                 fontWeight: FontWeight.w900,
                                 fontSize: 13,
