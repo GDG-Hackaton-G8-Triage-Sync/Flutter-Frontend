@@ -111,12 +111,12 @@ class _NotificationInboxScreenState extends State<NotificationInboxScreen> {
                     return GestureDetector(
                       onTap: () => _markOneAsRead(item),
                       child: _buildNotification(
-                      item.title,
-                      item.message,
-                      _relativeTime(item.createdAt),
-                      _notificationIcon(item.type),
-                      color,
-                      isNew: !item.isRead,
+                        item.title,
+                        item.message,
+                        item.createdAt,
+                        _notificationIcon(item.type),
+                        color,
+                        isNew: !item.isRead,
                       ),
                     );
                   },
@@ -191,11 +191,13 @@ class _NotificationInboxScreenState extends State<NotificationInboxScreen> {
   Widget _buildNotification(
     String title,
     String desc,
-    String time,
+    DateTime createdAt,
     IconData icon,
     Color color, {
     bool isNew = false,
   }) {
+    final isRecent = DateTime.now().difference(createdAt).inHours < 24;
+    final showNewBadge = isRecent && isNew;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -216,13 +218,39 @@ class _NotificationInboxScreenState extends State<NotificationInboxScreen> {
         title: Row(
           children: [
             Expanded(
-              child: Text(
-                title,
-                style: const TextStyle(fontWeight: FontWeight.bold),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (showNewBadge) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: color,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text(
+                        'NEW',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
             Text(
-              time,
+              _relativeTime(createdAt),
               style: const TextStyle(fontSize: 11, color: Colors.grey),
             ),
           ],

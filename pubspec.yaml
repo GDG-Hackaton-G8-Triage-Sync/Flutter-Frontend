@@ -23,6 +23,7 @@ dependencies:
   dio: ^5.9.2
   web_socket_channel: ^2.4.0
   image_picker: ^1.1.2
+  file_picker: ^8.1.2
 
   flutter_secure_storage: ^9.2.0
   shared_preferences: ^2.2.0

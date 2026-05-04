@@ -123,13 +123,24 @@ class BackendService {
   Future<TriageItem> submitSymptoms({
     required String description,
     String? photoName, // Match v1.6.0 doc field name
+    Uint8List? fileBytes,
+    String? fileName,
   }) async {
+    final data = <String, dynamic>{
+      'description': description,
+      if (photoName != null) 'photo_name': photoName,
+      if (fileBytes != null)
+        'file': MultipartFile.fromBytes(
+          fileBytes,
+          filename: (fileName != null && fileName.isNotEmpty)
+              ? fileName
+              : 'attachment',
+        ),
+    };
+
     final response = await _dio.post<Map<String, dynamic>>(
       ApiEndpoints.triageAi,
-      data: <String, dynamic>{
-        'description': description,
-        if (photoName != null) 'photo_name': photoName,
-      },
+      data: FormData.fromMap(data),
     );
 
     return TriageItem.fromJson(response.data ?? <String, dynamic>{});

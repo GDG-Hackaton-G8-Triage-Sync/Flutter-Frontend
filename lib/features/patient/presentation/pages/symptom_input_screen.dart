@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 import 'package:flutter_frontend/core/services/backend_service.dart';
@@ -23,6 +24,7 @@ class _SymptomInputScreenState extends State<SymptomInputScreen> {
   final BackendService _backend = BackendService.instance;
 
   XFile? _attachedImage;
+  PlatformFile? _attachedPdf;
   bool _isSubmitting = false;
 
   late stt.SpeechToText _speech;
@@ -87,6 +89,24 @@ class _SymptomInputScreenState extends State<SymptomInputScreen> {
 
     setState(() {
       _attachedImage = file;
+      _attachedPdf = null;
+    });
+  }
+
+  Future<void> _pickPdf() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: <String>['pdf'],
+      withData: true,
+    );
+
+    if (result == null || result.files.isEmpty) return;
+    final file = result.files.first;
+    if (file.bytes == null) return;
+
+    setState(() {
+      _attachedPdf = file;
+      _attachedImage = null;
     });
   }
 
@@ -115,15 +135,26 @@ class _SymptomInputScreenState extends State<SymptomInputScreen> {
     });
 
     try {
-      await _backend.submitSymptoms(
-        description: description,
-        photoName: _attachedImage?.name,
-      );
+      if (_attachedPdf != null) {
+        await _backend.submitSymptoms(
+          description: description,
+          fileBytes: _attachedPdf!.bytes,
+          fileName: _attachedPdf!.name,
+        );
+      } else {
+        await _backend.submitSymptoms(
+          description: description,
+          photoName: _attachedImage?.name,
+        );
+      }
 
       if (!mounted) return;
 
       _controller.clear();
-      setState(() => _attachedImage = null);
+      setState(() {
+        _attachedImage = null;
+        _attachedPdf = null;
+      });
 
       // Track whether the user already triggered the callback from SuccessScreen
       bool callbackFired = false;
@@ -288,6 +319,12 @@ class _SymptomInputScreenState extends State<SymptomInputScreen> {
                           icon: const Icon(Icons.attach_file),
                           label: const Text('Attach Photo'),
                         ),
+                        const SizedBox(width: 8),
+                        TextButton.icon(
+                          onPressed: _pickPdf,
+                          icon: const Icon(Icons.picture_as_pdf_outlined),
+                          label: const Text('Attach PDF'),
+                        ),
                       ],
                     ),
                   ],
@@ -319,6 +356,37 @@ class _SymptomInputScreenState extends State<SymptomInputScreen> {
                         IconButton(
                           onPressed: () =>
                               setState(() => _attachedImage = null),
+                          icon: const Icon(Icons.close),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (_attachedPdf != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE0F0FF),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.picture_as_pdf_outlined,
+                            color: Color(0xFFBA1A1A),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            _attachedPdf!.name,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => setState(() => _attachedPdf = null),
                           icon: const Icon(Icons.close),
                         ),
                       ],
