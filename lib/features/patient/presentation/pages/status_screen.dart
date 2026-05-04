@@ -65,11 +65,8 @@ class _StatusScreenState extends State<StatusScreen> {
     final email = await _sessionService.getEmail();
     if (email == null || email.isEmpty) return null;
 
-    final submissions = await _backend.getPatientSubmissions();
-    if (submissions.isEmpty) return null;
-
-    submissions.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    final latest = submissions.first;
+    final latest = await _backend.getCurrentPatientSubmission();
+    if (latest == null) return null;
 
     WaitingAnalytics? analytics;
     if (latest.status == 'waiting') {

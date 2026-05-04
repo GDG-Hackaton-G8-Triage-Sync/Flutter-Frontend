@@ -167,9 +167,21 @@ class TriageItem {
     required this.condition,
     required this.status,
     required this.createdAt,
+    this.metadata = const <String, dynamic>{},
+    this.patientId,
+    this.patient,
+    this.patientAge,
+    this.patientGender,
+    this.patientBloodType,
+    this.patientLifestyleHabits,
+    this.patientMedications,
+    this.patientAllergies,
     this.patientName,
     this.photoName,
     this.verifiedBy,
+    this.verifiedByName,
+    this.assignedStaffName,
+    this.assignedTo,
     this.verifiedAt,
     this.gender,
     this.age,
@@ -198,9 +210,21 @@ class TriageItem {
   final String condition;
   final String status;
   final DateTime createdAt;
+  final Map<String, dynamic> metadata;
+  final int? patientId;
+  final dynamic patient;
+  final int? patientAge;
+  final String? patientGender;
+  final String? patientBloodType;
+  final String? patientLifestyleHabits;
+  final String? patientMedications;
+  final String? patientAllergies;
   final String? patientName;
   final String? photoName;
   final String? verifiedBy;
+  final String? verifiedByName;
+  final String? assignedStaffName;
+  final String? assignedTo;
   final DateTime? verifiedAt;
   final String? gender;
   final int? age;
@@ -239,12 +263,41 @@ class TriageItem {
       createdAt:
           _readDateTime(json, <String>['created_at', 'timestamp']) ??
           DateTime.now(),
+      metadata: json['metadata'] is Map<String, dynamic>
+          ? json['metadata'] as Map<String, dynamic>
+          : const <String, dynamic>{},
+      patientId: json.containsKey('patient')
+          ? _readInt(json, <String>['patient'])
+          : (json.containsKey('patient_id')
+              ? _readInt(json, <String>['patient_id'])
+              : null),
+      patient: json['patient'],
+      patientAge: json.containsKey('patient_age')
+          ? _readInt(json, <String>['patient_age'])
+          : null,
+      patientGender: _readNullableString(json, <String>['patient_gender']),
+      patientBloodType: _readNullableString(json, <String>['patient_blood_type']),
+      patientLifestyleHabits: _readNullableString(
+        json,
+        <String>['patient_lifestyle_habits'],
+      ),
+      patientMedications: _readNullableString(
+        json,
+        <String>['patient_medications'],
+      ),
+      patientAllergies: _readNullableString(json, <String>['patient_allergies']),
       patientName: _readNullableString(json, <String>['patient_name', 'name', 'username', 'patient']),
       photoName: _readNullableString(json, <String>['photo_name']),
       verifiedBy: _readNullableString(
         json,
         <String>['verified_by', 'verified_by_user'],
       ),
+      verifiedByName: _readNullableString(json, <String>['verified_by_name']),
+      assignedStaffName: _readNullableString(
+        json,
+        <String>['assigned_staff_name'],
+      ),
+      assignedTo: _readNullableString(json, <String>['assigned_to']),
       verifiedAt: _readDateTime(json, <String>['verified_at']),
       gender: _readNullableString(json, <String>['gender']),
       age: json.containsKey('age') ? _readInt(json, <String>['age']) : null,
@@ -515,7 +568,7 @@ class AppNotification {
     this.readAt,
   });
 
-  final int id;
+  final String id;
   final String type;
   final String title;
   final String message;
@@ -526,18 +579,22 @@ class AppNotification {
 
   factory AppNotification.fromJson(Map<String, dynamic> json) {
     final metadata = json['metadata'];
+    final readAt = _readDateTime(json, <String>['read_at']);
+    final isReadFlag = json['is_read'] == true;
+    final derivedIsRead = readAt != null || isReadFlag;
+
     return AppNotification(
-      id: _readInt(json, <String>['id']),
+      id: _readString(json, <String>['id'], ''),
       type: _readString(json, <String>['notification_type', 'type']),
       title: _readString(json, <String>['title'], 'Notification'),
       message: _readString(json, <String>['message']),
-      isRead: json['is_read'] == true,
+      isRead: derivedIsRead,
       createdAt:
           _readDateTime(json, <String>['created_at']) ?? DateTime.now(),
       metadata: metadata is Map<String, dynamic>
           ? metadata
           : const <String, dynamic>{},
-      readAt: _readDateTime(json, <String>['read_at']),
+      readAt: readAt,
     );
   }
 }

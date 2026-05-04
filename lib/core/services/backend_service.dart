@@ -412,6 +412,35 @@ class BackendService {
     return response.data ?? <String, dynamic>{};
   }
 
+  Future<TriageItem?> getCurrentPatientSubmission() async {
+    try {
+      final response = await _dio.get<dynamic>(ApiEndpoints.patientCurrent);
+      final data = response.data;
+      if (data is Map<String, dynamic>) {
+        return TriageItem.fromJson(data);
+      }
+      if (data is List && data.isNotEmpty && data.first is Map<String, dynamic>) {
+        return TriageItem.fromJson(data.first as Map<String, dynamic>);
+      }
+    } on DioException {
+      return null;
+    }
+    return null;
+  }
+
+  Future<List<TriageItem>> getPatientHistory() async {
+    try {
+      final response = await _dio.get<dynamic>(ApiEndpoints.patientHistory);
+      final data = _extractList(response.data);
+      return data
+          .whereType<Map<String, dynamic>>()
+          .map(TriageItem.fromJson)
+          .toList();
+    } on DioException {
+      return <TriageItem>[];
+    }
+  }
+
   Future<List<TriageItem>> getPatientSubmissions() async {
     try {
       final response = await _dio.get<dynamic>(
@@ -423,7 +452,7 @@ class BackendService {
           .whereType<Map<String, dynamic>>()
           .map(TriageItem.fromJson)
           .toList();
-    } on DioException catch (_) {
+    } on DioException {
       return <TriageItem>[];
     }
   }
@@ -463,13 +492,19 @@ class BackendService {
     final response = await _dio.get<dynamic>(
       ApiEndpoints.notificationsUnreadCount,
     );
+
     final data = response.data;
     if (data is Map<String, dynamic>) {
+      // Support multiple shapes: { "unread_count": 5 } or { "data": { "unread_count": 5 } }
+      if (data.containsKey('unread_count')) {
+        return (data['unread_count'] as num? ?? 0).toInt();
+      }
       final payload = data['data'];
-      if (payload is Map<String, dynamic>) {
+      if (payload is Map<String, dynamic> && payload.containsKey('unread_count')) {
         return (payload['unread_count'] as num? ?? 0).toInt();
       }
     }
+
     return 0;
   }
 
