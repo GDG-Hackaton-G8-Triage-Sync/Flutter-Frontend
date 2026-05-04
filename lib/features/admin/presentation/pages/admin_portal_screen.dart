@@ -392,7 +392,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
   }
 
   Future<void> _logout() async {
-    await _session.clear();
+    await _backend.logout();
     if (!mounted) return;
     Navigator.pushAndRemoveUntil(
       context,

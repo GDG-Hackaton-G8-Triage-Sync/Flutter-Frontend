@@ -8,6 +8,7 @@ import 'package:flutter_frontend/core/models/api_models.dart';
 import 'package:flutter_frontend/core/network/interceptors/interceptor_setup.dart';
 import 'package:flutter_frontend/core/services/session_service.dart';
 import 'package:flutter_frontend/core/services/cache_service.dart';
+import 'package:flutter_frontend/core/services/websocket_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_frontend/core/utils/globals.dart';
 import 'package:flutter_frontend/features/auth/presentation/pages/login_screen.dart';
@@ -370,6 +371,22 @@ class BackendService {
     return PatientProfile.fromJson(response.data ?? <String, dynamic>{});
   }
 
+  Future<void> logout() async {
+    try {
+      final refresh = await _sessionService.getRefreshToken();
+      await _dio.post<dynamic>(
+        ApiEndpoints.authLogout,
+        data: <String, dynamic>{'refresh': refresh ?? ''},
+      );
+    } catch (_) {
+      // ignore network errors during logout
+    }
+
+    // Ensure local session cleanup and realtime disconnect
+    WebSocketManager.instance.disconnect();
+    await _sessionService.clear();
+  }
+
   Future<void> deleteUser(int id) async {
     await _dio.delete<void>(ApiEndpoints.adminUser(id));
   }
@@ -382,16 +399,19 @@ class BackendService {
     String? startDate,
     String? endDate,
   }) async {
+    // The backend exposes a CSV export at admin/reports/export/ and a JSON overview
+    // at dashboard/admin/overview/. For UI summary counts, use the overview endpoint.
     final response = await _dio.get<Map<String, dynamic>>(
-      ApiEndpoints.adminReportSummary,
+      ApiEndpoints.dashboardAdminOverview,
       queryParameters: <String, dynamic>{
         if (startDate != null) 'start_date': startDate,
         if (endDate != null) 'end_date': endDate,
       },
     );
+
     return response.data ?? <String, dynamic>{};
   }
-
+  
   Future<List<TriageItem>> getPatientSubmissions() async {
     try {
       final response = await _dio.get<dynamic>(
@@ -471,13 +491,13 @@ class BackendService {
   }
 
   Future<void> verifyPatient(int id) async {
-    await _dio.patch<dynamic>(ApiEndpoints.staffPatientVerify(id));
+    await _dio.patch<dynamic>(ApiEndpoints.dashboardStaffPatientVerify(id));
   }
 
   Future<List<StaffNote>> getStaffNotes(int id) async {
     try {
       final response = await _dio.get<dynamic>(
-        ApiEndpoints.staffPatientNotes(id),
+        ApiEndpoints.triageNotes(id),
       );
       final data = _extractList(response.data);
       return data
@@ -495,20 +515,20 @@ class BackendService {
     bool isInternal,
   ) async {
     final response = await _dio.post<Map<String, dynamic>>(
-      ApiEndpoints.staffPatientNotes(id),
+      ApiEndpoints.triageNotes(id),
       data: <String, dynamic>{'content': content, 'is_internal': isInternal},
     );
     return StaffNote.fromJson(response.data ?? <String, dynamic>{});
   }
 
   Future<void> assignStaff(int id) async {
-    await _dio.patch<dynamic>(ApiEndpoints.staffPatientAssign(id));
+    await _dio.patch<dynamic>(ApiEndpoints.triageAssign(id));
   }
 
   Future<List<VitalsLog>> getVitalsHistory(int id) async {
     try {
       final response = await _dio.get<dynamic>(
-        ApiEndpoints.staffPatientVitalsHistory(id),
+        ApiEndpoints.triageVitalsHistory(id),
       );
       final data = _extractList(response.data);
       return data

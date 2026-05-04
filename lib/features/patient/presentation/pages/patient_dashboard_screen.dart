@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:flutter_frontend/core/services/session_service.dart';
+import 'package:flutter_frontend/core/services/backend_service.dart';
 import 'package:flutter_frontend/core/services/websocket_manager.dart';
 import 'package:flutter_frontend/features/auth/presentation/pages/login_screen.dart';
 import 'package:flutter_frontend/features/admin/presentation/pages/admin_portal_screen.dart';
@@ -60,8 +61,7 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
   }
 
   Future<void> _logout() async {
-    WebSocketManager.instance.disconnect();
-    await _session.clear();
+    await BackendService.instance.logout();
     if (!mounted) return;
     Navigator.pushAndRemoveUntil(
       context,

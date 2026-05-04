@@ -166,7 +166,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
   }
 
   Future<void> _logout() async {
-    await _session.clear();
+    await BackendService.instance.logout();
     if (!mounted) return;
     Navigator.pushAndRemoveUntil(
       context,
