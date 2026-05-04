@@ -61,7 +61,9 @@ class _SplashScreenState extends State<SplashScreen>
       return;
     }
 
-    WebSocketManager.instance.connect();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      WebSocketManager.instance.connect();
+    });
 
     // Auto-login by role
     switch (role) {

@@ -177,7 +177,9 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _routeByRole(AuthResponse auth) {
-    WebSocketManager.instance.connect();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      WebSocketManager.instance.connect();
+    });
 
     if (auth.role == 'admin') {
       Navigator.pushReplacement(
