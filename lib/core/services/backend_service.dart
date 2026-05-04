@@ -121,26 +121,55 @@ class BackendService {
   }
 
   Future<TriageItem> submitSymptoms({
-    required String description,
-    String? photoName, // Match v1.6.0 doc field name
+    required String prompt,
+    int? age,
+    String? gender,
+    String? bloodType,
+    Uint8List? imageBytes,
+    String? imageName,
     Uint8List? fileBytes,
     String? fileName,
   }) async {
-    final data = <String, dynamic>{
-      'description': description,
-      if (photoName != null) 'photo_name': photoName,
+    final hasAttachments = imageBytes != null || fileBytes != null;
+
+    if (!hasAttachments) {
+      final response = await _dio.post<Map<String, dynamic>>(
+        ApiEndpoints.triageAi,
+        data: <String, dynamic>{
+          'prompt': prompt,
+          if (age != null) 'age': age,
+          if (gender != null) 'gender': gender,
+          if (bloodType != null) 'blood_type': bloodType,
+        },
+      );
+
+      return TriageItem.fromJson(response.data ?? <String, dynamic>{});
+    }
+
+    final formData = FormData.fromMap(<String, dynamic>{
+      'prompt': prompt,
+      if (age != null) 'age': age,
+      if (gender != null) 'gender': gender,
+      if (bloodType != null) 'blood_type': bloodType,
+      if (imageBytes != null)
+        'image': MultipartFile.fromBytes(
+          imageBytes,
+          filename: (imageName != null && imageName.isNotEmpty)
+              ? imageName
+              : 'image',
+        ),
       if (fileBytes != null)
         'file': MultipartFile.fromBytes(
           fileBytes,
           filename: (fileName != null && fileName.isNotEmpty)
               ? fileName
-              : 'attachment',
+              : 'attachment.pdf',
         ),
-    };
+    });
 
     final response = await _dio.post<Map<String, dynamic>>(
       ApiEndpoints.triageAi,
-      data: FormData.fromMap(data),
+      data: formData,
     );
 
     return TriageItem.fromJson(response.data ?? <String, dynamic>{});

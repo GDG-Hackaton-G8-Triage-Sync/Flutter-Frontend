@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
@@ -24,6 +26,8 @@ class _SymptomInputScreenState extends State<SymptomInputScreen> {
   final BackendService _backend = BackendService.instance;
 
   XFile? _attachedImage;
+  Uint8List? _attachedImageBytes;
+  String? _attachedImageName;
   PlatformFile? _attachedPdf;
   bool _isSubmitting = false;
 
@@ -87,8 +91,12 @@ class _SymptomInputScreenState extends State<SymptomInputScreen> {
     );
     if (file == null) return;
 
+    final bytes = await file.readAsBytes();
+
     setState(() {
       _attachedImage = file;
+      _attachedImageBytes = bytes;
+      _attachedImageName = file.name;
       _attachedPdf = null;
     });
   }
@@ -107,12 +115,14 @@ class _SymptomInputScreenState extends State<SymptomInputScreen> {
     setState(() {
       _attachedPdf = file;
       _attachedImage = null;
+      _attachedImageBytes = null;
+      _attachedImageName = null;
     });
   }
 
   Future<void> _submit() async {
-    final description = _controller.text.trim();
-    if (description.isEmpty) {
+    final prompt = _controller.text.trim();
+    if (prompt.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please describe your symptoms before submitting.'),
@@ -121,7 +131,7 @@ class _SymptomInputScreenState extends State<SymptomInputScreen> {
       return;
     }
 
-    if (description.length > _maxChars) {
+    if (prompt.length > _maxChars) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Description cannot exceed 500 characters.'),
@@ -137,14 +147,15 @@ class _SymptomInputScreenState extends State<SymptomInputScreen> {
     try {
       if (_attachedPdf != null) {
         await _backend.submitSymptoms(
-          description: description,
+          prompt: prompt,
           fileBytes: _attachedPdf!.bytes,
           fileName: _attachedPdf!.name,
         );
       } else {
         await _backend.submitSymptoms(
-          description: description,
-          photoName: _attachedImage?.name,
+          prompt: prompt,
+          imageBytes: _attachedImageBytes,
+          imageName: _attachedImageName,
         );
       }
 
@@ -153,6 +164,8 @@ class _SymptomInputScreenState extends State<SymptomInputScreen> {
       _controller.clear();
       setState(() {
         _attachedImage = null;
+        _attachedImageBytes = null;
+        _attachedImageName = null;
         _attachedPdf = null;
       });
 
@@ -354,8 +367,11 @@ class _SymptomInputScreenState extends State<SymptomInputScreen> {
                           ),
                         ),
                         IconButton(
-                          onPressed: () =>
-                              setState(() => _attachedImage = null),
+                          onPressed: () => setState(() {
+                            _attachedImage = null;
+                            _attachedImageBytes = null;
+                            _attachedImageName = null;
+                          }),
                           icon: const Icon(Icons.close),
                         ),
                       ],
