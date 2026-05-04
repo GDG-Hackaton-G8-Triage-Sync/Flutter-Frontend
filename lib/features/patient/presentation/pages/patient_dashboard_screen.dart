@@ -27,6 +27,7 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
   String _name = '';
   String _email = '';
   String _role = 'patient';
+  String? _profilePhotoUrl;
   bool _consentLoaded = false;
 
   /// Bumped after each successful symptom submit to force StatusScreen reload.
@@ -48,6 +49,13 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
     final name = await _session.getName() ?? '';
     final email = await _session.getEmail() ?? '';
     final role = await _session.getRole() ?? 'patient';
+    // Fetch profile from backend to get latest photo URL if available.
+    try {
+      final profile = await BackendService.instance.getProfile();
+      _profilePhotoUrl = profile.profilePhotoUrl?.trim();
+    } catch (_) {
+      // ignore — fallback to initials
+    }
     final hasConsented = await _session.getDataConsentAccepted(email: email);
     if (!mounted) return;
     setState(() {
@@ -203,16 +211,44 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
             padding: const EdgeInsets.only(right: 16),
             child: GestureDetector(
               onTap: _openProfile,
-              child: CircleAvatar(
-                radius: 18,
-                backgroundColor: const Color(0xFF005EB8),
-                child: Text(
-                  _name.isNotEmpty ? _name[0].toUpperCase() : 'U',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+              child: Container(
+                width: 36,
+                height: 36,
+                decoration: const BoxDecoration(shape: BoxShape.circle),
+                child: ClipOval(
+                  child: _profilePhotoUrl != null && _profilePhotoUrl!.isNotEmpty
+                      ? Image.network(
+                          _profilePhotoUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: const Color(0xFF005EB8),
+                              child: Center(
+                                child: Text(
+                                  _name.isNotEmpty ? _name[0].toUpperCase() : 'U',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        )
+                      : Container(
+                          color: const Color(0xFF005EB8),
+                          child: Center(
+                            child: Text(
+                              _name.isNotEmpty ? _name[0].toUpperCase() : 'U',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
                 ),
               ),
             ),

@@ -21,7 +21,7 @@ class ApiEndpoints {
     static String triageWaitingAnalytics(int id) => '/api/v1/triage/$id/waiting-analytics/';
   static String triageVitalsHistory(int id) => '/api/v1/triage/$id/vitals/history/';
 
-  static const String triagePdfExtract = '/api/v1/triage/pdf-extract/';
+
 
   // Dashboard (staff)
   static const String dashboardStaffPatients = '/api/v1/dashboard/staff/patients/';
@@ -31,7 +31,7 @@ class ApiEndpoints {
       '/api/v1/dashboard/staff/patient/$id/priority/';
   static String dashboardStaffPatientVerify(int id) =>
       '/api/v1/dashboard/staff/patient/$id/verify/';
-
+  
   // Dashboard (admin)
   static const String dashboardAdminOverview = '/api/v1/dashboard/admin/overview/';
   static const String dashboardAdminAnalytics = '/api/v1/dashboard/admin/analytics/';
@@ -58,6 +58,6 @@ class ApiEndpoints {
   static const String notifications = '/api/v1/notifications/';
   static const String notificationsUnreadCount = '/api/v1/notifications/unread-count/';
   static const String notificationsReadAll = '/api/v1/notifications/read-all/';
-  static String notificationById(String id) => '/api/v1/notifications/$id/';
-  static String notificationRead(String id) => '/api/v1/notifications/$id/read/';
+  static String notificationById(int id) => '/api/v1/notifications/$id/';
+  static String notificationRead(int id) => '/api/v1/notifications/$id/read/';
 }

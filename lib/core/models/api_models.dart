@@ -339,6 +339,9 @@ class AdminOverview {
     required this.completed,
     required this.criticalCases,
     this.slaBreaches = 0,
+    this.slaWarningCount = 0,
+    this.averageWaitTimeMinutes = 0.0,
+    this.maxWaitTimeMinutes = 0.0,
     this.backlogRisk = 'low',
   });
 
@@ -348,6 +351,9 @@ class AdminOverview {
   final int completed;
   final int criticalCases;
   final int slaBreaches;
+  final int slaWarningCount;
+  final double averageWaitTimeMinutes;
+  final double maxWaitTimeMinutes;
   final String backlogRisk;
 
   factory AdminOverview.fromJson(Map<String, dynamic> json) {
@@ -361,6 +367,12 @@ class AdminOverview {
       completed: _readInt(json, <String>['completed', 'completed_today']),
       criticalCases: _readInt(json, <String>['critical_cases']),
       slaBreaches: _readInt(json, <String>['sla_breaches', 'breaches']),
+      slaWarningCount: _readInt(json, <String>['sla_warning_count']),
+      averageWaitTimeMinutes: _readDouble(
+        json,
+        <String>['average_wait_time_minutes'],
+      ),
+      maxWaitTimeMinutes: _readDouble(json, <String>['max_wait_time_minutes']),
       backlogRisk: _readString(json, <String>['backlog_risk', 'risk'], 'low'),
     );
   }
@@ -568,7 +580,7 @@ class AppNotification {
     this.readAt,
   });
 
-  final String id;
+  final int id;
   final String type;
   final String title;
   final String message;
@@ -584,7 +596,7 @@ class AppNotification {
     final derivedIsRead = readAt != null || isReadFlag;
 
     return AppNotification(
-      id: _readString(json, <String>['id'], ''),
+      id: _readInt(json, <String>['id']),
       type: _readString(json, <String>['notification_type', 'type']),
       title: _readString(json, <String>['title'], 'Notification'),
       message: _readString(json, <String>['message']),

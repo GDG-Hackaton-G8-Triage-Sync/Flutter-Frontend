@@ -235,11 +235,14 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
     try {
       final report = await _backend.getReportSummary();
       if (!mounted) return;
-      final total = report['total_submissions'] ?? report['total'] ?? '—';
+      final total = report['total_patients'] ?? report['total'] ?? '—';
       final critical = report['critical_cases'] ?? '—';
+      final waiting = report['waiting_patients'] ?? report['waiting'] ?? '—';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Report ready: $total submissions, $critical critical cases.'),
+          content: Text(
+            'Report ready: $total total patients, $waiting waiting, $critical critical cases.',
+          ),
           duration: const Duration(seconds: 5),
         ),
       );

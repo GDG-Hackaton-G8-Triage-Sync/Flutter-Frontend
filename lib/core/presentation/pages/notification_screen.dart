@@ -17,6 +17,7 @@ class NotificationInboxScreen extends StatefulWidget {
 class _NotificationInboxScreenState extends State<NotificationInboxScreen> {
   final BackendService _backend = BackendService.instance;
   late Future<List<AppNotification>> _future;
+  List<AppNotification> _notifications = <AppNotification>[];
 
   @override
   void initState() {
@@ -35,6 +36,28 @@ class _NotificationInboxScreenState extends State<NotificationInboxScreen> {
     await _refresh();
   }
 
+  Future<void> _markOneAsRead(AppNotification item) async {
+    if (item.isRead) return;
+
+    final updated = await _backend.markNotificationRead(item.id);
+    if (!mounted) return;
+
+    setState(() {
+      final index = _notifications.indexWhere((n) => n.id == item.id);
+      if (index == -1) return;
+      _notifications[index] = updated ?? AppNotification(
+        id: item.id,
+        type: item.type,
+        title: item.title,
+        message: item.message,
+        isRead: true,
+        createdAt: item.createdAt,
+        metadata: item.metadata,
+        readAt: DateTime.now(),
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final content = FutureBuilder<List<AppNotification>>(
@@ -44,8 +67,8 @@ class _NotificationInboxScreenState extends State<NotificationInboxScreen> {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final notifications = snapshot.data ?? <AppNotification>[];
-        if (notifications.isEmpty) {
+        _notifications = snapshot.data ?? <AppNotification>[];
+        if (_notifications.isEmpty) {
           return const Center(
             child: Text(
               'No notifications yet.',
@@ -81,17 +104,20 @@ class _NotificationInboxScreenState extends State<NotificationInboxScreen> {
               Expanded(
                 child: ListView.builder(
                   padding: const EdgeInsets.all(16),
-                  itemCount: notifications.length,
+                  itemCount: _notifications.length,
                   itemBuilder: (context, index) {
-                    final item = notifications[index];
+                    final item = _notifications[index];
                     final color = _notificationColor(item.type);
-                    return _buildNotification(
+                    return GestureDetector(
+                      onTap: () => _markOneAsRead(item),
+                      child: _buildNotification(
                       item.title,
                       item.message,
                       _relativeTime(item.createdAt),
                       _notificationIcon(item.type),
                       color,
                       isNew: !item.isRead,
+                      ),
                     );
                   },
                 ),

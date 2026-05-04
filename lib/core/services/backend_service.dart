@@ -167,7 +167,7 @@ class BackendService {
     });
 
     final response = await _dio.post<Map<String, dynamic>>(
-      ApiEndpoints.triagePdfExtract,
+      ApiEndpoints.triageAi,
       data: formData,
     );
 
@@ -350,7 +350,7 @@ class BackendService {
       email: updatedEmail,
       role: updatedRole,
     );
-    
+
     return <String, String>{
       'name': updatedName,
       'email': updatedEmail,
@@ -360,7 +360,8 @@ class BackendService {
       if ((data['profile_photo_url'] ?? data['profile_photo'] ?? '')
           .toString()
           .isNotEmpty)
-        'profilePhotoUrl': data['profile_photo_url']?.toString() ??
+        'profilePhotoUrl':
+            data['profile_photo_url']?.toString() ??
             data['profile_photo']?.toString() ??
             '',
     };
@@ -419,7 +420,9 @@ class BackendService {
       if (data is Map<String, dynamic>) {
         return TriageItem.fromJson(data);
       }
-      if (data is List && data.isNotEmpty && data.first is Map<String, dynamic>) {
+      if (data is List &&
+          data.isNotEmpty &&
+          data.first is Map<String, dynamic>) {
         return TriageItem.fromJson(data.first as Map<String, dynamic>);
       }
     } on DioException {
@@ -458,20 +461,32 @@ class BackendService {
   }
 
   Future<WaitingAnalytics> getWaitingAnalytics(int id) async {
-    final response = await _dio.get<Map<String, dynamic>>(
-      ApiEndpoints.triageWaitingAnalytics(id),
-    );
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        ApiEndpoints.triageWaitingAnalytics(id),
+      );
 
-    final data = response.data ?? <String, dynamic>{};
+      final data = response.data ?? <String, dynamic>{};
 
-    return WaitingAnalytics(
-      position: (data['queue_position'] as num?)?.toInt() ?? 1,
-      totalWaiting: (data['patients_ahead'] as num?)?.toInt() ?? 1,
-      estimatedWaitMins:
-          (data['estimated_wait_minutes'] as num?)?.toInt() ?? 15,
-      aiConfidence: (data['ai_confidence'] as num?)?.toDouble() ?? 0.0,
-      message: 'Live analytics connected.',
-    );
+      return WaitingAnalytics(
+        position: (data['queue_position'] as num?)?.toInt() ?? 1,
+        totalWaiting: (data['patients_ahead'] as num?)?.toInt() ?? 1,
+        estimatedWaitMins:
+            (data['estimated_wait_minutes'] as num?)?.toInt() ?? 15,
+        aiConfidence: (data['ai_confidence'] as num?)?.toDouble() ?? 0.0,
+        message: 'Live analytics connected.',
+      );
+    } on DioException catch (_) {
+      // Backend does not expose per-triage waiting analytics in this API.
+      // Return a conservative fallback so UI remains stable.
+      return WaitingAnalytics(
+        position: 1,
+        totalWaiting: 1,
+        estimatedWaitMins: 15,
+        aiConfidence: 0.0,
+        message: 'Analytics unavailable',
+      );
+    }
   }
 
   Future<List<AppNotification>> getNotifications() async {
@@ -500,7 +515,8 @@ class BackendService {
         return (data['unread_count'] as num? ?? 0).toInt();
       }
       final payload = data['data'];
-      if (payload is Map<String, dynamic> && payload.containsKey('unread_count')) {
+      if (payload is Map<String, dynamic> &&
+          payload.containsKey('unread_count')) {
         return (payload['unread_count'] as num? ?? 0).toInt();
       }
     }
@@ -514,6 +530,23 @@ class BackendService {
     } on DioException {
       // Local fallback notifications are read-only placeholders.
     }
+  }
+
+  Future<AppNotification?> markNotificationRead(int id) async {
+    try {
+      final response = await _dio.patch<dynamic>(ApiEndpoints.notificationRead(id));
+      final data = response.data;
+      if (data is Map<String, dynamic>) {
+        final payload = data['data'];
+        if (payload is Map<String, dynamic>) {
+          return AppNotification.fromJson(payload);
+        }
+        return AppNotification.fromJson(data);
+      }
+    } on DioException {
+      // Keep inbox usable even if backend rejects/omits item-level read updates.
+    }
+    return null;
   }
 
   Future<List<AuditLogEntry>> getAuditLogs() async {
@@ -531,9 +564,7 @@ class BackendService {
 
   Future<List<StaffNote>> getStaffNotes(int id) async {
     try {
-      final response = await _dio.get<dynamic>(
-        ApiEndpoints.triageNotes(id),
-      );
+      final response = await _dio.get<dynamic>(ApiEndpoints.triageNotes(id));
       final data = _extractList(response.data);
       return data
           .whereType<Map<String, dynamic>>()
