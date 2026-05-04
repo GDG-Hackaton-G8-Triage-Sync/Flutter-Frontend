@@ -9,6 +9,7 @@ import 'package:flutter_frontend/core/models/api_models.dart';
 import 'package:flutter_frontend/core/error/api_error_mapper.dart';
 import 'package:flutter_frontend/core/services/backend_service.dart';
 import 'package:flutter_frontend/core/services/session_service.dart';
+import 'package:flutter_frontend/core/services/websocket_manager.dart';
 import 'package:flutter_frontend/features/auth/presentation/pages/terms_of_use_screen.dart';
 import 'package:flutter_frontend/features/patient/presentation/pages/patient_dashboard_screen.dart';
 import 'package:flutter_frontend/features/auth/presentation/pages/privacy_security_screen.dart';
@@ -176,6 +177,8 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _routeByRole(AuthResponse auth) {
+    WebSocketManager.instance.connect();
+
     if (auth.role == 'admin') {
       Navigator.pushReplacement(
         context,

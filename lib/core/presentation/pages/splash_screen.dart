@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:flutter_frontend/core/services/websocket_manager.dart';
 import 'package:flutter_frontend/core/services/session_service.dart';
 
 import 'package:flutter_frontend/features/patient/presentation/pages/patient_dashboard_screen.dart';
@@ -59,6 +60,8 @@ class _SplashScreenState extends State<SplashScreen>
       _navigate(const OnboardingScreen());
       return;
     }
+
+    WebSocketManager.instance.connect();
 
     // Auto-login by role
     switch (role) {

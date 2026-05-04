@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'package:flutter_frontend/core/models/api_models.dart';
 import 'package:flutter_frontend/core/services/backend_service.dart';
 import 'package:flutter_frontend/core/services/session_service.dart';
+import 'package:flutter_frontend/core/services/websocket_manager.dart';
 import 'package:flutter_frontend/core/error/api_error_mapper.dart';
 import 'package:flutter_frontend/core/presentation/widgets/state_visuals.dart';
 import 'package:flutter_frontend/features/patient/presentation/pages/triage_history_screen.dart';
@@ -30,11 +33,17 @@ class _StatusScreenState extends State<StatusScreen> {
 
   // Hold the future so we can re-create it when we need to refresh
   late Future<StatusData?> _future;
+  StreamSubscription<TriageItem>? _wsSub;
 
   @override
   void initState() {
     super.initState();
     _future = _loadLatest();
+    _wsSub = WebSocketManager.instance.updates.listen((_) {
+      if (mounted) {
+        _refresh();
+      }
+    });
   }
 
   @override
@@ -44,6 +53,12 @@ class _StatusScreenState extends State<StatusScreen> {
     if (oldWidget.refreshTrigger != widget.refreshTrigger) {
       setState(() => _future = _loadLatest());
     }
+  }
+
+  @override
+  void dispose() {
+    _wsSub?.cancel();
+    super.dispose();
   }
 
   Future<StatusData?> _loadLatest() async {
@@ -584,4 +599,3 @@ class _StatusScreenState extends State<StatusScreen> {
     );
   }
 }
-

@@ -46,7 +46,6 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
       (_) => _fetchPatients(silent: true),
     );
     // Real-time WebSocket updates
-    WebSocketManager.instance.connect();
     _wsSub = WebSocketManager.instance.updates.listen((item) {
       if (mounted) {
         setState(() {
@@ -254,6 +253,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
         children: [
           _buildQuickStatsStrip(waiting, inProgress, critical),
           _buildAIPredictiveBanner(waiting),
+          _buildNavigationGuide(),
           _buildFilterBar(),
           Expanded(
             child: _isLoading
@@ -435,6 +435,65 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
             _priorityFilterChip(3, 'Routine'),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildNavigationGuide() {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFDDE4F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Fast Actions',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w900,
+              color: Color(0xFF003366),
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Tap a patient card to open full details. Use filters to isolate critical cases quickly.',
+            style: TextStyle(fontSize: 12, color: Color(0xFF4A4F57)),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                onPressed: () => _fetchPatients(),
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text('Refresh Queue'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () {
+                  setState(() => _selectedPriority = 1);
+                  _fetchPatients();
+                },
+                icon: const Icon(Icons.local_fire_department_outlined, size: 18),
+                label: const Text('Critical Only'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () {
+                  setState(() => _selectedPriority = null);
+                  _fetchPatients();
+                },
+                icon: const Icon(Icons.layers_outlined, size: 18),
+                label: const Text('Show All'),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

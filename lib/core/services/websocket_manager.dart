@@ -19,7 +19,9 @@ class WebSocketManager {
 
   WebSocketChannel? _channel;
   StreamController<TriageItem>? _controller;
+  StreamController<Map<String, dynamic>>? _eventController;
   bool _intentionallyClosed = false;
+  bool _isConnecting = false;
   Timer? _reconnectTimer;
   Timer? _heartbeatTimer;
 
@@ -29,14 +31,25 @@ class WebSocketManager {
     return _controller!.stream;
   }
 
+  /// Stream of all incoming JSON WebSocket events.
+  Stream<Map<String, dynamic>> get events {
+    _eventController ??= StreamController<Map<String, dynamic>>.broadcast();
+    return _eventController!.stream;
+  }
+
   /// Connect to the WebSocket server. Safe to call multiple times.
   void connect() {
-    if (_channel != null) return; // already connected
+    if (_channel != null || _isConnecting) return;
     _intentionallyClosed = false;
     _doConnect();
   }
 
   Future<void> _doConnect() async {
+    if (_isConnecting || _channel != null) {
+      return;
+    }
+
+    _isConnecting = true;
     try {
       final token = await SessionService().getAccessToken();
       if (token == null || token.isEmpty) {
@@ -58,10 +71,12 @@ class WebSocketManager {
         _channel?.sink.close();
         _channel = null;
         _scheduleReconnect();
+        _isConnecting = false;
         return;
       }
 
       _startHeartbeat();
+      _isConnecting = false;
 
       _channel!.stream.listen(
         _onMessage,
@@ -71,6 +86,7 @@ class WebSocketManager {
       );
     } catch (e) {
       debugPrint('WebSocket connect error: $e');
+      _isConnecting = false;
       _scheduleReconnect();
     }
   }
@@ -82,19 +98,10 @@ class WebSocketManager {
       }
 
       final Map<String, dynamic> json = jsonDecode(raw) as Map<String, dynamic>;
+      _eventController?.add(json);
 
-      final type = (json['type'] ?? json['event_type'] ?? '').toString().toLowerCase();
-      if (type == 'triage_created' ||
-          type == 'patient_created' ||
-          type == 'triage_updated' ||
-          type == 'status_changed' ||
-          type == 'priority_update' ||
-          type == 'critical_alert' ||
-          type == 'sla_breach') {
-        final data = json['data'] is Map<String, dynamic>
-            ? (json['data']['triage_item'] ?? json['data']) as Map<String, dynamic>
-            : (json['triage_item'] ?? json);
-        final item = TriageItem.fromJson(data as Map<String, dynamic>);
+      final item = _tryParseTriageItem(json);
+      if (item != null) {
         _controller?.add(item);
       }
     } catch (_) {
@@ -102,9 +109,55 @@ class WebSocketManager {
     }
   }
 
+  TriageItem? _tryParseTriageItem(Map<String, dynamic> message) {
+    final type =
+        (message['type'] ?? message['event_type'] ?? '')
+            .toString()
+            .toLowerCase();
+
+    final triageTypes = <String>{
+      'triage_created',
+      'patient_created',
+      'triage_updated',
+      'status_changed',
+      'priority_update',
+      'critical_alert',
+      'sla_breach',
+      'triage_event',
+    };
+
+    if (!triageTypes.contains(type)) {
+      return null;
+    }
+
+    final rawData = message['data'];
+    Map<String, dynamic>? triageJson;
+
+    if (rawData is Map<String, dynamic>) {
+      final nested = rawData['triage_item'];
+      if (nested is Map<String, dynamic>) {
+        triageJson = nested;
+      } else {
+        triageJson = rawData;
+      }
+    } else if (message['triage_item'] is Map<String, dynamic>) {
+      triageJson = message['triage_item'] as Map<String, dynamic>;
+    } else {
+      triageJson = message;
+    }
+
+    final id = triageJson['id'] ?? triageJson['submission_id'] ?? triageJson['patient_id'];
+    if (id == null) {
+      return null;
+    }
+
+    return TriageItem.fromJson(triageJson);
+  }
+
   void _onError(Object error) {
     _stopHeartbeat();
     _channel = null;
+    _isConnecting = false;
     if (!_intentionallyClosed) {
       _scheduleReconnect();
     }
@@ -113,6 +166,7 @@ class WebSocketManager {
   void _onDone() {
     _stopHeartbeat();
     _channel = null;
+    _isConnecting = false;
     if (!_intentionallyClosed) {
       _scheduleReconnect();
     }
@@ -135,6 +189,7 @@ class WebSocketManager {
     _stopHeartbeat();
     _channel?.sink.close();
     _channel = null;
+    _isConnecting = false;
   }
 
   void _startHeartbeat() {
@@ -158,5 +213,7 @@ class WebSocketManager {
     disconnect();
     _controller?.close();
     _controller = null;
+    _eventController?.close();
+    _eventController = null;
   }
 }

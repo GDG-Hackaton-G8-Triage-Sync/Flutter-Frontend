@@ -1,3 +1,5 @@
+import 'package:flutter_frontend/core/config/api_config.dart';
+
 int _readInt(Map<String, dynamic> json, List<String> keys, [int fallback = 0]) {
   for (final key in keys) {
     final value = json[key];
@@ -39,6 +41,19 @@ String _readString(
     if (text.isNotEmpty) return text;
   }
   return fallback;
+}
+
+String? _resolveMediaUrl(dynamic value) {
+  if (value == null) return null;
+  final raw = value.toString().trim();
+  if (raw.isEmpty) return null;
+  if (raw.startsWith('http://') || raw.startsWith('https://') || raw.startsWith('data:') || raw.startsWith('blob:')) {
+    return raw;
+  }
+  if (raw.startsWith('/')) {
+    return '${ApiConfig.baseUrl}$raw';
+  }
+  return '${ApiConfig.baseUrl}/$raw';
 }
 
 String? _readNullableString(Map<String, dynamic> json, List<String> keys) {
@@ -426,6 +441,64 @@ class AppUser {
         <String>['current_medications'],
       ),
       badHabits: _readNullableString(json, <String>['bad_habits']),
+    );
+  }
+}
+
+class PatientProfile {
+  PatientProfile({
+    required this.name,
+    required this.email,
+    required this.role,
+    this.age,
+    this.gender,
+    this.bloodType,
+    this.healthHistory,
+    this.allergies,
+    this.medications,
+    this.lifestyleHabits,
+    this.profilePhotoName,
+    this.profilePhotoUrl,
+  });
+
+  final String name;
+  final String email;
+  final String role;
+  final int? age;
+  final String? gender;
+  final String? bloodType;
+  final String? healthHistory;
+  final String? allergies;
+  final String? medications;
+  final String? lifestyleHabits;
+  final String? profilePhotoName;
+  final String? profilePhotoUrl;
+
+  factory PatientProfile.fromJson(Map<String, dynamic> json) {
+    return PatientProfile(
+      name: _readString(json, <String>['name', 'username']),
+      email: _readString(json, <String>['email']),
+      role: _readString(json, <String>['role'], 'patient'),
+      age: json.containsKey('age') ? _readInt(json, <String>['age']) : null,
+      gender: _readNullableString(json, <String>['gender']),
+      bloodType: _readNullableString(json, <String>['blood_type']),
+      healthHistory: _readNullableString(json, <String>['health_history']),
+      allergies: _readNullableString(json, <String>['allergies']),
+      medications: _readNullableString(
+        json,
+        <String>['medications', 'current_medications'],
+      ),
+      lifestyleHabits: _readNullableString(
+        json,
+        <String>['lifestyle_habits', 'bad_habits'],
+      ),
+      profilePhotoName: _readNullableString(
+        json,
+        <String>['profile_photo_name', 'profile_photo'],
+      ),
+      profilePhotoUrl: _resolveMediaUrl(
+        json['profile_photo_url'] ?? json['profile_photo'],
+      ),
     );
   }
 }
