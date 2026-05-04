@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 
 import 'package:flutter_frontend/core/models/api_models.dart';
 import 'package:flutter_frontend/core/services/backend_service.dart';
-import 'package:flutter_frontend/core/services/session_service.dart';
 import 'package:flutter_frontend/core/services/websocket_manager.dart';
 import 'package:flutter_frontend/features/auth/presentation/pages/login_screen.dart';
 import 'package:flutter_frontend/features/staff/presentation/pages/command_center_screen.dart';
@@ -19,7 +18,6 @@ class AdminPortalScreen extends StatefulWidget {
 class _AdminPortalScreenState extends State<AdminPortalScreen>
     with SingleTickerProviderStateMixin {
   final BackendService _backend = BackendService.instance;
-  final SessionService _session = SessionService();
 
   late TabController _tabController;
 

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import 'package:flutter_frontend/core/services/session_service.dart';
 import 'package:flutter_frontend/core/services/backend_service.dart';
-import 'package:flutter_frontend/core/services/websocket_manager.dart';
 import 'package:flutter_frontend/features/auth/presentation/pages/login_screen.dart';
 import 'package:flutter_frontend/features/admin/presentation/pages/admin_portal_screen.dart';
 import 'package:flutter_frontend/features/staff/presentation/pages/staff_dashboard_screen.dart';
@@ -228,7 +227,11 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
             color: const Color(0xFFE0F0FF),
             child: Row(
               children: [
-                const Icon(Icons.info_outline, color: Color(0xFF005EB8), size: 20),
+                const Icon(
+                  Icons.info_outline,
+                  color: Color(0xFF005EB8),
+                  size: 20,
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
@@ -245,7 +248,9 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
               ],
             ),
           ),
-          Expanded(child: IndexedStack(index: _currentIndex, children: screens)),
+          Expanded(
+            child: IndexedStack(index: _currentIndex, children: screens),
+          ),
         ],
       ),
       bottomNavigationBar: Container(

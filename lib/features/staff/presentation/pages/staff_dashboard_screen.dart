@@ -6,7 +6,6 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_frontend/core/models/api_models.dart';
 import 'package:flutter_frontend/core/services/backend_service.dart';
 import 'package:flutter_frontend/core/services/cache_service.dart';
-import 'package:flutter_frontend/core/services/session_service.dart';
 import 'package:flutter_frontend/core/services/websocket_manager.dart';
 import 'package:flutter_frontend/core/presentation/widgets/state_visuals.dart';
 import 'package:flutter_frontend/features/auth/presentation/pages/login_screen.dart';
@@ -21,7 +20,6 @@ class StaffDashboardScreen extends StatefulWidget {
 
 class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
   final BackendService _backend = BackendService.instance;
-  final SessionService _session = SessionService();
   final TextEditingController _statusFilterController = TextEditingController();
 
   List<TriageItem> _patients = <TriageItem>[];
@@ -45,7 +43,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
       const Duration(seconds: 5),
       (_) => _fetchPatients(silent: true),
     );
-    // Real-time WebSocket updates
+    
     _wsSub = WebSocketManager.instance.updates.listen((item) {
       if (mounted) {
         setState(() {

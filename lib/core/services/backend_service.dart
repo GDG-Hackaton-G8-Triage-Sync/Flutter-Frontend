@@ -350,7 +350,7 @@ class BackendService {
       email: updatedEmail,
       role: updatedRole,
     );
-
+    
     return <String, String>{
       'name': updatedName,
       'email': updatedEmail,
@@ -411,7 +411,7 @@ class BackendService {
 
     return response.data ?? <String, dynamic>{};
   }
-  
+
   Future<List<TriageItem>> getPatientSubmissions() async {
     try {
       final response = await _dio.get<dynamic>(
