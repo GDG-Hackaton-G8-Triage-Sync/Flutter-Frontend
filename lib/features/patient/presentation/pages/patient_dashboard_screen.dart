@@ -155,6 +155,7 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
         name: _name,
         email: _email,
         onStartTriage: () => setState(() => _currentIndex = 2),
+        onOpenWaitList: () => setState(() => _currentIndex = 1),
       ),
       StatusScreen(
         key: ValueKey('status_$_statusRefreshTrigger'),

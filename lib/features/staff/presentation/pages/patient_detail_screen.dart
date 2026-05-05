@@ -2,6 +2,7 @@ import 'dart:math';
 import 'dart:convert';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:flutter_frontend/core/models/api_models.dart';
 import 'package:flutter_frontend/core/services/backend_service.dart';
@@ -302,6 +303,7 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
           },
       ],
     };
+    final jsonText = const JsonEncoder.withIndent('  ').convert(fhirRecord);
 
     showDialog<void>(
       context: context,
@@ -309,7 +311,7 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
         title: const Text('FHIR R4 JSON Export'),
         content: SingleChildScrollView(
           child: Text(
-            const JsonEncoder.withIndent('  ').convert(fhirRecord),
+            jsonText,
             style: const TextStyle(fontFamily: 'monospace', fontSize: 11),
           ),
         ),
@@ -320,15 +322,16 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
           ),
           ElevatedButton(
             onPressed: () {
+              Clipboard.setData(ClipboardData(text: jsonText));
               Navigator.pop(ctx);
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('FHIR Record exported to interoperability hub.'),
+                  content: Text('FHIR JSON copied to clipboard.'),
                 ),
               );
             },
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF005EB8)),
-            child: const Text('Propagate to EHR', style: TextStyle(color: Colors.white)),
+            child: const Text('Copy JSON', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),

@@ -9,7 +9,6 @@ import 'package:flutter_frontend/core/services/websocket_manager.dart';
 import 'package:flutter_frontend/core/error/api_error_mapper.dart';
 import 'package:flutter_frontend/core/presentation/widgets/state_visuals.dart';
 import 'package:flutter_frontend/features/patient/presentation/pages/triage_history_screen.dart';
-import 'package:flutter_frontend/features/patient/presentation/pages/timeline_screen.dart';
 
 class StatusScreen extends StatefulWidget {
   const StatusScreen({super.key, this.refreshTrigger = 0});
@@ -35,6 +34,7 @@ class _StatusScreenState extends State<StatusScreen> {
   // Hold the future so we can re-create it when we need to refresh
   late Future<StatusData?> _future;
   StreamSubscription<TriageItem>? _wsSub;
+  StreamSubscription<Map<String, dynamic>>? _eventSub;
 
   @override
   void initState() {
@@ -42,6 +42,11 @@ class _StatusScreenState extends State<StatusScreen> {
     _future = _loadLatest();
     _wsSub = WebSocketManager.instance.updates.listen((_) {
       if (mounted) {
+        _refresh();
+      }
+    });
+    _eventSub = WebSocketManager.instance.events.listen((event) {
+      if (mounted && _shouldRefreshForEvent(event)) {
         _refresh();
       }
     });
@@ -59,6 +64,7 @@ class _StatusScreenState extends State<StatusScreen> {
   @override
   void dispose() {
     _wsSub?.cancel();
+    _eventSub?.cancel();
     super.dispose();
   }
 
@@ -66,7 +72,19 @@ class _StatusScreenState extends State<StatusScreen> {
     final email = await _sessionService.getEmail();
     if (email == null || email.isEmpty) return null;
 
-    final latest = await _backend.getCurrentPatientSubmission();
+    final current = await _backend.getCurrentPatientSubmission();
+    final history = await _backend.getPatientHistory();
+
+    TriageItem? historyLatest;
+    if (history.isNotEmpty) {
+      history.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      historyLatest = history.first;
+    }
+
+    final latest = _selectBestTriage(
+      current: current,
+      historyLatest: historyLatest,
+    );
     if (latest == null) return null;
 
     final queue = await _backend.getPatientQueue();
@@ -82,6 +100,67 @@ class _StatusScreenState extends State<StatusScreen> {
   }
 
   void _refresh() => setState(() => _future = _loadLatest());
+
+  bool _shouldRefreshForEvent(Map<String, dynamic> event) {
+    final type = (event['type'] ?? event['event_type'] ?? '')
+        .toString()
+        .toLowerCase();
+    final relevantTypes = <String>{
+      'triage_created',
+      'patient_created',
+      'triage_updated',
+      'status_changed',
+      'priority_update',
+      'critical_alert',
+      'sla_breach',
+      'triage_event',
+      'queue_snapshot',
+      'queue_updated',
+      'queue_changed',
+      'waitlist_updated',
+      'patient_updated',
+    };
+
+    if (relevantTypes.contains(type)) {
+      return true;
+    }
+
+    final data = event['data'];
+    if (data is Map<String, dynamic>) {
+      return data.containsKey('triage_item') ||
+          data.containsKey('queue_position') ||
+          data.containsKey('estimated_wait_minutes') ||
+          data.containsKey('status') ||
+          data.containsKey('priority');
+    }
+
+    return false;
+  }
+
+  bool _looksPlaceholder(TriageItem item) {
+    final condition = item.condition.trim().toLowerCase();
+    final description = item.description.trim().toLowerCase();
+    return item.id <= 0 ||
+        item.priority >= 5 &&
+            (condition == 'unknown' ||
+                condition.isEmpty ||
+                description.isEmpty);
+  }
+
+  TriageItem? _selectBestTriage({
+    TriageItem? current,
+    TriageItem? historyLatest,
+  }) {
+    if (historyLatest == null) return current;
+    if (current == null) return historyLatest;
+    if (_looksPlaceholder(current) && !_looksPlaceholder(historyLatest)) {
+      return historyLatest;
+    }
+    if (historyLatest.createdAt.isAfter(current.createdAt)) {
+      return historyLatest;
+    }
+    return current;
+  }
 
   String _waitEstimate(int priority) {
     switch (priority) {
@@ -111,6 +190,8 @@ class _StatusScreenState extends State<StatusScreen> {
         return const Color(0xFFBA1A1A);
       case 'in_progress':
         return const Color(0xFFF57C00);
+      case 'completed':
+        return const Color(0xFF146C2E);
       case 'canceled':
         return const Color(0xFF73777F);
       default:
@@ -131,13 +212,6 @@ class _StatusScreenState extends State<StatusScreen> {
       default:
         return 'Routine';
     }
-  }
-
-  String _confidenceText(double? confidence) {
-    if (confidence == null || !confidence.isFinite) {
-      return 'Pending';
-    }
-    return '${(confidence.clamp(0.0, 1.0) * 100).toStringAsFixed(0)}%';
   }
 
   Widget _summaryTile({
@@ -205,124 +279,447 @@ class _StatusScreenState extends State<StatusScreen> {
     );
   }
 
-  Widget _buildStatusSnapshot(TriageItem result, WaitingAnalytics? analytics) {
-    final confidence = result.confidence ?? analytics?.aiConfidence;
-    final queuePosition = analytics?.position;
-    final patientsAhead = analytics?.totalWaiting;
-    final estimatedWait = analytics?.estimatedWaitMins ?? _waitEstimate(result.priority);
-    final assignedStaff = result.assignedStaffName;
-    final recommendedAction = result.recommendedAction;
-    final reason = result.reasoning ?? result.reason;
+  String _queueStatusLabel(String status) {
+    switch (status) {
+      case 'waiting':
+        return 'Waiting';
+      case 'in_progress':
+        return 'Being Seen';
+      case 'completed':
+        return 'Completed';
+      case 'canceled':
+        return 'Canceled';
+      default:
+        return status.replaceAll('_', ' ').toUpperCase();
+    }
+  }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 24),
-        const Text(
-          'YOUR STATUS AT A GLANCE',
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 1.2,
-            color: Color(0xFF73777F),
-          ),
+  Color _slaColor(String slaStatus) {
+    switch (slaStatus) {
+      case 'critical':
+        return const Color(0xFFBA1A1A);
+      case 'warning':
+        return const Color(0xFFF57C00);
+      default:
+        return const Color(0xFF146C2E);
+    }
+  }
+
+  Widget _buildQueueHero({
+    required TriageItem triage,
+    required PatientQueueSnapshot? queue,
+    required WaitingAnalytics? analytics,
+  }) {
+    final liveQueue = queue != null;
+    final queueSnapshot = queue;
+    final queuePosition = queue?.position ?? analytics?.position ?? 1;
+    final patientsAhead = queue?.aheadOfYou ?? analytics?.totalWaiting ?? 1;
+    final patientsBehind = queue?.behindYou ?? 0;
+    final etaLabel = queue?.etaLabel ?? _waitEstimate(triage.priority);
+    final statusLabel = liveQueue
+        ? _queueStatusLabel(queueSnapshot?.status ?? triage.status)
+        : triage.status == 'waiting'
+        ? 'Waiting'
+        : triage.status.replaceAll('_', ' ').toUpperCase();
+    final progress = (queue?.progressPercent ?? 0).clamp(0, 100) / 100;
+    final slaColor = liveQueue
+        ? _slaColor(queueSnapshot?.slaStatus ?? 'normal')
+        : _priorityColor(triage.priority);
+    final currentStep = queue?.currentStep ?? 'Waiting for live queue data';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFF003366),
+            const Color(0xFF005EB8).withValues(alpha: 0.92),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: [
-            SizedBox(
-              width: MediaQuery.of(context).size.width > 420
-                  ? (MediaQuery.of(context).size.width - 56) / 2
-                  : double.infinity,
-              child: _summaryTile(
-                icon: Icons.local_fire_department_outlined,
-                color: _priorityColor(result.priority),
-                label: 'Priority',
-                value: '${result.priority} - ${_priorityLabel(result.priority)}',
-                note: 'Assigned by the triage engine',
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF003366).withValues(alpha: 0.16),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  liveQueue ? 'LIVE QUEUE SNAPSHOT' : 'LIVE ESTIMATE',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.1,
+                  ),
+                ),
               ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: slaColor.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  liveQueue ? queue.slaStatus.toUpperCase() : 'ESTIMATED',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.92),
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.9,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'YOUR POSITION',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '#$queuePosition',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 34,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      liveQueue
+                          ? 'This is your current position in the live backend queue.'
+                          : 'This is a priority-based estimate until live queue data arrives.',
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.16),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    const Text(
+                      'STATUS',
+                      style: TextStyle(
+                        color: Colors.white60,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      statusLabel,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Priority ${triage.priority} • ${_priorityLabel(triage.priority)}',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w900,
             ),
-            SizedBox(
-              width: MediaQuery.of(context).size.width > 420
-                  ? (MediaQuery.of(context).size.width - 56) / 2
-                  : double.infinity,
-              child: _summaryTile(
-                icon: Icons.queue_outlined,
-                color: const Color(0xFF005EB8),
-                label: 'Queue Position',
-                value: queuePosition != null ? '#$queuePosition' : 'Waiting',
-                note: patientsAhead != null
-                    ? '$patientsAhead patient(s) ahead'
-                    : 'Queue position is updating',
-              ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            triage.condition,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
             ),
-            SizedBox(
-              width: MediaQuery.of(context).size.width > 420
-                  ? (MediaQuery.of(context).size.width - 56) / 2
-                  : double.infinity,
-              child: _summaryTile(
-                icon: Icons.access_time_outlined,
-                color: const Color(0xFFF57C00),
-                label: 'Estimated Wait',
-                value: analytics != null
-                  ? '$estimatedWait min'
-                    : _waitEstimate(result.priority),
-                note: result.status == 'waiting'
-                    ? 'Based on your priority and live queue load'
-                    : 'This is the latest treatment estimate',
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _summaryTile(
+                  icon: Icons.people_alt_outlined,
+                  color: Colors.white,
+                  label: 'Patients ahead',
+                  value: '$patientsAhead',
+                  note: 'People still waiting before you',
+                ),
               ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _summaryTile(
+                  icon: Icons.hourglass_bottom,
+                  color: Colors.white,
+                  label: 'ETA',
+                  value: etaLabel,
+                  note: 'From the live queue engine',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          LinearProgressIndicator(
+            value: progress,
+            minHeight: 10,
+            backgroundColor: Colors.white.withValues(alpha: 0.18),
+            valueColor: AlwaysStoppedAnimation<Color>(slaColor),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '${queue?.progressPercent ?? 0}% through this triage cycle',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Text(
+                '$patientsBehind behind you',
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            currentStep,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
             ),
-            SizedBox(
-              width: MediaQuery.of(context).size.width > 420
-                  ? (MediaQuery.of(context).size.width - 56) / 2
-                  : double.infinity,
-              child: _summaryTile(
-                icon: Icons.verified_outlined,
-                color: const Color(0xFF00897B),
-                label: 'AI Confidence',
-                value: _confidenceText(confidence),
-                note: 'How sure the system is about your triage result',
-              ),
+          ),
+          if (liveQueue) ...[
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: queue.steps.map((step) {
+                final isCurrent = step == queue.currentStep;
+                return Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isCurrent
+                        ? Colors.white.withValues(alpha: 0.2)
+                        : Colors.white.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(
+                      color: isCurrent
+                          ? Colors.white.withValues(alpha: 0.35)
+                          : Colors.white.withValues(alpha: 0.12),
+                    ),
+                  ),
+                  child: Text(
+                    step,
+                    style: TextStyle(
+                      color: Colors.white.withValues(
+                        alpha: isCurrent ? 1 : 0.8,
+                      ),
+                      fontSize: 11,
+                      fontWeight: isCurrent ? FontWeight.w900 : FontWeight.w600,
+                    ),
+                  ),
+                );
+              }).toList(),
             ),
           ],
-        ),
-        const SizedBox(height: 16),
-        if (assignedStaff != null && assignedStaff.isNotEmpty)
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.person_outline, color: Color(0xFF005EB8)),
-              title: const Text(
-                'Assigned Staff',
-                style: TextStyle(fontWeight: FontWeight.w600),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTerminalHero(TriageItem triage) {
+    final completedAt =
+        triage.completedAt ?? triage.verifiedAt ?? triage.createdAt;
+    final statusColor = _priorityColor(triage.priority);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text(
+                'CURRENT TRIAGE',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.2,
+                  color: Color(0xFF73777F),
+                ),
               ),
-              subtitle: Text(assignedStaff),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: _statusColor(triage.status).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  triage.status.replaceAll('_', ' ').toUpperCase(),
+                  style: TextStyle(
+                    color: _statusColor(triage.status),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 10,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            triage.condition,
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w900,
+              color: Color(0xFF1A1C1E),
             ),
           ),
-        if (recommendedAction != null && recommendedAction.isNotEmpty)
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.medical_services_outlined, color: Color(0xFF005EB8)),
-              title: const Text(
-                'Recommended Next Step',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-              subtitle: Text(recommendedAction),
+          const SizedBox(height: 6),
+          Text(
+            triage.description,
+            style: const TextStyle(
+              fontSize: 13,
+              color: Color(0xFF44474E),
+              height: 1.4,
             ),
           ),
-        if (reason != null && reason.isNotEmpty)
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.info_outline, color: Color(0xFF005EB8)),
-              title: const Text(
-                'Why this priority?',
-                style: TextStyle(fontWeight: FontWeight.w600),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: _summaryTile(
+                  icon: Icons.local_fire_department_outlined,
+                  color: statusColor,
+                  label: 'Priority',
+                  value: 'P${triage.priority}',
+                  note: _priorityLabel(triage.priority),
+                ),
               ),
-              subtitle: Text(reason),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _summaryTile(
+                  icon: Icons.event_available_outlined,
+                  color: const Color(0xFF005EB8),
+                  label: 'Updated',
+                  value: completedAt.toLocal().toString().substring(0, 16),
+                  note: triage.status == 'completed'
+                      ? 'This triage is in history now'
+                      : 'Latest lifecycle update',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            triage.status == 'completed'
+                ? 'This triage is complete. Check the Triage History screen for the archived result.'
+                : 'This triage is not active in the live queue right now.',
+            style: const TextStyle(
+              fontSize: 12,
+              color: Color(0xFF5F6368),
+              height: 1.4,
             ),
           ),
-      ],
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const TriageHistoryScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.history_outlined),
+              label: const Text('View Triage History'),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -417,268 +814,22 @@ class _StatusScreenState extends State<StatusScreen> {
         final result = data.triage;
         final analytics = data.analytics;
         final queue = data.queue;
-        final priorityColor = _priorityColor(result.priority);
-        final statusColor = _statusColor(result.status);
 
         return RefreshIndicator(
           onRefresh: () async => _refresh(),
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              // AI Live Forecast Card (The "Wow" Factor)
-              if (result.status == 'waiting' && analytics != null)
-                _buildAIForecast(analytics),
-
-              const SizedBox(height: 12),
-
-              // Priority Hero Card
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: priorityColor.withValues(alpha: 0.08),
-                      blurRadius: 20,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+              if (result.status == 'waiting' || result.status == 'in_progress') ...[
+                _buildQueueHero(
+                  triage: result,
+                  queue: queue,
+                  analytics: analytics,
                 ),
-                clipBehavior: Clip.antiAlias,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Priority accent bar
-                    Container(height: 5, color: priorityColor),
-                    Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'TRIAGE PRIORITY',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 1.5,
-                                      color: Color(0xFF73777F),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Priority ${result.priority}',
-                                    style: TextStyle(
-                                      fontFamily: 'Manrope',
-                                      fontSize: 32,
-                                      fontWeight: FontWeight.w900,
-                                      color: priorityColor,
-                                      letterSpacing: -0.5,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: statusColor.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Text(
-                                  result.status
-                                      .replaceAll('_', ' ')
-                                      .toUpperCase(),
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                    color: statusColor,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            result.condition,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF1A1C1E),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            result.description,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: Color(0xFF44474E),
-                              height: 1.5,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          // Urgency score bar
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text(
-                                    'URGENCY SCORE',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 1.2,
-                                      color: Color(0xFF73777F),
-                                    ),
-                                  ),
-                                  Text(
-                                    '${result.urgencyScore}/100',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: priorityColor,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(4),
-                                child: LinearProgressIndicator(
-                                  value: result.urgencyScore / 100,
-                                  minHeight: 8,
-                                  backgroundColor: const Color(0xFFF2F4F6),
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    priorityColor,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          SizedBox(
-                            width: double.infinity,
-                            child: TextButton.icon(
-                              onPressed: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      PatientTimelineScreen(item: result),
-                                ),
-                              ),
-                              icon: const Icon(
-                                Icons.timeline_outlined,
-                                size: 16,
-                              ),
-                              label: const Text(
-                                'VIEW LIVE CARE TIMELINE',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1.1,
-                                ),
-                              ),
-                              style: TextButton.styleFrom(
-                                foregroundColor: priorityColor,
-                                backgroundColor: priorityColor.withValues(
-                                  alpha: 0.1,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              _buildStatusSnapshot(result, analytics),
-
-              if (queue != null) ...[
-                const SizedBox(height: 16),
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'QUEUE SNAPSHOT',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 1.2,
-                            color: Color(0xFF73777F),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _summaryTile(
-                                icon: Icons.people_outline,
-                                color: const Color(0xFF005EB8),
-                                label: 'Ahead of you',
-                                value: '${queue.aheadOfYou}',
-                                note: 'Patients still waiting to be seen',
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _summaryTile(
-                                icon: Icons.hourglass_bottom,
-                                color: const Color(0xFFF57C00),
-                                label: 'ETA',
-                                value: queue.etaLabel,
-                                note: 'Based on live queue pressure',
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        LinearProgressIndicator(
-                          value: queue.progressPercent.clamp(0, 100) / 100,
-                          minHeight: 10,
-                          backgroundColor: const Color(0xFFF2F4F6),
-                          valueColor: AlwaysStoppedAnimation<Color>(priorityColor),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '${queue.progressPercent}% through the wait lifecycle · Current step: ${queue.currentStep}',
-                          style: const TextStyle(fontSize: 12, color: Color(0xFF44474E)),
-                        ),
-                        const SizedBox(height: 10),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: queue.steps
-                              .map(
-                                (step) => Chip(
-                                  label: Text(step),
-                                  backgroundColor: step == queue.currentStep
-                                      ? priorityColor.withValues(alpha: 0.12)
-                                      : const Color(0xFFF5F7FA),
-                                ),
-                              )
-                              .toList(),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                const SizedBox(height: 12),
+              ] else ...[
+                _buildTerminalHero(result),
+                const SizedBox(height: 12),
               ],
 
               const SizedBox(height: 12),
@@ -696,28 +847,6 @@ class _StatusScreenState extends State<StatusScreen> {
                   ),
                 ),
               const SizedBox(height: 24),
-
-              // Wait time
-              Card(
-                child: ListTile(
-                  leading: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE0F0FF),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.access_time_outlined,
-                      color: Color(0xFF005EB8),
-                    ),
-                  ),
-                  title: const Text(
-                    'Estimated Wait',
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  subtitle: Text(_waitEstimate(result.priority)),
-                ),
-              ),
 
               // Submitted at
               Card(
@@ -799,142 +928,6 @@ class _StatusScreenState extends State<StatusScreen> {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildAIForecast(WaitingAnalytics analytics) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF003366), Color(0xFF005EB8)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF003366).withValues(alpha: 0.2),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'LIVE AI FORECAST',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.5,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.check_circle,
-                      color: Colors.greenAccent,
-                      size: 12,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${(analytics.aiConfidence * 100).toInt()}% SURE',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 8,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Queue Position',
-                      style: TextStyle(color: Colors.white60, fontSize: 12),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '#${analytics.position}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 32,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(width: 1, height: 40, color: Colors.white24),
-              const SizedBox(width: 24),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Est. Wait Time',
-                      style: TextStyle(color: Colors.white60, fontSize: 12),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${analytics.estimatedWaitMins}m',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 32,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.info_outline, color: Colors.white70, size: 16),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    analytics.message,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

@@ -10,12 +10,14 @@ class PatientHomeTab extends StatefulWidget {
   final String name;
   final String email;
   final VoidCallback onStartTriage;
+  final VoidCallback onOpenWaitList;
 
   const PatientHomeTab({
     super.key,
     required this.name,
     required this.email,
     required this.onStartTriage,
+    required this.onOpenWaitList,
   });
 
   @override
@@ -210,9 +212,6 @@ class _PatientHomeTabState extends State<PatientHomeTab> {
       );
     }
 
-    final status = _latestTriage!.status;
-    final color = _getStatusColor(status);
-
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -232,63 +231,58 @@ class _PatientHomeTabState extends State<PatientHomeTab> {
           Row(
             children: [
               const Text(
-                'Current Triage Status',
+                'Live Triage Status',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
               const Spacer(),
-              _statusBadge(status),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE0F0FF),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text(
+                  'SEE WAIT LIST',
+                  style: TextStyle(
+                    color: Color(0xFF005EB8),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 10,
+                  ),
+                ),
+              ),
             ],
+          ),
+          const SizedBox(height: 16),
+          const SizedBox(height: 16),
+          Text(
+            'The live triage position, wait time, and priority now appear in the Wait List tab so you always see the backend state instead of a stale summary here.',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[700],
+              height: 1.4,
+            ),
           ),
           const SizedBox(height: 16),
           Row(
             children: [
-              Container(
-                width: 45,
-                height: 45,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
+              Expanded(
+                child: PremiumButton(
+                  onTap: widget.onOpenWaitList,
+                  label: 'Open Wait List',
+                  color: const Color(0xFF005EB8),
+                  textColor: Colors.white,
                 ),
-                child: Icon(Icons.assignment_ind, color: color),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _latestTriage!.condition,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                      ),
-                    ),
-                    Text(
-                      'Priority ${_latestTriage!.priority} • Triage #${_latestTriage!.id}',
-                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                    ),
-                  ],
+                child: PremiumButton(
+                  onTap: widget.onStartTriage,
+                  label: 'New Triage',
+                  color: const Color(0xFFE0F0FF),
+                  textColor: const Color(0xFF005EB8),
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 16),
-          LinearProgressIndicator(
-            value: status == 'waiting'
-                ? 0.3
-                : (status == 'in_progress' ? 0.7 : 1.0),
-            backgroundColor: Colors.grey[100],
-            color: color,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            _getStatusMessage(status),
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[700],
-              fontStyle: FontStyle.italic,
-            ),
           ),
         ],
       ),
@@ -464,48 +458,4 @@ class _PatientHomeTabState extends State<PatientHomeTab> {
     );
   }
 
-  Color _getStatusColor(String status) {
-    switch (status) {
-      case 'waiting':
-        return const Color(0xFFF57C00);
-      case 'in_progress':
-        return const Color(0xFF005EB8);
-      case 'completed':
-        return const Color(0xFF146C2E);
-      default:
-        return Colors.grey;
-    }
-  }
-
-  String _getStatusMessage(String status) {
-    switch (status) {
-      case 'waiting':
-        return 'Physician has received your data and is reviewing.';
-      case 'in_progress':
-        return 'A nurse is currently preparing your clinical plan.';
-      case 'completed':
-        return 'Session complete. Take-home notes available.';
-      default:
-        return '';
-    }
-  }
-
-  Widget _statusBadge(String status) {
-    final color = _getStatusColor(status);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        status.toUpperCase(),
-        style: TextStyle(
-          color: color,
-          fontWeight: FontWeight.bold,
-          fontSize: 10,
-        ),
-      ),
-    );
-  }
 }
