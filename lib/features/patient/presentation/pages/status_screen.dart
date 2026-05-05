@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'package:flutter_frontend/core/models/api_models.dart';
 import 'package:flutter_frontend/core/services/backend_service.dart';
 import 'package:flutter_frontend/core/services/session_service.dart';
+import 'package:flutter_frontend/core/services/websocket_manager.dart';
 import 'package:flutter_frontend/core/error/api_error_mapper.dart';
 import 'package:flutter_frontend/core/presentation/widgets/state_visuals.dart';
 import 'package:flutter_frontend/features/patient/presentation/pages/triage_history_screen.dart';
@@ -30,11 +33,17 @@ class _StatusScreenState extends State<StatusScreen> {
 
   // Hold the future so we can re-create it when we need to refresh
   late Future<StatusData?> _future;
+  StreamSubscription<TriageItem>? _wsSub;
 
   @override
   void initState() {
     super.initState();
     _future = _loadLatest();
+    _wsSub = WebSocketManager.instance.updates.listen((_) {
+      if (mounted) {
+        _refresh();
+      }
+    });
   }
 
   @override
@@ -46,15 +55,18 @@ class _StatusScreenState extends State<StatusScreen> {
     }
   }
 
+  @override
+  void dispose() {
+    _wsSub?.cancel();
+    super.dispose();
+  }
+
   Future<StatusData?> _loadLatest() async {
     final email = await _sessionService.getEmail();
     if (email == null || email.isEmpty) return null;
 
-    final submissions = await _backend.getPatientSubmissions();
-    if (submissions.isEmpty) return null;
-
-    submissions.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    final latest = submissions.first;
+    final latest = await _backend.getCurrentPatientSubmission();
+    if (latest == null) return null;
 
     WaitingAnalytics? analytics;
     if (latest.status == 'waiting') {
@@ -584,4 +596,3 @@ class _StatusScreenState extends State<StatusScreen> {
     );
   }
 }
-

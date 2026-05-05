@@ -29,7 +29,7 @@ class _TriageHistoryScreenState extends State<TriageHistoryScreen> {
       return <TriageItem>[];
     }
 
-    final list = await _backend.getPatientSubmissions();
+    final list = await _backend.getPatientHistory();
     list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return list;
   }

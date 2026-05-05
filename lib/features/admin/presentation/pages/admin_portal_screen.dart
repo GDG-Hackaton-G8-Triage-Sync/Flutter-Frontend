@@ -1,8 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'package:flutter_frontend/core/models/api_models.dart';
 import 'package:flutter_frontend/core/services/backend_service.dart';
-import 'package:flutter_frontend/core/services/session_service.dart';
+import 'package:flutter_frontend/core/services/websocket_manager.dart';
 import 'package:flutter_frontend/features/auth/presentation/pages/login_screen.dart';
 import 'package:flutter_frontend/features/staff/presentation/pages/command_center_screen.dart';
 
@@ -16,7 +18,6 @@ class AdminPortalScreen extends StatefulWidget {
 class _AdminPortalScreenState extends State<AdminPortalScreen>
     with SingleTickerProviderStateMixin {
   final BackendService _backend = BackendService.instance;
-  final SessionService _session = SessionService();
 
   late TabController _tabController;
 
@@ -31,19 +32,44 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
 
   bool _isLoading = true;
   String? _error;
+  StreamSubscription<Map<String, dynamic>>? _wsEventSub;
+  Timer? _silentRefreshDebounce;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _loadAll();
+
+    _wsEventSub = WebSocketManager.instance.events.listen((event) {
+      if (!mounted) return;
+
+      final type = (event['type'] ?? event['event_type'] ?? '')
+          .toString()
+          .toLowerCase();
+      final shouldRefresh = type.contains('triage') ||
+          type.contains('status') ||
+          type.contains('audit') ||
+          type.contains('critical') ||
+          type.contains('sla');
+      if (!shouldRefresh) return;
+
+      _silentRefreshDebounce?.cancel();
+      _silentRefreshDebounce = Timer(const Duration(milliseconds: 600), () {
+        if (mounted) {
+          _loadAll(silent: true);
+        }
+      });
+    });
   }
 
-  Future<void> _loadAll() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
+  Future<void> _loadAll({bool silent = false}) async {
+    if (!silent) {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+    }
 
     try {
       final results = await Future.wait([
@@ -60,10 +86,13 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
         _allUsers = results[2] as List<AppUser>;
         _auditLogs = results[3] as List<AuditLogEntry>;
         _applySearch();
-        _isLoading = false;
+        if (!silent) {
+          _isLoading = false;
+        }
       });
     } catch (_) {
       if (!mounted) return;
+      if (silent) return;
       setState(() {
         _error = 'Failed to load enterprise dashboard data (HIPAA Timeout).';
         _isLoading = false;
@@ -206,11 +235,14 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
     try {
       final report = await _backend.getReportSummary();
       if (!mounted) return;
-      final total = report['total_submissions'] ?? report['total'] ?? '—';
+      final total = report['total_patients'] ?? report['total'] ?? '—';
       final critical = report['critical_cases'] ?? '—';
+      final waiting = report['waiting_patients'] ?? report['waiting'] ?? '—';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Report ready: $total submissions, $critical critical cases.'),
+          content: Text(
+            'Report ready: $total total patients, $waiting waiting, $critical critical cases.',
+          ),
           duration: const Duration(seconds: 5),
         ),
       );
@@ -361,12 +393,140 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
   }
 
   Future<void> _logout() async {
-    await _session.clear();
+    await _backend.logout();
     if (!mounted) return;
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (_) => const LoginScreen()),
       (_) => false,
+    );
+  }
+
+  @override
+  void dispose() {
+    _silentRefreshDebounce?.cancel();
+    _wsEventSub?.cancel();
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  void _switchToTab(int index) {
+    _tabController.animateTo(index);
+  }
+
+  String _humanizeAuditAction(String action) {
+    final normalized = action.trim().toLowerCase();
+    const map = <String, String>{
+      'user_role_updated': 'User Role Updated',
+      'role_override': 'Role Override',
+      'user_deleted': 'User Deleted',
+      'patient_deleted': 'Patient Deleted',
+      'user_suspended': 'User Suspended',
+      'triage_created': 'Triage Submission Created',
+      'triage_updated': 'Triage Updated',
+      'status_changed': 'Patient Status Changed',
+      'priority_update': 'Triage Priority Updated',
+      'critical_alert': 'Critical Alert Triggered',
+      'login': 'User Logged In',
+      'logout': 'User Logged Out',
+      'report_exported': 'Report Exported',
+    };
+    if (map.containsKey(normalized)) {
+      return map[normalized]!;
+    }
+
+    if (normalized.isEmpty) {
+      return 'System Event';
+    }
+
+    return normalized
+        .split('_')
+        .map((part) => part.isEmpty
+            ? part
+            : '${part[0].toUpperCase()}${part.substring(1)}')
+        .join(' ');
+  }
+
+  String _formatActor(String? actorEmail) {
+    final actor = (actorEmail ?? '').trim();
+    if (actor.isEmpty) {
+      return 'System';
+    }
+    return actor;
+  }
+
+  String _formatAuditTimestamp(DateTime timestamp) {
+    String two(int value) => value.toString().padLeft(2, '0');
+    return '${timestamp.year}-${two(timestamp.month)}-${two(timestamp.day)} '
+        '${two(timestamp.hour)}:${two(timestamp.minute)}';
+  }
+
+  String _buildAuditNarrative(AuditLogEntry log) {
+    final actor = _formatActor(log.actorEmail);
+    final target = (log.targetEmail ?? '').trim();
+    final details = log.details.trim();
+
+    if (target.isNotEmpty && details.isNotEmpty) {
+      return '$actor acted on $target. Details: $details';
+    }
+    if (target.isNotEmpty) {
+      return '$actor acted on $target.';
+    }
+    if (details.isNotEmpty) {
+      return '$actor: $details';
+    }
+    return '$actor triggered this event.';
+  }
+
+  Widget _buildQuickNavigationCard() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFDDE4F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Quick Navigation',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF00478D),
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Use these shortcuts during peak traffic to jump directly to the right panel.',
+            style: TextStyle(fontSize: 12, color: Color(0xFF4A4F57)),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                onPressed: () => _switchToTab(0),
+                icon: const Icon(Icons.dashboard_outlined, size: 18),
+                label: const Text('Operations Dashboard'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () => _switchToTab(1),
+                icon: const Icon(Icons.manage_accounts_outlined, size: 18),
+                label: const Text('User Directory'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () => _switchToTab(2),
+                icon: const Icon(Icons.policy_outlined, size: 18),
+                label: const Text('Audit Trail'),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -448,6 +608,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          _buildQuickNavigationCard(),
           Row(
             children: [
               Expanded(
@@ -756,16 +917,36 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
             separatorBuilder: (_, __) => const Divider(),
             itemBuilder: (context, index) {
               final log = _auditLogs[index];
-              return ListTile(
-                leading: const Icon(Icons.security, color: Color(0xFFBA1A1A)),
-                title: Text(
-                  log.action,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+              return Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFE6ECF5)),
                 ),
-                subtitle: Text('${log.actorEmail} - ${log.details}'),
-                trailing: Text(
-                  log.timestamp.toIso8601String().substring(0, 16).replaceFirst('T', ' '),
-                  style: const TextStyle(fontSize: 12, color: Colors.black54),
+                child: ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFBA1A1A).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.policy_outlined, color: Color(0xFFBA1A1A)),
+                  ),
+                  title: Text(
+                    _humanizeAuditAction(log.action),
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                  subtitle: Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text(
+                      _buildAuditNarrative(log),
+                      style: const TextStyle(height: 1.35),
+                    ),
+                  ),
+                  trailing: Text(
+                    _formatAuditTimestamp(log.timestamp),
+                    style: const TextStyle(fontSize: 12, color: Colors.black54),
+                  ),
                 ),
               );
             },

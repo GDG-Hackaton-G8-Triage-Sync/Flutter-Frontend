@@ -49,18 +49,12 @@ class _PatientHomeTabState extends State<PatientHomeTab> {
 
   Future<void> _loadLatest() async {
     try {
-      final items = await BackendService.instance.getPatientSubmissions();
-      if (items.isNotEmpty) {
-        // Sort by date to get the absolute latest if the backend doesn't
-        items.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-        if (mounted) {
-          setState(() {
-            _latestTriage = items.first;
-            _isLoading = false;
-          });
-        }
-      } else {
-        if (mounted) setState(() => _isLoading = false);
+      final current = await BackendService.instance.getCurrentPatientSubmission();
+      if (mounted) {
+        setState(() {
+          _latestTriage = current;
+          _isLoading = false;
+        });
       }
     } catch (_) {
       if (mounted) setState(() => _isLoading = false);

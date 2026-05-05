@@ -14,20 +14,37 @@ class SessionService {
   static const _consentAcceptedPrefix = 'consent_accepted_';
 
   Future<void> _writeSessionValue(String key, String value) async {
-    await _secureStorage.write(key: key, value: value);
+    try {
+      await _secureStorage.write(key: key, value: value);
+      return;
+    } catch (_) {
+      // Fallback for web/private-mode environments where secure storage can fail.
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(key, value);
+    }
   }
 
   Future<String?> _readSessionValue(String key) async {
-    final secureValue = await _secureStorage.read(key: key);
-    if (secureValue != null && secureValue.isNotEmpty) {
-      return secureValue;
+    try {
+      final secureValue = await _secureStorage.read(key: key);
+      if (secureValue != null && secureValue.isNotEmpty) {
+        return secureValue;
+      }
+    } catch (_) {
+      // If secure storage becomes unreadable (e.g. web key mismatch),
+      // continue with legacy/local fallback rather than breaking requests.
+      try {
+        await _secureStorage.delete(key: key);
+      } catch (_) {}
     }
 
     // Backward-compatibility migration from SharedPreferences.
     final prefs = await SharedPreferences.getInstance();
     final legacyValue = prefs.getString(key);
     if (legacyValue != null && legacyValue.isNotEmpty) {
-      await _secureStorage.write(key: key, value: legacyValue);
+      try {
+        await _secureStorage.write(key: key, value: legacyValue);
+      } catch (_) {}
       await prefs.remove(key);
       return legacyValue;
     }
@@ -106,11 +123,13 @@ class SessionService {
   }
 
   Future<void> clear() async {
-    await _secureStorage.delete(key: _accessTokenKey);
-    await _secureStorage.delete(key: _refreshTokenKey);
-    await _secureStorage.delete(key: _roleKey);
-    await _secureStorage.delete(key: _emailKey);
-    await _secureStorage.delete(key: _nameKey);
+    try {
+      await _secureStorage.delete(key: _accessTokenKey);
+      await _secureStorage.delete(key: _refreshTokenKey);
+      await _secureStorage.delete(key: _roleKey);
+      await _secureStorage.delete(key: _emailKey);
+      await _secureStorage.delete(key: _nameKey);
+    } catch (_) {}
 
     // Cleanup any legacy values from older builds.
     final prefs = await SharedPreferences.getInstance();
@@ -123,13 +142,29 @@ class SessionService {
 
   // --- Biometric Enclave Handling ---
   Future<void> saveBiometricCredentials(String email, String password) async {
-    await _secureStorage.write(key: _bioEmailKey, value: email);
-    await _secureStorage.write(key: _bioPasswordKey, value: password);
+    try {
+      await _secureStorage.write(key: _bioEmailKey, value: email);
+      await _secureStorage.write(key: _bioPasswordKey, value: password);
+    } catch (_) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_bioEmailKey, email);
+      await prefs.setString(_bioPasswordKey, password);
+    }
   }
 
   Future<Map<String, String>?> getBiometricCredentials() async {
-    final email = await _secureStorage.read(key: _bioEmailKey);
-    final password = await _secureStorage.read(key: _bioPasswordKey);
+    String? email;
+    String? password;
+
+    try {
+      email = await _secureStorage.read(key: _bioEmailKey);
+      password = await _secureStorage.read(key: _bioPasswordKey);
+    } catch (_) {
+      final prefs = await SharedPreferences.getInstance();
+      email = prefs.getString(_bioEmailKey);
+      password = prefs.getString(_bioPasswordKey);
+    }
+
     if (email != null && password != null) {
       return {'email': email, 'password': password};
     }

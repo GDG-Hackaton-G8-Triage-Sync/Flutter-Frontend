@@ -2,11 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:dio/dio.dart';
 
 import 'package:flutter_frontend/core/models/api_models.dart';
 import 'package:flutter_frontend/core/services/backend_service.dart';
 import 'package:flutter_frontend/core/services/cache_service.dart';
-import 'package:flutter_frontend/core/services/session_service.dart';
 import 'package:flutter_frontend/core/services/websocket_manager.dart';
 import 'package:flutter_frontend/core/presentation/widgets/state_visuals.dart';
 import 'package:flutter_frontend/features/auth/presentation/pages/login_screen.dart';
@@ -21,7 +21,6 @@ class StaffDashboardScreen extends StatefulWidget {
 
 class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
   final BackendService _backend = BackendService.instance;
-  final SessionService _session = SessionService();
   final TextEditingController _statusFilterController = TextEditingController();
 
   List<TriageItem> _patients = <TriageItem>[];
@@ -29,6 +28,16 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
   String? _error;
   Timer? _poller;
   StreamSubscription<TriageItem>? _wsSub;
+
+  Timer? _debounceTimer;
+  // Dio cancellation token for in-flight patient list requests
+  dynamic _currentCancelToken;
+
+  // Simple in-memory cache for recent queries
+  List<TriageItem>? _cachedItems;
+  DateTime? _cacheAt;
+  String? _lastQueryKey;
+  final int _cacheTtlSeconds = 5;
 
   // Track recently added patients for "Sync" glow effects
   final Set<int> _newPatientIds = <int>{};
@@ -40,13 +49,15 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
   void initState() {
     super.initState();
     _fetchPatients();
-    // Poll every 5 seconds as a fallback
+    // Poll every 10 seconds as a fallback to reduce load
     _poller = Timer.periodic(
-      const Duration(seconds: 5),
+      const Duration(seconds: 10),
       (_) => _fetchPatients(silent: true),
     );
-    // Real-time WebSocket updates
-    WebSocketManager.instance.connect();
+
+    // Debounce rapid filter edits
+    _statusFilterController.addListener(_onFilterChanged);
+
     _wsSub = WebSocketManager.instance.updates.listen((item) {
       if (mounted) {
         setState(() {
@@ -90,16 +101,42 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
         });
       }
     }
+    final queryKey = '${_selectedPriority ?? 'all'}|${_statusFilterController.text.trim()}';
+
+    // Use short-lived cache when available
+    if (_cachedItems != null && _cacheAt != null && _lastQueryKey == queryKey) {
+      final age = DateTime.now().difference(_cacheAt!);
+      if (age.inSeconds <= _cacheTtlSeconds) {
+        if (mounted) {
+          setState(() {
+            _patients = _cachedItems!;
+            _isLoading = false;
+          });
+        }
+        return;
+      }
+    }
+
+    // Cancel any previous request
+    try {
+      _currentCancelToken?.cancel('superseded');
+    } catch (_) {}
+
+    _currentCancelToken = CancelToken();
 
     try {
-      final items = await _backend.getStaffPatients(
+      final items = await _backend
+          .getStaffPatients(
         priority: _selectedPriority,
         status: _statusFilterController.text.trim().isEmpty
             ? null
             : _statusFilterController.text.trim(),
-      ).timeout(
+        cancelToken: _currentCancelToken,
+      )
+          .timeout(
         const Duration(seconds: 12),
-        onTimeout: () => throw TimeoutException('Staff patient fetch timed out'),
+        onTimeout: () =>
+            throw TimeoutException('Staff patient fetch timed out'),
       );
 
       try {
@@ -138,8 +175,22 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
         _isLoading = false;
       });
 
-      // Fire-and-forget: cache write must NOT block or propagate errors to UI
+      // Update short-lived in-memory cache and persistent cache
+      _cachedItems = items;
+      _cacheAt = DateTime.now();
+      _lastQueryKey = queryKey;
       CacheService.instance.cachePatients(items).catchError((_) {});
+    } on DioException catch (e) {
+      // If the request was cancelled, just return silently.
+      if (e.type == DioExceptionType.cancel) {
+        return;
+      }
+      debugPrint('Dio error fetching patients: ${e.message}');
+      if (!mounted) return;
+      setState(() {
+        _error = 'Failed to load queue. Pull down to retry.';
+        _isLoading = false;
+      });
     } catch (e) {
       debugPrint('Error fetching patients: $e');
       if (!mounted) return;
@@ -166,8 +217,16 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
     }
   }
 
+  void _onFilterChanged() {
+    // Debounce rapid changes (typing, quick filter taps)
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 300), () {
+      if (mounted) _fetchPatients();
+    });
+  }
+
   Future<void> _logout() async {
-    await _session.clear();
+    await BackendService.instance.logout();
     if (!mounted) return;
     Navigator.pushAndRemoveUntil(
       context,
@@ -180,7 +239,12 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
   void dispose() {
     _poller?.cancel();
     _wsSub?.cancel();
+    _statusFilterController.removeListener(_onFilterChanged);
     _statusFilterController.dispose();
+    _debounceTimer?.cancel();
+    try {
+      _currentCancelToken?.cancel('disposed');
+    } catch (_) {}
     super.dispose();
   }
 
@@ -204,78 +268,148 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final waiting = _patients.where((p) => p.status == 'waiting').length;
-    final inProgress = _patients.where((p) => p.status == 'in_progress').length;
-    final critical = _patients.where((p) => p.priority == 1).length;
+    final activePatients = _patients
+        .where((p) => p.status != 'completed')
+        .toList();
+    final waiting = activePatients.where((p) => p.status == 'waiting').length;
+    final inProgress = activePatients
+        .where((p) => p.status == 'in_progress')
+        .length;
+    final critical = activePatients.where((p) => p.priority == 1).length;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF7F9FB),
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: false,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Patient Queue Management',
-              style: TextStyle(
-                fontFamily: 'Manrope',
-                fontSize: 10,
-                fontWeight: FontWeight.w900,
-                color: Color(0xFF73777F),
-                letterSpacing: 1.5,
+    final completedPatients = _patients
+        .where((p) => p.status == 'completed')
+        .toList();
+
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF7F9FB),
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          backgroundColor: Colors.white,
+          elevation: 0,
+          centerTitle: false,
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Patient Queue Management',
+                style: TextStyle(
+                  fontFamily: 'Manrope',
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                  color: Color(0xFF73777F),
+                  letterSpacing: 1.5,
+                ),
               ),
+              const Text(
+                'Unit D-4 Operations',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                  color: Color(0xFF003366),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            IconButton(
+              onPressed: () => _fetchPatients(),
+              icon: const Icon(Icons.refresh_rounded, color: Color(0xFF005EB8)),
             ),
-            const Text(
-              'Unit D-4 Operations',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-                color: Color(0xFF003366),
+            IconButton(
+              onPressed: _logout,
+              icon: const Icon(Icons.logout_rounded, color: Color(0xFF005EB8)),
+            ),
+            const SizedBox(width: 8),
+          ],
+          bottom: TabBar(
+            indicatorColor: const Color(0xFF005EB8),
+            labelColor: const Color(0xFF005EB8),
+            unselectedLabelColor: Colors.grey[600],
+            tabs: const [
+              Tab(text: 'Queue'),
+              Tab(text: 'Completed'),
+            ],
+          ),
+        ),
+        body: Column(
+          children: [
+            _buildQuickStatsStrip(waiting, inProgress, critical),
+            _buildAIPredictiveBanner(waiting),
+            _buildNavigationGuide(),
+            _buildFilterBar(),
+            Expanded(
+              child: TabBarView(
+                children: [
+                  // Queue tab: active patients
+                  _isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : _error != null
+                      ? _buildErrorView()
+                      : (activePatients.isEmpty)
+                      ? _buildEmptyView()
+                      : RefreshIndicator(
+                          onRefresh: _fetchPatients,
+                          child: ListView.builder(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 8,
+                            ),
+                            itemCount: activePatients.length,
+                            itemBuilder: (context, index) =>
+                                _buildPatientRow(activePatients[index]),
+                          ),
+                        ),
+
+                  // Completed tab: completed patients only
+                  _isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : _error != null
+                      ? _buildErrorView()
+                      : (completedPatients.isEmpty)
+                      ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.check_circle_outline,
+                                size: 48,
+                                color: Colors.green,
+                              ),
+                              const SizedBox(height: 12),
+                              const Text(
+                                'No completed cases yet.',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: _fetchPatients,
+                                child: const Text('REFRESH'),
+                              ),
+                            ],
+                          ),
+                        )
+                      : RefreshIndicator(
+                          onRefresh: _fetchPatients,
+                          child: ListView.builder(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 8,
+                            ),
+                            itemCount: completedPatients.length,
+                            itemBuilder: (context, index) =>
+                                _buildPatientRow(completedPatients[index]),
+                          ),
+                        ),
+                ],
               ),
             ),
           ],
         ),
-        actions: [
-          IconButton(
-            onPressed: () => _fetchPatients(),
-            icon: const Icon(Icons.refresh_rounded, color: Color(0xFF005EB8)),
-          ),
-          IconButton(
-            onPressed: _logout,
-            icon: const Icon(Icons.logout_rounded, color: Color(0xFF005EB8)),
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: Column(
-        children: [
-          _buildQuickStatsStrip(waiting, inProgress, critical),
-          _buildAIPredictiveBanner(waiting),
-          _buildFilterBar(),
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _error != null
-                ? _buildErrorView()
-                : _patients.isEmpty
-                ? _buildEmptyView()
-                : RefreshIndicator(
-                    onRefresh: _fetchPatients,
-                    child: ListView.builder(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 8,
-                      ),
-                      itemCount: _patients.length,
-                      itemBuilder: (context, index) =>
-                          _buildPatientRow(_patients[index]),
-                    ),
-                  ),
-          ),
-        ],
       ),
     );
   }
@@ -439,6 +573,68 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
     );
   }
 
+  Widget _buildNavigationGuide() {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFDDE4F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Fast Actions',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w900,
+              color: Color(0xFF003366),
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Tap a patient card to open full details. Use filters to isolate critical cases quickly.',
+            style: TextStyle(fontSize: 12, color: Color(0xFF4A4F57)),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                onPressed: () => _fetchPatients(),
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text('Refresh Queue'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () {
+                  setState(() => _selectedPriority = 1);
+                  _fetchPatients();
+                },
+                icon: const Icon(
+                  Icons.local_fire_department_outlined,
+                  size: 18,
+                ),
+                label: const Text('Critical Only'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () {
+                  setState(() => _selectedPriority = null);
+                  _fetchPatients();
+                },
+                icon: const Icon(Icons.layers_outlined, size: 18),
+                label: const Text('Show All'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPatientRow(TriageItem patient) {
     final color = _priorityColor(patient.priority);
     final waitingTime = DateTime.now().difference(patient.createdAt).inMinutes;
@@ -490,7 +686,8 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                         Row(
                           children: [
                             Text(
-                              patient.patientName ?? patient.condition.toUpperCase(),
+                              patient.patientName ??
+                                  patient.condition.toUpperCase(),
                               style: const TextStyle(
                                 fontWeight: FontWeight.w900,
                                 fontSize: 13,
@@ -688,7 +885,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
       selected: isSelected,
       onSelected: (_) {
         setState(() => _selectedPriority = priority);
-        _fetchPatients();
+        _onFilterChanged();
       },
       backgroundColor: Colors.white,
       selectedColor: const Color(0xFF005EB8),

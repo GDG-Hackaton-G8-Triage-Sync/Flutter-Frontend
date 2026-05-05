@@ -1,5 +1,8 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 import 'package:flutter_frontend/core/services/backend_service.dart';
@@ -23,6 +26,9 @@ class _SymptomInputScreenState extends State<SymptomInputScreen> {
   final BackendService _backend = BackendService.instance;
 
   XFile? _attachedImage;
+  Uint8List? _attachedImageBytes;
+  String? _attachedImageName;
+  PlatformFile? _attachedPdf;
   bool _isSubmitting = false;
 
   late stt.SpeechToText _speech;
@@ -85,14 +91,38 @@ class _SymptomInputScreenState extends State<SymptomInputScreen> {
     );
     if (file == null) return;
 
+    final bytes = await file.readAsBytes();
+
     setState(() {
       _attachedImage = file;
+      _attachedImageBytes = bytes;
+      _attachedImageName = file.name;
+      _attachedPdf = null;
+    });
+  }
+
+  Future<void> _pickPdf() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: <String>['pdf'],
+      withData: true,
+    );
+
+    if (result == null || result.files.isEmpty) return;
+    final file = result.files.first;
+    if (file.bytes == null) return;
+
+    setState(() {
+      _attachedPdf = file;
+      _attachedImage = null;
+      _attachedImageBytes = null;
+      _attachedImageName = null;
     });
   }
 
   Future<void> _submit() async {
-    final description = _controller.text.trim();
-    if (description.isEmpty) {
+    final prompt = _controller.text.trim();
+    if (prompt.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please describe your symptoms before submitting.'),
@@ -101,7 +131,7 @@ class _SymptomInputScreenState extends State<SymptomInputScreen> {
       return;
     }
 
-    if (description.length > _maxChars) {
+    if (prompt.length > _maxChars) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Description cannot exceed 500 characters.'),
@@ -115,15 +145,29 @@ class _SymptomInputScreenState extends State<SymptomInputScreen> {
     });
 
     try {
-      await _backend.submitSymptoms(
-        description: description,
-        photoName: _attachedImage?.name,
-      );
+      if (_attachedPdf != null) {
+        await _backend.submitSymptoms(
+          prompt: prompt,
+          fileBytes: _attachedPdf!.bytes,
+          fileName: _attachedPdf!.name,
+        );
+      } else {
+        await _backend.submitSymptoms(
+          prompt: prompt,
+          imageBytes: _attachedImageBytes,
+          imageName: _attachedImageName,
+        );
+      }
 
       if (!mounted) return;
 
       _controller.clear();
-      setState(() => _attachedImage = null);
+      setState(() {
+        _attachedImage = null;
+        _attachedImageBytes = null;
+        _attachedImageName = null;
+        _attachedPdf = null;
+      });
 
       // Track whether the user already triggered the callback from SuccessScreen
       bool callbackFired = false;
@@ -288,6 +332,12 @@ class _SymptomInputScreenState extends State<SymptomInputScreen> {
                           icon: const Icon(Icons.attach_file),
                           label: const Text('Attach Photo'),
                         ),
+                        const SizedBox(width: 8),
+                        TextButton.icon(
+                          onPressed: _pickPdf,
+                          icon: const Icon(Icons.picture_as_pdf_outlined),
+                          label: const Text('Attach PDF'),
+                        ),
                       ],
                     ),
                   ],
@@ -317,8 +367,42 @@ class _SymptomInputScreenState extends State<SymptomInputScreen> {
                           ),
                         ),
                         IconButton(
-                          onPressed: () =>
-                              setState(() => _attachedImage = null),
+                          onPressed: () => setState(() {
+                            _attachedImage = null;
+                            _attachedImageBytes = null;
+                            _attachedImageName = null;
+                          }),
+                          icon: const Icon(Icons.close),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (_attachedPdf != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE0F0FF),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.picture_as_pdf_outlined,
+                            color: Color(0xFFBA1A1A),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            _attachedPdf!.name,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => setState(() => _attachedPdf = null),
                           icon: const Icon(Icons.close),
                         ),
                       ],

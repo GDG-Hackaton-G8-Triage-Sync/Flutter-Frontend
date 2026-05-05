@@ -6,13 +6,14 @@
 // tree, read text, and verify that the values of widget properties are correct.
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:flutter_frontend/app.dart';
 
 void main() {
   testWidgets('App loads smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const TriageSyncApp());
+    await tester.pumpWidget(const ProviderScope(child: TriageSyncApp()));
     await tester.pump(const Duration(milliseconds: 2000));
 
     // Verify app is still mounted after splash/session check.

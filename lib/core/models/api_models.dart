@@ -1,3 +1,5 @@
+import 'package:flutter_frontend/core/config/api_config.dart';
+
 int _readInt(Map<String, dynamic> json, List<String> keys, [int fallback = 0]) {
   for (final key in keys) {
     final value = json[key];
@@ -39,6 +41,19 @@ String _readString(
     if (text.isNotEmpty) return text;
   }
   return fallback;
+}
+
+String? _resolveMediaUrl(dynamic value) {
+  if (value == null) return null;
+  final raw = value.toString().trim();
+  if (raw.isEmpty) return null;
+  if (raw.startsWith('http://') || raw.startsWith('https://') || raw.startsWith('data:') || raw.startsWith('blob:')) {
+    return raw;
+  }
+  if (raw.startsWith('/')) {
+    return '${ApiConfig.baseUrl}$raw';
+  }
+  return '${ApiConfig.baseUrl}/$raw';
 }
 
 String? _readNullableString(Map<String, dynamic> json, List<String> keys) {
@@ -152,9 +167,21 @@ class TriageItem {
     required this.condition,
     required this.status,
     required this.createdAt,
+    this.metadata = const <String, dynamic>{},
+    this.patientId,
+    this.patient,
+    this.patientAge,
+    this.patientGender,
+    this.patientBloodType,
+    this.patientLifestyleHabits,
+    this.patientMedications,
+    this.patientAllergies,
     this.patientName,
     this.photoName,
     this.verifiedBy,
+    this.verifiedByName,
+    this.assignedStaffName,
+    this.assignedTo,
     this.verifiedAt,
     this.gender,
     this.age,
@@ -183,9 +210,21 @@ class TriageItem {
   final String condition;
   final String status;
   final DateTime createdAt;
+  final Map<String, dynamic> metadata;
+  final int? patientId;
+  final dynamic patient;
+  final int? patientAge;
+  final String? patientGender;
+  final String? patientBloodType;
+  final String? patientLifestyleHabits;
+  final String? patientMedications;
+  final String? patientAllergies;
   final String? patientName;
   final String? photoName;
   final String? verifiedBy;
+  final String? verifiedByName;
+  final String? assignedStaffName;
+  final String? assignedTo;
   final DateTime? verifiedAt;
   final String? gender;
   final int? age;
@@ -224,12 +263,41 @@ class TriageItem {
       createdAt:
           _readDateTime(json, <String>['created_at', 'timestamp']) ??
           DateTime.now(),
+      metadata: json['metadata'] is Map<String, dynamic>
+          ? json['metadata'] as Map<String, dynamic>
+          : const <String, dynamic>{},
+      patientId: json.containsKey('patient')
+          ? _readInt(json, <String>['patient'])
+          : (json.containsKey('patient_id')
+              ? _readInt(json, <String>['patient_id'])
+              : null),
+      patient: json['patient'],
+      patientAge: json.containsKey('patient_age')
+          ? _readInt(json, <String>['patient_age'])
+          : null,
+      patientGender: _readNullableString(json, <String>['patient_gender']),
+      patientBloodType: _readNullableString(json, <String>['patient_blood_type']),
+      patientLifestyleHabits: _readNullableString(
+        json,
+        <String>['patient_lifestyle_habits'],
+      ),
+      patientMedications: _readNullableString(
+        json,
+        <String>['patient_medications'],
+      ),
+      patientAllergies: _readNullableString(json, <String>['patient_allergies']),
       patientName: _readNullableString(json, <String>['patient_name', 'name', 'username', 'patient']),
       photoName: _readNullableString(json, <String>['photo_name']),
       verifiedBy: _readNullableString(
         json,
         <String>['verified_by', 'verified_by_user'],
       ),
+      verifiedByName: _readNullableString(json, <String>['verified_by_name']),
+      assignedStaffName: _readNullableString(
+        json,
+        <String>['assigned_staff_name'],
+      ),
+      assignedTo: _readNullableString(json, <String>['assigned_to']),
       verifiedAt: _readDateTime(json, <String>['verified_at']),
       gender: _readNullableString(json, <String>['gender']),
       age: json.containsKey('age') ? _readInt(json, <String>['age']) : null,
@@ -271,6 +339,9 @@ class AdminOverview {
     required this.completed,
     required this.criticalCases,
     this.slaBreaches = 0,
+    this.slaWarningCount = 0,
+    this.averageWaitTimeMinutes = 0.0,
+    this.maxWaitTimeMinutes = 0.0,
     this.backlogRisk = 'low',
   });
 
@@ -280,6 +351,9 @@ class AdminOverview {
   final int completed;
   final int criticalCases;
   final int slaBreaches;
+  final int slaWarningCount;
+  final double averageWaitTimeMinutes;
+  final double maxWaitTimeMinutes;
   final String backlogRisk;
 
   factory AdminOverview.fromJson(Map<String, dynamic> json) {
@@ -293,6 +367,12 @@ class AdminOverview {
       completed: _readInt(json, <String>['completed', 'completed_today']),
       criticalCases: _readInt(json, <String>['critical_cases']),
       slaBreaches: _readInt(json, <String>['sla_breaches', 'breaches']),
+      slaWarningCount: _readInt(json, <String>['sla_warning_count']),
+      averageWaitTimeMinutes: _readDouble(
+        json,
+        <String>['average_wait_time_minutes'],
+      ),
+      maxWaitTimeMinutes: _readDouble(json, <String>['max_wait_time_minutes']),
       backlogRisk: _readString(json, <String>['backlog_risk', 'risk'], 'low'),
     );
   }
@@ -430,6 +510,64 @@ class AppUser {
   }
 }
 
+class PatientProfile {
+  PatientProfile({
+    required this.name,
+    required this.email,
+    required this.role,
+    this.age,
+    this.gender,
+    this.bloodType,
+    this.healthHistory,
+    this.allergies,
+    this.medications,
+    this.lifestyleHabits,
+    this.profilePhotoName,
+    this.profilePhotoUrl,
+  });
+
+  final String name;
+  final String email;
+  final String role;
+  final int? age;
+  final String? gender;
+  final String? bloodType;
+  final String? healthHistory;
+  final String? allergies;
+  final String? medications;
+  final String? lifestyleHabits;
+  final String? profilePhotoName;
+  final String? profilePhotoUrl;
+
+  factory PatientProfile.fromJson(Map<String, dynamic> json) {
+    return PatientProfile(
+      name: _readString(json, <String>['name', 'username']),
+      email: _readString(json, <String>['email']),
+      role: _readString(json, <String>['role'], 'patient'),
+      age: json.containsKey('age') ? _readInt(json, <String>['age']) : null,
+      gender: _readNullableString(json, <String>['gender']),
+      bloodType: _readNullableString(json, <String>['blood_type']),
+      healthHistory: _readNullableString(json, <String>['health_history']),
+      allergies: _readNullableString(json, <String>['allergies']),
+      medications: _readNullableString(
+        json,
+        <String>['medications', 'current_medications'],
+      ),
+      lifestyleHabits: _readNullableString(
+        json,
+        <String>['lifestyle_habits', 'bad_habits'],
+      ),
+      profilePhotoName: _readNullableString(
+        json,
+        <String>['profile_photo_name', 'profile_photo'],
+      ),
+      profilePhotoUrl: _resolveMediaUrl(
+        json['profile_photo_url'] ?? json['profile_photo'],
+      ),
+    );
+  }
+}
+
 class AppNotification {
   AppNotification({
     required this.id,
@@ -453,18 +591,22 @@ class AppNotification {
 
   factory AppNotification.fromJson(Map<String, dynamic> json) {
     final metadata = json['metadata'];
+    final readAt = _readDateTime(json, <String>['read_at']);
+    final isReadFlag = json['is_read'] == true;
+    final derivedIsRead = readAt != null || isReadFlag;
+
     return AppNotification(
       id: _readInt(json, <String>['id']),
       type: _readString(json, <String>['notification_type', 'type']),
       title: _readString(json, <String>['title'], 'Notification'),
       message: _readString(json, <String>['message']),
-      isRead: json['is_read'] == true,
+      isRead: derivedIsRead,
       createdAt:
           _readDateTime(json, <String>['created_at']) ?? DateTime.now(),
       metadata: metadata is Map<String, dynamic>
           ? metadata
           : const <String, dynamic>{},
-      readAt: _readDateTime(json, <String>['read_at']),
+      readAt: readAt,
     );
   }
 }
