@@ -21,6 +21,7 @@ class WebSocketManager {
   StreamController<TriageItem>? _controller;
   StreamController<Map<String, dynamic>>? _eventController;
   bool _intentionallyClosed = false;
+  bool _authFailureBlocked = false;
   bool _isConnecting = false;
   Timer? _reconnectTimer;
   Timer? _heartbeatTimer;
@@ -39,13 +40,14 @@ class WebSocketManager {
 
   /// Connect to the WebSocket server. Safe to call multiple times.
   void connect() {
+    _authFailureBlocked = false;
     if (_channel != null || _isConnecting) return;
     _intentionallyClosed = false;
     _doConnect();
   }
 
   Future<void> _doConnect() async {
-    if (_isConnecting || _channel != null) {
+    if (_isConnecting || _channel != null || _authFailureBlocked) {
       return;
     }
 
@@ -158,6 +160,12 @@ class WebSocketManager {
     _stopHeartbeat();
     _channel = null;
     _isConnecting = false;
+    if (_isAuthFailure(error)) {
+      _authFailureBlocked = true;
+      debugPrint('WebSocket auth failure detected; reconnect disabled until login.');
+      disconnect();
+      return;
+    }
     if (!_intentionallyClosed) {
       _scheduleReconnect();
     }
@@ -173,10 +181,13 @@ class WebSocketManager {
   }
 
   void _scheduleReconnect() {
+    if (_authFailureBlocked) {
+      return;
+    }
     _stopHeartbeat();
     _reconnectTimer?.cancel();
     _reconnectTimer = Timer(_reconnectDelay, () {
-      if (!_intentionallyClosed) {
+      if (!_intentionallyClosed && !_authFailureBlocked) {
         _doConnect();
       }
     });
@@ -206,6 +217,17 @@ class WebSocketManager {
   void _stopHeartbeat() {
     _heartbeatTimer?.cancel();
     _heartbeatTimer = null;
+  }
+
+  bool _isAuthFailure(Object error) {
+    final text = error.toString().toLowerCase();
+    return text.contains('4001') ||
+        text.contains('401') ||
+        text.contains('unauthorized') ||
+        text.contains('token expired') ||
+        text.contains('invalid token') ||
+        text.contains('authentication failed') ||
+        text.contains('reject');
   }
 
   /// Dispose the manager (close stream controller). Call on app shutdown.

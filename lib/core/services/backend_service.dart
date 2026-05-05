@@ -6,6 +6,7 @@ import 'package:flutter_frontend/core/config/api_config.dart';
 import 'package:flutter_frontend/core/constants/api_endpoints.dart';
 import 'package:flutter_frontend/core/models/api_models.dart';
 import 'package:flutter_frontend/core/network/interceptors/interceptor_setup.dart';
+import 'package:flutter_frontend/core/network/interceptors/auth_interceptor.dart';
 import 'package:flutter_frontend/core/services/session_service.dart';
 import 'package:flutter_frontend/core/services/cache_service.dart';
 import 'package:flutter_frontend/core/services/websocket_manager.dart';
@@ -131,26 +132,25 @@ class BackendService {
     String? fileName,
   }) async {
     final hasAttachments = imageBytes != null || fileBytes != null;
+    final sharedFields = <String, dynamic>{
+      'prompt': prompt,
+      'symptoms': prompt,
+      if (age != null) 'age': age,
+      if (gender != null) 'gender': gender,
+      if (bloodType != null) 'blood_type': bloodType,
+    };
 
     if (!hasAttachments) {
       final response = await _dio.post<Map<String, dynamic>>(
         ApiEndpoints.triageAi,
-        data: <String, dynamic>{
-          'prompt': prompt,
-          if (age != null) 'age': age,
-          if (gender != null) 'gender': gender,
-          if (bloodType != null) 'blood_type': bloodType,
-        },
+        data: sharedFields,
       );
 
       return TriageItem.fromJson(response.data ?? <String, dynamic>{});
     }
 
     final formData = FormData.fromMap(<String, dynamic>{
-      'prompt': prompt,
-      if (age != null) 'age': age,
-      if (gender != null) 'gender': gender,
-      if (bloodType != null) 'blood_type': bloodType,
+      ...sharedFields,
       if (imageBytes != null)
         'image': MultipartFile.fromBytes(
           imageBytes,
@@ -182,7 +182,7 @@ class BackendService {
     String? bloodType,
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
-      ApiEndpoints.triageAi,
+      ApiEndpoints.triageEvaluate,
       data: <String, dynamic>{
         'symptoms': symptoms,
         if (age != null) 'age': age,
@@ -217,6 +217,7 @@ class BackendService {
   Future<List<TriageItem>> getStaffPatients({
     int? priority,
     String? status,
+    CancelToken? cancelToken,
   }) async {
     try {
       final response = await _dio.get<dynamic>(
@@ -225,6 +226,7 @@ class BackendService {
           if (priority != null) 'priority': priority,
           if (status != null && status.isNotEmpty) 'status': status,
         },
+        cancelToken: cancelToken,
       );
 
       final data = _extractList(response.data);
@@ -353,6 +355,7 @@ class BackendService {
     String? lifestyleHabits,
     Uint8List? profilePhotoBytes,
     String? profilePhotoName,
+    bool removeProfilePhoto = false,
   }) async {
     final formData = FormData.fromMap(<String, dynamic>{
       'name': name,
@@ -362,10 +365,9 @@ class BackendService {
       if (bloodType != null) 'blood_type': bloodType,
       if (healthHistory != null) 'health_history': healthHistory,
       if (allergies != null) 'allergies': allergies,
-      if (medications != null) 'medications': medications,
       if (medications != null) 'current_medications': medications,
-      if (lifestyleHabits != null) 'lifestyle_habits': lifestyleHabits,
       if (lifestyleHabits != null) 'bad_habits': lifestyleHabits,
+      if (profilePhotoBytes == null && removeProfilePhoto) 'remove_profile_photo': true,
       if (profilePhotoBytes != null)
         'profile_photo': MultipartFile.fromBytes(
           profilePhotoBytes,
@@ -415,9 +417,16 @@ class BackendService {
   Future<void> logout() async {
     try {
       final refresh = await _sessionService.getRefreshToken();
+      if (refresh == null || refresh.isEmpty) {
+        WebSocketManager.instance.disconnect();
+        await _sessionService.clear();
+        return;
+      }
+
       await _dio.post<dynamic>(
         ApiEndpoints.authLogout,
-        data: <String, dynamic>{'refresh': refresh ?? ''},
+        data: <String, dynamic>{'refresh': refresh},
+        options: Options(extra: <String, dynamic>{AuthInterceptor.skipAuthKey: true}),
       );
     } catch (_) {
       // ignore network errors during logout

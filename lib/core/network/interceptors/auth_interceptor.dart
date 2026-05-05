@@ -59,9 +59,10 @@ class AuthInterceptor extends QueuedInterceptor {
     final request = err.requestOptions;
 
     final isRefreshCall = request.path.contains(ApiEndpoints.authRefresh);
+    final isLogoutCall = request.path.contains(ApiEndpoints.authLogout);
     final alreadyRetried = request.extra[retryKey] == true;
 
-    if (statusCode == 401 && !isRefreshCall && !alreadyRetried) {
+    if (statusCode == 401 && !isRefreshCall && !isLogoutCall && !alreadyRetried) {
       String? refreshToken;
       try {
         refreshToken = await _sessionService.getRefreshToken();
