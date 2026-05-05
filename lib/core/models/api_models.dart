@@ -637,12 +637,29 @@ class WaitingAnalytics {
   });
 
   factory WaitingAnalytics.fromJson(Map<String, dynamic> json) {
+    final payload = json['data'] is Map<String, dynamic>
+        ? json['data'] as Map<String, dynamic>
+        : json;
+
     return WaitingAnalytics(
-      position: _readInt(json, <String>['position']),
-      totalWaiting: _readInt(json, <String>['total_waiting']),
-      estimatedWaitMins: _readInt(json, <String>['estimated_wait_mins']),
-      aiConfidence: _readDouble(json, <String>['ai_confidence']),
-      message: _readString(json, <String>['message']),
+      position: _readInt(payload, <String>['position', 'queue_position']),
+      totalWaiting: _readInt(
+        payload,
+        <String>['total_waiting', 'patients_ahead', 'queue_size'],
+      ),
+      estimatedWaitMins: _readInt(
+        payload,
+        <String>['estimated_wait_mins', 'estimated_wait_minutes'],
+      ),
+      aiConfidence: _readDouble(
+        payload,
+        <String>['ai_confidence', 'confidence'],
+      ),
+      message: _readString(
+        payload,
+        <String>['message', 'detail'],
+        'Live analytics connected.',
+      ),
     );
   }
 }

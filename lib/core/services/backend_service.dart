@@ -516,15 +516,7 @@ class BackendService {
       );
 
       final data = response.data ?? <String, dynamic>{};
-
-      return WaitingAnalytics(
-        position: (data['queue_position'] as num?)?.toInt() ?? 1,
-        totalWaiting: (data['patients_ahead'] as num?)?.toInt() ?? 1,
-        estimatedWaitMins:
-            (data['estimated_wait_minutes'] as num?)?.toInt() ?? 15,
-        aiConfidence: (data['ai_confidence'] as num?)?.toDouble() ?? 0.0,
-        message: 'Live analytics connected.',
-      );
+      return WaitingAnalytics.fromJson(data);
     } on DioException catch (_) {
       // Backend does not expose per-triage waiting analytics in this API.
       // Return a conservative fallback so UI remains stable.
