@@ -29,6 +29,18 @@ double _readDouble(
   return fallback;
 }
 
+double? _readNullableDouble(Map<String, dynamic> json, List<String> keys) {
+  for (final key in keys) {
+    final value = json[key];
+    if (value is num) return value.toDouble();
+    if (value is String) {
+      final parsed = double.tryParse(value);
+      if (parsed != null) return parsed;
+    }
+  }
+  return null;
+}
+
 String _readString(
   Map<String, dynamic> json,
   List<String> keys, [
@@ -310,9 +322,7 @@ class TriageItem {
       ),
       badHabits: _readNullableString(json, <String>['bad_habits']),
       reasoning: _readNullableString(json, <String>['reasoning', 'reason']),
-      confidence: json.containsKey('confidence')
-          ? _readDouble(json, <String>['confidence'])
-          : null,
+        confidence: _readNullableDouble(json, <String>['confidence']),
       vitals: vitals is Map<String, dynamic> ? Vitals.fromJson(vitals) : null,
       startedAt: _readDateTime(json, <String>['started_at']),
       completedAt: _readDateTime(
