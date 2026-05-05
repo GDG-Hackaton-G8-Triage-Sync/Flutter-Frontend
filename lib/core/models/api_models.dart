@@ -664,6 +664,70 @@ class WaitingAnalytics {
   }
 }
 
+class PatientQueueSnapshot {
+  PatientQueueSnapshot({
+    required this.position,
+    required this.aheadOfYou,
+    required this.behindYou,
+    required this.progressPercent,
+    required this.currentStep,
+    required this.steps,
+    required this.etaLabel,
+    required this.priorityLabel,
+    required this.status,
+    required this.slaStatus,
+  });
+
+  final int position;
+  final int aheadOfYou;
+  final int behindYou;
+  final int progressPercent;
+  final String currentStep;
+  final List<String> steps;
+  final String etaLabel;
+  final String priorityLabel;
+  final String status;
+  final String slaStatus;
+
+  factory PatientQueueSnapshot.fromJson(Map<String, dynamic> json) {
+    final payload = json['data'] is Map<String, dynamic>
+        ? json['data'] as Map<String, dynamic>
+        : json;
+
+    final stepList = payload['steps'];
+    return PatientQueueSnapshot(
+      position: _readInt(payload, <String>['position', 'queue_position']),
+      aheadOfYou: _readInt(payload, <String>['ahead_of_you', 'patients_ahead']),
+      behindYou: _readInt(payload, <String>['behind_you', 'patients_behind']),
+      progressPercent: _readInt(payload, <String>['progress_percent']),
+      currentStep: _readString(
+        payload,
+        <String>['current_step', 'step'],
+        'Waiting',
+      ),
+      steps: stepList is List
+          ? stepList.map((e) => e.toString()).toList()
+          : <String>[],
+      etaLabel: _readString(
+        payload,
+        <String>['estimated_wait_range', 'eta_label', 'eta'],
+        'TBD',
+      ),
+      priorityLabel: _readString(
+        payload,
+        <String>['priority_label', 'priority_name'],
+        'Routine',
+      ),
+      status: _readString(payload, <String>['status'], 'waiting'),
+      slaStatus: _readString(
+        payload,
+        <String>['sla_status', 'sla'],
+        'normal',
+      ),
+    );
+  }
+}
+
 class AuditLogEntry {
   AuditLogEntry({
     required this.id,

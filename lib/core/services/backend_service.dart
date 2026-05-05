@@ -480,6 +480,25 @@ class BackendService {
     return null;
   }
 
+  Future<PatientQueueSnapshot?> getPatientQueue() async {
+    try {
+      final response = await _dio.get<dynamic>(ApiEndpoints.patientQueue);
+      final data = response.data;
+      if (data is Map<String, dynamic>) {
+        return PatientQueueSnapshot.fromJson(data);
+      }
+    } on DioException {
+      return null;
+    }
+    return null;
+  }
+
+  Future<void> cancelCurrentPatientSubmission() async {
+    await _dio.post<dynamic>(
+      ApiEndpoints.patientCurrentCancel,
+    );
+  }
+
   Future<List<TriageItem>> getPatientHistory() async {
     try {
       final response = await _dio.get<dynamic>(ApiEndpoints.patientHistory);

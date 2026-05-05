@@ -47,6 +47,7 @@ class ApiEndpoints {
 
   // Patients
   static const String patientCurrent = '/api/v1/patients/current/';
+  static const String patientCurrentCancel = '/api/v1/patients/current/cancel/';
   static const String patientHistory = '/api/v1/patients/history/';
   static const String patientProfile = '/api/v1/patients/profile/';
   static const String patientProfilePhoto = '/api/v1/patients/profile/photo/';

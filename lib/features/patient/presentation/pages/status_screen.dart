@@ -24,7 +24,8 @@ class StatusScreen extends StatefulWidget {
 class StatusData {
   final TriageItem triage;
   final WaitingAnalytics? analytics;
-  StatusData({required this.triage, this.analytics});
+  final PatientQueueSnapshot? queue;
+  StatusData({required this.triage, this.analytics, this.queue});
 }
 
 class _StatusScreenState extends State<StatusScreen> {
@@ -68,14 +69,16 @@ class _StatusScreenState extends State<StatusScreen> {
     final latest = await _backend.getCurrentPatientSubmission();
     if (latest == null) return null;
 
+    final queue = await _backend.getPatientQueue();
+
     WaitingAnalytics? analytics;
-    if (latest.status == 'waiting') {
+    if (latest.status == 'waiting' && queue == null) {
       try {
         analytics = await _backend.getWaitingAnalytics(latest.id);
       } catch (_) {}
     }
 
-    return StatusData(triage: latest, analytics: analytics);
+    return StatusData(triage: latest, analytics: analytics, queue: queue);
   }
 
   void _refresh() => setState(() => _future = _loadLatest());
@@ -108,6 +111,8 @@ class _StatusScreenState extends State<StatusScreen> {
         return const Color(0xFFBA1A1A);
       case 'in_progress':
         return const Color(0xFFF57C00);
+      case 'canceled':
+        return const Color(0xFF73777F);
       default:
         return const Color(0xFF146C2E);
     }
@@ -321,6 +326,44 @@ class _StatusScreenState extends State<StatusScreen> {
     );
   }
 
+  Future<void> _cancelSubmission() async {
+    final shouldCancel = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cancel triage?'),
+        content: const Text(
+          'This will remove your submission from the active queue. You can still view it in history.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Keep waiting'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Cancel triage'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldCancel != true) return;
+
+    try {
+      await _backend.cancelCurrentPatientSubmission();
+      _refresh();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Your triage has been canceled.')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to cancel triage right now.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<StatusData?>(
@@ -373,6 +416,7 @@ class _StatusScreenState extends State<StatusScreen> {
 
         final result = data.triage;
         final analytics = data.analytics;
+        final queue = data.queue;
         final priorityColor = _priorityColor(result.priority);
         final statusColor = _statusColor(result.status);
 
@@ -562,6 +606,95 @@ class _StatusScreenState extends State<StatusScreen> {
                 ),
               ),
               _buildStatusSnapshot(result, analytics),
+
+              if (queue != null) ...[
+                const SizedBox(height: 16),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'QUEUE SNAPSHOT',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.2,
+                            color: Color(0xFF73777F),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _summaryTile(
+                                icon: Icons.people_outline,
+                                color: const Color(0xFF005EB8),
+                                label: 'Ahead of you',
+                                value: '${queue.aheadOfYou}',
+                                note: 'Patients still waiting to be seen',
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _summaryTile(
+                                icon: Icons.hourglass_bottom,
+                                color: const Color(0xFFF57C00),
+                                label: 'ETA',
+                                value: queue.etaLabel,
+                                note: 'Based on live queue pressure',
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        LinearProgressIndicator(
+                          value: queue.progressPercent.clamp(0, 100) / 100,
+                          minHeight: 10,
+                          backgroundColor: const Color(0xFFF2F4F6),
+                          valueColor: AlwaysStoppedAnimation<Color>(priorityColor),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '${queue.progressPercent}% through the wait lifecycle · Current step: ${queue.currentStep}',
+                          style: const TextStyle(fontSize: 12, color: Color(0xFF44474E)),
+                        ),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: queue.steps
+                              .map(
+                                (step) => Chip(
+                                  label: Text(step),
+                                  backgroundColor: step == queue.currentStep
+                                      ? priorityColor.withValues(alpha: 0.12)
+                                      : const Color(0xFFF5F7FA),
+                                ),
+                              )
+                              .toList(),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 12),
+              if (result.status == 'waiting')
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: _cancelSubmission,
+                    icon: const Icon(Icons.cancel_outlined),
+                    label: const Text('Cancel Triage'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFFBA1A1A),
+                      side: const BorderSide(color: Color(0xFFBA1A1A)),
+                    ),
+                  ),
+                ),
               const SizedBox(height: 24),
 
               // Wait time
