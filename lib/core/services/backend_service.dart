@@ -249,6 +249,23 @@ class BackendService {
     }
   }
 
+  Future<TriageItem> getTriageById(int id) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      ApiEndpoints.dashboardStaffPatient(id),
+    );
+
+    final data = response.data;
+    if (data is Map<String, dynamic>) {
+      final payload = data['data'];
+      if (payload is Map<String, dynamic>) {
+        return TriageItem.fromJson(payload);
+      }
+      return TriageItem.fromJson(data);
+    }
+
+    throw StateError('Unexpected triage detail response');
+  }
+
   Future<TriageItem> updatePatientStatus({
     required int id,
     required String status,

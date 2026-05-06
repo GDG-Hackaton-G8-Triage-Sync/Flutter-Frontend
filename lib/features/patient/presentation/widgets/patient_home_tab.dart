@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_frontend/core/models/api_models.dart';
 import 'package:flutter_frontend/core/services/backend_service.dart';
+import 'package:flutter_frontend/core/services/websocket_manager.dart';
 import 'package:flutter_frontend/features/patient/presentation/pages/hospital_info_screen.dart';
 import 'package:flutter_frontend/features/patient/presentation/pages/timeline_screen.dart';
 import 'package:flutter_frontend/core/presentation/widgets/premium_interactive.dart';
@@ -28,12 +31,31 @@ class _PatientHomeTabState extends State<PatientHomeTab> {
   TriageItem? _latestTriage;
   bool _isLoading = true;
   int _unreadNotifications = 0;
+  StreamSubscription<Map<String, dynamic>>? _eventSubscription;
 
   @override
   void initState() {
     super.initState();
     _loadLatest();
     _loadUnreadNotifications();
+    WebSocketManager.instance.connect();
+    _eventSubscription = WebSocketManager.instance.events.listen((event) {
+      if (_shouldRefreshForEvent(event)) {
+        _loadUnreadNotifications();
+      }
+    });
+  }
+
+  bool _shouldRefreshForEvent(Map<String, dynamic> event) {
+    final type = (event['type'] ?? event['event_type'] ?? '')
+        .toString()
+        .toLowerCase();
+    return type.contains('notification') ||
+        type.contains('triage') ||
+        type.contains('status') ||
+        type.contains('priority') ||
+        type.contains('critical') ||
+        type.contains('sla');
   }
 
   Future<void> _loadUnreadNotifications() async {
@@ -47,6 +69,12 @@ class _PatientHomeTabState extends State<PatientHomeTab> {
         setState(() => _unreadNotifications = 0);
       }
     }
+  }
+
+  @override
+  void dispose() {
+    _eventSubscription?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadLatest() async {

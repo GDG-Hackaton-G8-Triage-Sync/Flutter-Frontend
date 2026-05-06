@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'package:flutter_frontend/core/models/api_models.dart';
 import 'package:flutter_frontend/core/services/backend_service.dart';
+import 'package:flutter_frontend/core/services/websocket_manager.dart';
 
 class NotificationInboxScreen extends StatefulWidget {
   const NotificationInboxScreen({super.key, this.showAppBar = true});
@@ -18,17 +21,28 @@ class _NotificationInboxScreenState extends State<NotificationInboxScreen> {
   final BackendService _backend = BackendService.instance;
   late Future<List<AppNotification>> _future;
   List<AppNotification> _notifications = <AppNotification>[];
+  StreamSubscription<Map<String, dynamic>>? _eventSubscription;
 
   @override
   void initState() {
     super.initState();
     _future = _backend.getNotifications();
+    WebSocketManager.instance.connect();
+    _eventSubscription = WebSocketManager.instance.events.listen((event) {
+      if (_shouldRefreshForEvent(event)) {
+        _refresh();
+      }
+    });
   }
 
   Future<void> _refresh() async {
-    setState(() {
-      _future = _backend.getNotifications();
-    });
+    final future = _backend.getNotifications();
+    if (mounted) {
+      setState(() {
+        _future = future;
+      });
+    }
+    await future;
   }
 
   Future<void> _markAllAsRead() async {
@@ -56,6 +70,24 @@ class _NotificationInboxScreenState extends State<NotificationInboxScreen> {
         readAt: DateTime.now(),
       );
     });
+  }
+
+  bool _shouldRefreshForEvent(Map<String, dynamic> event) {
+    final type = (event['type'] ?? event['event_type'] ?? '')
+        .toString()
+        .toLowerCase();
+    return type.contains('notification') ||
+        type.contains('triage') ||
+        type.contains('status') ||
+        type.contains('priority') ||
+        type.contains('critical') ||
+        type.contains('sla');
+  }
+
+  @override
+  void dispose() {
+    _eventSubscription?.cancel();
+    super.dispose();
   }
 
   @override
@@ -97,6 +129,11 @@ class _NotificationInboxScreenState extends State<NotificationInboxScreen> {
                       TextButton(
                         onPressed: _markAllAsRead,
                         child: const Text('Mark all read'),
+                      ),
+                      IconButton(
+                        onPressed: _refresh,
+                        tooltip: 'Refresh notifications',
+                        icon: const Icon(Icons.refresh),
                       ),
                     ],
                   ),
@@ -140,6 +177,11 @@ class _NotificationInboxScreenState extends State<NotificationInboxScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         actions: [
+          IconButton(
+            onPressed: _refresh,
+            tooltip: 'Refresh notifications',
+            icon: const Icon(Icons.refresh),
+          ),
           TextButton(
             onPressed: _markAllAsRead,
             child: const Text('Mark all as read'),

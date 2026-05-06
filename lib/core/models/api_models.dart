@@ -188,6 +188,7 @@ class TriageItem {
     this.patientLifestyleHabits,
     this.patientMedications,
     this.patientAllergies,
+    this.patientMedicalHistory,
     this.patientName,
     this.photoName,
     this.verifiedBy,
@@ -200,6 +201,8 @@ class TriageItem {
     this.bloodType,
     this.healthHistory,
     this.allergies,
+    this.hasAllergies,
+    this.riskFactors,
     this.currentMedications,
     this.badHabits,
     this.reasoning,
@@ -231,6 +234,7 @@ class TriageItem {
   final String? patientLifestyleHabits;
   final String? patientMedications;
   final String? patientAllergies;
+  final String? patientMedicalHistory;
   final String? patientName;
   final String? photoName;
   final String? verifiedBy;
@@ -243,6 +247,8 @@ class TriageItem {
   final String? bloodType;
   final String? healthHistory;
   final String? allergies;
+  final bool? hasAllergies;
+  final List<String>? riskFactors;
   final String? currentMedications;
   final String? badHabits;
   final String? reasoning;
@@ -298,6 +304,7 @@ class TriageItem {
         <String>['patient_medications'],
       ),
       patientAllergies: _readNullableString(json, <String>['patient_allergies']),
+      patientMedicalHistory: _readNullableString(json, <String>['patient_medical_history']),
       patientName: _readNullableString(json, <String>['patient_name', 'name', 'username', 'patient']),
       photoName: _readNullableString(json, <String>['photo_name']),
       verifiedBy: _readNullableString(
@@ -316,6 +323,10 @@ class TriageItem {
       bloodType: _readNullableString(json, <String>['blood_type']),
       healthHistory: _readNullableString(json, <String>['health_history']),
       allergies: _readNullableString(json, <String>['allergies']),
+      hasAllergies: json.containsKey('has_allergies') ? json['has_allergies'] == true : null,
+      riskFactors: json['risk_factors'] is List 
+          ? (json['risk_factors'] as List).map((e) => e.toString()).toList() 
+          : null,
       currentMedications: _readNullableString(
         json,
         <String>['current_medications'],

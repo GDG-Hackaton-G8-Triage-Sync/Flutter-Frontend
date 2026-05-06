@@ -19,12 +19,27 @@ class PatientDetailScreen extends StatefulWidget {
 class _PatientDetailScreenState extends State<PatientDetailScreen> {
   final BackendService _backend = BackendService.instance;
   bool _isUpdating = false;
+  bool _isLoadingDetail = false;
   late TriageItem _patient;
 
   @override
   void initState() {
     super.initState();
     _patient = widget.patient;
+    _loadFullPatient();
+  }
+
+  Future<void> _loadFullPatient() async {
+    setState(() => _isLoadingDetail = true);
+    try {
+      final fullPatient = await _backend.getTriageById(_patient.id);
+      if (!mounted) return;
+      setState(() => _patient = fullPatient);
+    } catch (_) {
+      // Keep the locally provided patient summary if the detail fetch fails.
+    } finally {
+      if (mounted) setState(() => _isLoadingDetail = false);
+    }
   }
 
   double get _displayConfidence => _resolveConfidence(_patient);
@@ -878,10 +893,49 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
     }
   }
 
+  String _aiReasoningText() {
+    final segments = <String>[];
+
+    final primaryReason = _patient.reason?.trim();
+    if (primaryReason != null && primaryReason.isNotEmpty) {
+      segments.add(primaryReason);
+    }
+
+    final reasoning = _patient.reasoning?.trim();
+    if (segments.isEmpty && reasoning != null && reasoning.isNotEmpty) {
+      segments.add(reasoning);
+    }
+
+    final explanation = _patient.explanation
+        ?.map((entry) => entry.trim())
+        .where((entry) => entry.isNotEmpty)
+        .toList();
+    if (segments.isEmpty && explanation != null && explanation.isNotEmpty) {
+      segments.addAll(explanation);
+    }
+
+    final action = _patient.recommendedAction?.trim();
+    if (action != null && action.isNotEmpty) {
+      segments.add('Recommended action: $action');
+    }
+
+    final source = _patient.source?.trim();
+    if (source != null && source.isNotEmpty) {
+      segments.add('Source: $source');
+    }
+
+    if (segments.isEmpty) {
+      return 'Clinical assessment is based on the submitted symptoms, triage response, and supporting metadata.';
+    }
+
+    return segments.join('\n\n');
+  }
+
   Widget _buildAICopilotCard() {
     final isVerified = _patient.verifiedBy != null;
     final double confidence = _displayConfidence;
     final bool isHighConfidence = confidence > 0.85;
+    final reasoningText = _aiReasoningText();
 
     return Container(
       width: double.infinity,
@@ -982,7 +1036,7 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
           Text(
             isVerified
                 ? 'This decision has been manually verified by ${_patient.verifiedBy} to ensure clinical accuracy and HIPAA compliance.'
-                : 'Suggested Level: ${_patient.priority}\nReasoning: ${_patient.reasoning ?? "Analysis of symptom vectors indicates clinical correlation required."}',
+                : 'Suggested Level: ${_patient.priority}\nReasoning: $reasoningText',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
@@ -992,6 +1046,17 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
               height: 1.5,
             ),
           ),
+          if (_isLoadingDetail) ...[
+            const SizedBox(height: 12),
+            const Text(
+              'Loading complete AI reasoning...',
+              style: TextStyle(
+                fontSize: 12,
+                color: Color(0xFF00695C),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           if (!isVerified && !_isUpdating)
             SizedBox(

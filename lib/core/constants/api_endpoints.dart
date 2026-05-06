@@ -25,6 +25,8 @@ class ApiEndpoints {
 
   // Dashboard (staff)
   static const String dashboardStaffPatients = '/api/v1/dashboard/staff/patients/';
+  static String dashboardStaffPatient(int id) =>
+      '/api/v1/dashboard/staff/patient/$id/';
   static String dashboardStaffPatientStatus(int id) =>
       '/api/v1/dashboard/staff/patient/$id/status/';
   static String dashboardStaffPatientPriority(int id) =>
